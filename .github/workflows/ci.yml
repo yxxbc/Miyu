@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'ci/**', 'feat/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -54,7 +54,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev pkg-config
+          sudo apt-get install -y libasound2-dev pkg-config ripgrep
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -69,5 +69,5 @@ jobs:
       - name: Check all targets
         run: cargo check --all-targets --target ${{ matrix.target }}
 
-      - name: Run unit tests
-        run: cargo test --lib --no-fail-fast
+      - name: Run unit tests under PTY
+        run: python3 -c "import pty, sys; sys.exit(pty.spawn(['cargo', 'test', '--lib', '--no-fail-fast']))"
