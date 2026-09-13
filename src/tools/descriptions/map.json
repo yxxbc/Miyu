@@ -1,0 +1,37 @@
+{
+  "name": "map_search",
+  "display_name": "地图",
+  "description": "Turn a place into coordinates, or coordinates into a place. Use this whenever the user asks where something is, how to describe a location, what is nearby, or what address a pair of coordinates belongs to — and use it INSTEAD of pasting a map website link: the WebUI renders the result as a real map card with the point marked on it, which a link cannot do. query takes an address, a place name or a category (咖啡馆, 加油站); city narrows it; around='lon,lat' searches near a point; reverse='lon,lat' turns coordinates into an address. Every result carries both coordinate systems (lon/lat in the provider's own datum, plus lon_wgs84/lat_wgs84 and lon_gcj02/lat_gcj02) and ready-made links — you do not need to build any map URL yourself, and you must not convert coordinates by hand. When you then talk about the place, say the name and the address in your own words; the coordinates are for the card, not for reading out loud. count=0 means nothing matched: say so and suggest a fuller address, rather than guessing a location.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "What to look for: an address, a place name, or a category such as 咖啡馆."
+      },
+      "city": {
+        "type": "string",
+        "description": "Optional city to search in, e.g. 上海. Narrows an ambiguous name."
+      },
+      "around": {
+        "type": "string",
+        "description": "Optional 'lon,lat' to search near — for 'what is around here' questions."
+      },
+      "reverse": {
+        "type": "string",
+        "description": "A 'lon,lat' to turn into an address. Use this instead of query, not with it."
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max results, 1-10. Default 5."
+      }
+    },
+    "additionalProperties": false
+  },
+  "permission": "reads",
+  "always_loaded": false,
+  "load_policy": "summary",
+  "groups": ["web"],
+  "trust": "external",
+  "stub_example": "{\"query\":\"上海图书馆东馆\"}"
+}

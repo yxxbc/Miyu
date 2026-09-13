@@ -7400,7 +7400,10 @@
   // 普通 Markdown 随内容收缩；只有需要稳定横向空间的结构撑满消息列。
   // .image-gen-bubble 必须算宽块:纯生图回合没有其他宽内容,漏掉它气泡
   // 会收缩成 fit-content,占位方块的 70% 宽随之塌成一丁点(08-25 实录)。
-  const WIDE_BLOCK_SELECTOR = ".markdown-body pre, .markdown-table-scroll, .conversation-media, .context-operation, img, .image-gen-bubble, .tool-card:not(.collapsed), .tool-live-progress:not([hidden])";
+  // 地图卡片挂在工具签外面(收起态也在),所以收起的工具签不算宽块时它仍要
+  // 自己算进来——地图是固定高度的一块画布,气泡收缩成 fit-content 会把它
+  // 挤成一条缝。
+  const WIDE_BLOCK_SELECTOR = ".markdown-body pre, .markdown-table-scroll, .conversation-media, .context-operation, img, .image-gen-bubble, .tool-card:not(.collapsed), .tool-live-progress:not([hidden]), .map-card";
   function syncBubbleWidth(article) {
     if (!article) return;
     const content = article.querySelector(".assistant-content");
@@ -7860,6 +7863,37 @@
   //
   // 数据来自 `turn.tool_flow`，库里一直有——以前 API 不发，于是 WebUI 的
   // 工具信息只在事件流里活过一次，切走再回来就没了。
+  /*
+   * 工具卡外挂的富卡片(地图;快递随后也挂这里)。
+   *
+   * 与 share_file 的附件卡同一条规矩:挂在工具签**外面**,收起态也看得见——
+   * 那是给人看的产出,不是调试信息。三处调用(回看重建、子过程回放、实时完成)
+   * 走同一个函数,少一处就会出现「实时有、刷新没了」那类不一致,工具签自己
+   * 踩过这个坑。
+   */
+  const TOOL_RICH_CARDS = [
+    { selector: ".map-card", module: () => window.MiyuMap, matches: (m, name) => m.isMapTool(name), render: (m, output) => m.renderCard(output) },
+  ];
+
+  function toolRichCards(name, output) {
+    const cards = [];
+    for (const kind of TOOL_RICH_CARDS) {
+      const module = kind.module();
+      if (!module || !kind.matches(module, String(name || ""))) continue;
+      const node = kind.render(module, String(output || ""));
+      if (node) cards.push({ node, selector: kind.selector });
+    }
+    return cards;
+  }
+
+  /** 挂到工具卡上,重画时先摘掉上一张(实时完成会重复调用)。 */
+  function attachToolRichCards(card, name, output) {
+    for (const { node, selector } of toolRichCards(name, output)) {
+      card.querySelector(selector)?.remove();
+      card.appendChild(node);
+    }
+  }
+
   function createPersistedToolCard(call) {
     const card = document.createElement("section");
     card.className = state.toolExpanded ? "tool-card" : "tool-card collapsed";
@@ -7979,6 +8013,8 @@
     // 分享附件同理:文件卡片是交付物,直接出现在气泡里,点击即下载。
     const shared = window.MiyuShared?.isShareTool(name) ? window.MiyuShared.renderCard(output) : null;
     if (shared) card.appendChild(shared);
+    // 地图/快递卡片同理:坐标与物流轨迹是产出,不是工具日志。
+    attachToolRichCards(card, name, output);
     return card;
   }
 
@@ -8621,6 +8657,7 @@
         tool.card.querySelector(".shared-attachment")?.remove();
         if (shared) tool.card.appendChild(shared);
       }
+      if (ok) attachToolRichCards(tool.card, tool.name, output);
       scheduleCommandOutputPreview(tool, data?.preview);
       if (tool.imagePlaceholder) {
         stopImageGenDots(tool.imagePlaceholder);
@@ -10298,7 +10335,7 @@
     elements.timeline.hidden = true;
     elements.emptyState.hidden = true;
     elements.blockedState.hidden = false;
-    elements.blockedTitle.textContent = unauthorized ? "登录 Miyu" : "无法载入 Miyu WebUI";
+    elements.blockedTitle.textContent = unauthorized ? "登录顾清影" : "无法载入顾清影 WebUI";
     elements.blockedMessage.textContent = unauthorized
       ? (expired ? "登录已过期,请重新登录。" : "输入用户名和密码以继续。")
       : message || "本地服务暂时无法访问";

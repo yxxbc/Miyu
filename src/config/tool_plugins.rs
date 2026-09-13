@@ -19,6 +19,8 @@ pub struct PluginsConfig {
     #[serde(default)]
     pub exchange_rate: ExchangeRatePluginConfig,
     #[serde(default)]
+    pub map: MapPluginConfig,
+    #[serde(default)]
     pub image_generation: ImageGenerationPluginConfig,
     #[serde(default)]
     pub print_image: PrintImagePluginConfig,
@@ -299,6 +301,35 @@ pub struct ExchangeRatePluginConfig {
     pub free_fallback_enabled: bool,
 }
 
+/// 地图:地理编码 / POI 检索 / 逆地理编码,外加 WebUI 那张可拖可缩的卡片。
+///
+/// 两条源的取舍写在 `tools::map` 的模块注释里,一句话版本:默认走开源的
+/// Nominatim + OSM 瓦片(零 key、瓦片永远是当下的那份),配了高德 Web 服务
+/// key 就自动切高德(国内 POI 与门牌覆盖好得多)。`provider` 显式点名时
+/// 不再自动。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MapPluginConfig {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// `auto`(默认,有 key 走高德否则 OSM)/ `osm` / `amap`。
+    #[serde(default = "default_map_provider")]
+    pub provider: String,
+    /// 高德 **Web 服务** key(不是 JS API key)。空 = 不用高德。
+    #[serde(default)]
+    pub amap_key: String,
+    /// Nominatim 实例。自建的话换这里;公共实例有使用条款,别拿它跑批量。
+    #[serde(default = "default_nominatim_base_url")]
+    pub nominatim_base_url: String,
+    /// 瓦片缓存留多久(小时)。瓦片会变(新修的路、改名的店),但不会每天变;
+    /// 默认 72 小时是「基本是最新的」与「别把公共瓦片服务器当自家 CDN 刷」
+    /// 之间的折中。0 = 不缓存,每次都回源。
+    #[serde(default = "default_map_tile_ttl_hours")]
+    pub tile_ttl_hours: u64,
+    /// 瓦片磁盘缓存上限(MiB),超了按最旧的删。
+    #[serde(default = "default_map_tile_cache_mb")]
+    pub tile_cache_mb: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageGenerationPluginConfig {
     #[serde(default = "default_true")]
@@ -547,6 +578,7 @@ impl Default for PluginsConfig {
             deep_research: DeepResearchPluginConfig::default(),
             vision: VisionPluginConfig::default(),
             exchange_rate: ExchangeRatePluginConfig::default(),
+            map: MapPluginConfig::default(),
             image_generation: ImageGenerationPluginConfig::default(),
             print_image: PrintImagePluginConfig::default(),
             memes: MemesPluginConfig::default(),
@@ -662,6 +694,19 @@ impl Default for ExchangeRatePluginConfig {
             enabled: false,
             api_key: String::new(),
             free_fallback_enabled: default_true(),
+        }
+    }
+}
+
+impl Default for MapPluginConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_true(),
+            provider: default_map_provider(),
+            amap_key: String::new(),
+            nominatim_base_url: default_nominatim_base_url(),
+            tile_ttl_hours: default_map_tile_ttl_hours(),
+            tile_cache_mb: default_map_tile_cache_mb(),
         }
     }
 }

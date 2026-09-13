@@ -197,6 +197,10 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
                 concat!("src=\"/diff.js?v=", env!("MIYU_BUILD_ID"), "\""),
             )
             .replace(
+                "src=\"/mapcard.js\"",
+                concat!("src=\"/mapcard.js?v=", env!("MIYU_BUILD_ID"), "\""),
+            )
+            .replace(
                 "src=\"/highlight.js\"",
                 concat!("src=\"/highlight.js?v=", env!("MIYU_BUILD_ID"), "\""),
             )
@@ -295,6 +299,14 @@ pub(in crate::web) async fn shared_js_asset(headers: HeaderMap) -> Response {
     embedded_asset(
         &headers,
         SHARED_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
+}
+
+pub(in crate::web) async fn mapcard_js_asset(headers: HeaderMap) -> Response {
+    embedded_asset(
+        &headers,
+        MAPCARD_JS.as_bytes(),
         "application/javascript; charset=utf-8",
     )
 }

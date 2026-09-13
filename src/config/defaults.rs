@@ -306,6 +306,24 @@ pub(crate) fn default_openai_images_base_url() -> String {
     "https://api.openai.com".to_string()
 }
 
+pub(crate) fn default_map_provider() -> String {
+    "auto".to_string()
+}
+
+/// 官方公共实例。使用条款要求带能联系上的 User-Agent 且别跑批量,
+/// `tools::map` 两条都照做了;自建实例改配置里的 `nominatim_base_url`。
+pub(crate) fn default_nominatim_base_url() -> String {
+    "https://nominatim.openstreetmap.org".to_string()
+}
+
+pub(crate) fn default_map_tile_ttl_hours() -> u64 {
+    72
+}
+
+pub(crate) fn default_map_tile_cache_mb() -> u64 {
+    256
+}
+
 pub(crate) fn default_image_generation_model() -> String {
     "gpt-image-1".to_string()
 }

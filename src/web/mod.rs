@@ -55,6 +55,8 @@ pub(crate) mod voice_tts;
 // `ipc::send` 会突然解析到子模块上——编译期就报，但报错信息（找不到 send）
 // 离真正的原因很远。
 mod ipc_server;
+// 地图瓦片代理:CSP 是 img-src 'self',瓦片只能由 daemon 代取。
+mod map_api;
 
 use accounts_api::*;
 use actor::*;
@@ -77,6 +79,7 @@ use dto::*;
 use event_map::*;
 use goal_driver::*;
 use ipc_server::*;
+use map_api::*;
 use ownership::*;
 use persona::*;
 use prompt_files::*;
@@ -166,6 +169,8 @@ const HIGHLIGHT_JS: &str = include_str!("../../web/highlight.js");
 const SHARED_JS: &str = include_str!("../../web/shared.js");
 // 文件编辑工具的 diff 渲染:把 patchText 参数画成增删配色的 diff 卡。
 const DIFF_JS: &str = include_str!("../../web/diff.js");
+// 地图卡片:自己写的切片地图(没引第三方地图库),瓦片走 /api/map/tile。
+const MAPCARD_JS: &str = include_str!("../../web/mapcard.js");
 // 插件 dashboard 脚本走 assets.rs 的 DASH_SCRIPTS 静态表,加面板只改那一行。
 // KaTeX 0.18.4(vendored):公式渲染;字体只带 woff2(css 里 woff2 列首,
 // 现代浏览器不会去请求 woff/ttf 回退项)。

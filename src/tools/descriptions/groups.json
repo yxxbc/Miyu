@@ -23,5 +23,5 @@
   "skills": { "display_name": "技能工具组", "summary": "Load, create, update, delete, and publish skills." },
   "systeminfo": { "display_name": "系统信息工具组", "summary": "System status, clipboard, and service status queries." },
   "utility": { "display_name": "实用工具组", "summary": "General utilities such as calculation, hashing, encoding, and exchange rates." },
-  "web": { "display_name": "联网工具组", "summary": "Web search, web page reading, and weather lookup." }
+  "web": { "display_name": "联网工具组", "summary": "Web search, web page reading, weather lookup, and maps and place lookup." }
 }

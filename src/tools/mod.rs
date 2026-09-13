@@ -21,6 +21,7 @@ pub mod jobs;
 pub mod knowledge_base;
 mod ledger;
 mod load_tools;
+mod map;
 mod mcp;
 pub(crate) mod memes;
 mod memory;
@@ -102,6 +103,13 @@ pub(crate) fn string_list(value: Option<&serde_json::Value>) -> Vec<String> {
         }
         _ => Vec::new(),
     }
+}
+
+/// 进程级共享 HTTP 客户端。工具域自己用 `http_response::shared_client`;
+/// Web 层(地图瓦片代理)也要发同性质的出站请求,与其再建一个连接池,不如
+/// 把同一个借出去。
+pub(crate) fn shared_http_client() -> &'static reqwest::Client {
+    http_response::shared_client()
 }
 
 pub fn register_ask_question(registry: &mut ToolRegistry) {
@@ -293,6 +301,7 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "archlinux_news" => t("Arch news", "Arch 新闻"),
         "exchange_rate" | "get_exchange_rate" => t("Exchange rates", "汇率查询"),
         "album" => t("Album", "图库"),
+        "map_search" => t("Map", "地图"),
         "load_skill" => t("Load skill", "加载技能"),
         "manage_skill" => t("Manage skills", "管理技能"),
         "load_tools" => t("Load", "加载"),
@@ -503,6 +512,9 @@ pub fn compose_registry(
     // 纯浪费(08-17 实测 get_exchange_rate 311 字符)。
     if plugin("exchange_rate") && config.plugins.exchange_rate.enabled {
         exchange_rate::register(&mut registry, config.plugins.exchange_rate.clone());
+    }
+    if plugin("map") && config.plugins.map.enabled {
+        map::register(&mut registry, config.plugins.map.clone());
     }
     if plugin("archlinux") && config.plugins.archlinux.enabled {
         archlinux::register(&mut registry, paths);
