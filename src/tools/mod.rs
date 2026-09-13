@@ -1,3 +1,4 @@
+pub mod album;
 mod alarm;
 mod api_quota;
 mod apply_patch;
@@ -291,6 +292,7 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "archwiki_query" => t("Query ArchWiki", "查询 ArchWiki"),
         "archlinux_news" => t("Arch news", "Arch 新闻"),
         "exchange_rate" | "get_exchange_rate" => t("Exchange rates", "汇率查询"),
+        "album" => t("Album", "图库"),
         "load_skill" => t("Load skill", "加载技能"),
         "manage_skill" => t("Manage skills", "管理技能"),
         "load_tools" => t("Load", "加载"),
@@ -513,6 +515,11 @@ pub fn compose_registry(
     }
     if plugin("memes") && config.plugins.memes.enabled {
         memes::register(&mut registry, config.clone(), paths.clone());
+    }
+    // 图库:和表情包挨着注册,但两件事——表情包是「该有反应时自动挑」,图库是
+    // 「人让留的图,按名字/描述找出来发」。没有机器级开关,persona 说了算。
+    if plugin("album") {
+        album::register(&mut registry, config.clone(), paths.clone());
     }
     if manifest.subsystems.voice {
         if config.voice.enabled {

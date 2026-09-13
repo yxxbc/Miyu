@@ -315,6 +315,7 @@ static DASH_SCRIPTS: &[(&str, &str)] = &[
     ("dash-memory.js", include_str!("../../web/dash-memory.js")),
     ("dash-kb.js", include_str!("../../web/dash-kb.js")),
     ("dash-memes.js", include_str!("../../web/dash-memes.js")),
+    ("dash-album.js", include_str!("../../web/dash-album.js")),
     ("dash-qq.js", include_str!("../../web/dash-qq.js")),
     ("dash-groups.js", include_str!("../../web/dash-groups.js")),
     (

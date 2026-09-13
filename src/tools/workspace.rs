@@ -57,6 +57,26 @@ pub fn try_workspace() -> Option<PathBuf> {
     TURN_WORKSPACE.try_with(|workspace| workspace.clone()).ok()
 }
 
+/// 把模型给的路径展开成绝对路径:`~/` 认家目录,相对路径挂在
+/// [`effective_workdir`] 上(**不是**进程 cwd——并发回合各有各的工作区)。
+///
+/// 这里是它该待的地方:`memes::library` 与 `knowledge_base::store` 各自抄过一份,
+/// 新代码一律用这个,不再加第四份。
+pub fn expand_path(value: &str) -> PathBuf {
+    let value = value.trim();
+    if let Some(rest) = value.strip_prefix("~/") {
+        if let Some(home) = directories::BaseDirs::new().map(|dirs| dirs.home_dir().to_path_buf()) {
+            return home.join(rest);
+        }
+    }
+    let path = std::path::Path::new(value);
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        effective_workdir().join(path)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

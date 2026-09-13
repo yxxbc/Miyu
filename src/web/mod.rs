@@ -65,6 +65,7 @@ use bridge_question::*;
 use commands_api::*;
 use config_api::*;
 use dashboards::affection::*;
+use dashboards::album::*;
 use dashboards::kb::*;
 use dashboards::ledger::*;
 use dashboards::memes::*;

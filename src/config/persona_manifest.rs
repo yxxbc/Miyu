@@ -23,6 +23,7 @@ pub const PERSONA_MANIFEST_FILE: &str = "persona.toml";
 /// 里能被指出来。
 pub const PLUGIN_IDS: &[&str] = &[
     "files",
+    "album",
     "usage_query",
     "alarm",
     "exchange_rate",

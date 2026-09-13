@@ -50,6 +50,7 @@ const TOOL_GROUPS_RAW: &str = include_str!("descriptions/groups.json");
 macro_rules! tool_description_files {
     () => {
         [
+            include_str!("descriptions/album.json"),
             include_str!("descriptions/alarm.json"),
             include_str!("descriptions/archlinux_news.json"),
             include_str!("descriptions/archlinux_official_package_query.json"),

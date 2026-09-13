@@ -5,6 +5,7 @@
 //! 与 `qq_history.rs` 一样直接挂在路由表上。
 
 pub(in crate::web) mod affection;
+pub(in crate::web) mod album;
 pub(in crate::web) mod kb;
 pub(in crate::web) mod ledger;
 pub(in crate::web) mod memes;

@@ -1,0 +1,55 @@
+{
+  "name": "album",
+  "display_name": "图库",
+  "description": "Save, find and send pictures from this persona's album. This is the plain picture library, kept separate from the meme library: use it for images worth keeping that are NOT reaction memes — portraits and reference art of the persona, generated images the user liked, screenshots, diagrams, photos the user asked you to keep. Prefer it over manage_meme whenever the user says \"keep this\", \"save this picture\" or \"remember this image\": memes get picked automatically when a reaction is called for, so a non-meme in that library pollutes the picking. action=save copies the file in and records a name, description and tags — write a real description, it is the only thing search can match on later. action=search finds entries by keyword across name, description and tags; action=list shows everything, newest first. action=show sends the picture, rendering it in the terminal and delivering it in the WebUI; pass the id from search or list. action=delete drops the entry, and only hard_delete=true removes the file itself. Ids are short and stable. Search first unless the user gave an exact id. The album is per-persona: each persona has its own, they never mix.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["save", "search", "list", "show", "delete"],
+        "description": "save takes a picture in; search finds by keyword; list shows everything newest first; show sends one; delete drops an entry."
+      },
+      "path": {
+        "type": "string",
+        "description": "Required for save: the image file to take in. Absolute or ~/ path; relative paths resolve against the workspace."
+      },
+      "name": {
+        "type": "string",
+        "description": "For save: short human name. Defaults to the file name."
+      },
+      "description": {
+        "type": "string",
+        "description": "For save: what is in the picture. Write a real one — search only matches name, description and tags."
+      },
+      "tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "For save: tags for later search, e.g. [\"persona\", \"立绘\"]."
+      },
+      "query": {
+        "type": "string",
+        "description": "Required for search: keyword matched against name, description and tags."
+      },
+      "id": {
+        "type": "string",
+        "description": "Required for show and delete: the entry id from search or list. A name works too when unambiguous."
+      },
+      "hard_delete": {
+        "type": "boolean",
+        "description": "For delete: also remove the image file. Default false (entry only)."
+      },
+      "limit": {
+        "type": "integer",
+        "description": "For list and search: max entries, 1-50. Default 20."
+      }
+    },
+    "required": ["action"],
+    "additionalProperties": false
+  },
+  "permission": "writes",
+  "always_loaded": false,
+  "load_policy": "group",
+  "groups": ["images"],
+  "stub_example": "{\"action\":\"search\",\"query\":\"立绘\"}"
+}

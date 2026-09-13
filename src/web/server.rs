@@ -518,6 +518,17 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         )
         .route("/api/dash/ledger/export", get(dash_ledger_export))
         .route("/api/dash/ledger/import", post(dash_ledger_import))
+        .route(
+            "/api/dash/album/items",
+            get(dash_album_items)
+                .post(dash_album_upload)
+                .layer(DefaultBodyLimit::max(ALBUM_UPLOAD_LIMIT)),
+        )
+        .route(
+            "/api/dash/album/items/{id}",
+            axum::routing::patch(dash_album_patch).delete(dash_album_delete),
+        )
+        .route("/api/dash/album/image", get(dash_album_image))
         .route("/api/dash/memes/libraries", get(dash_memes_libraries))
         .route(
             "/api/dash/memes/items",
