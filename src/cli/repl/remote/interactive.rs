@@ -173,6 +173,10 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
             ReplInput::Chat => (None, ""),
             ReplInput::Slash(command, args) => (Some(command), args),
         };
+        // `/init` 是唯一一条**展开成消息**的命令:它要模型真的去看工作区、
+        // 写文件,那是一整个回合的活,不是一次客户端动作。装在这里,跑完命令
+        // 分支后落到下面的聊天路上。
+        let mut synthesized_prompt: Option<&'static str> = None;
         if let Some(command) = slash_command {
             // 命令也进上方向键历史：`/goal 长长的目标` 打错一个字重敲一遍，
             // 和重敲一条消息一样冤。落盘历史仍只收消息（命令是操作不是对话）。
@@ -194,6 +198,35 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
             }
             match command {
                 ReplSlashCommand::Exit => break,
+                ReplSlashCommand::Init => {
+                    // 人格会话里没有意义:GQY.md 只在 dev 提示词里注入,
+                    // 在这儿生成等于让她白做一遍没人读的功课。
+                    if mode != AgentMode::Dev {
+                        repl_note(
+                            &mut live_repl,
+                            &format!(
+                                "\x1b[2m{}\x1b[0m\n",
+                                t(
+                                    "/init is a dev-mode command; switch to dev first",
+                                    "/init 是开发模式的命令,先切到开发模式"
+                                )
+                            ),
+                        )?;
+                    } else {
+                        repl_note(
+                            &mut live_repl,
+                            &format!(
+                                "\x1b[2m{}\x1b[0m\n",
+                                t(
+                                    "reading the workspace and writing GQY.md…",
+                                    "正在通读工作区并写 GQY.md…"
+                                )
+                            ),
+                        )?;
+                        synthesized_prompt =
+                            Some(crate::agent::prompt::INIT_PROJECT_PROMPT);
+                    }
+                }
                 ReplSlashCommand::Help => print_repl_help(),
                 ReplSlashCommand::Stt => {
                     if crate::cli::repl::dictation::is_active() {
@@ -1046,14 +1079,21 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     )?;
                 }
             }
+            if synthesized_prompt.is_none() {
+                continue;
+            }
+        }
+        if input.is_empty() && synthesized_prompt.is_none() {
             continue;
         }
-        if input.is_empty() {
-            continue;
+        // 展开出来的提示词不进历史:用户敲的是 `/init`,上方向键该给回那一条
+        // (命令分支已经记过了),不是这几百字的说明。
+        let input = synthesized_prompt.unwrap_or(input);
+        if synthesized_prompt.is_none() {
+            push_history_capped(&mut history, history_entry.clone());
+            live_repl.editor.record_history(history_entry.clone());
+            persist_repl_history_entry(paths, &active_session_id, &history_entry);
         }
-        push_history_capped(&mut history, history_entry.clone());
-        live_repl.editor.record_history(history_entry.clone());
-        persist_repl_history_entry(paths, &active_session_id, &history_entry);
         match try_run_remote_chat(
             paths,
             Some(&mut live_repl),

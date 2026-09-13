@@ -21,6 +21,7 @@ pub(crate) fn split_repl_command(input: &str) -> (&str, &str) {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ReplSlashCommand {
     New,
+    Init,
     Session,
     Rename,
     Delete,
@@ -109,6 +110,17 @@ pub(crate) const REPL_COMMAND_TABLE: &[ReplCommandSpec] = &[
         arg_hint: "[name|index]",
         help_en: "delete a session (current by default)",
         help_zh: "删除会话（默认当前会话）",
+        web: false,
+    },
+    ReplCommandSpec {
+        name: "/init",
+        command: ReplSlashCommand::Init,
+        arg_hint: "",
+        help_en: "scan the workspace and write GQY.md (dev mode)",
+        help_zh: "扫一遍工作区并写出 GQY.md 项目说明(开发模式)",
+        // WebUI 里没接:它展开成一条普通消息交给模型跑,而 WebUI 的命令层
+        // 只做客户端动作(见 web/commands.js 的说明),没有「替用户发一条
+        // 消息」的出口。接的时候在那边加一条分支即可。
         web: false,
     },
     ReplCommandSpec {

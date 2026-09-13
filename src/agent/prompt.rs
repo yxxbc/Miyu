@@ -46,10 +46,76 @@ pub(in crate::agent) fn mode_system_prompt(
     with_user_profile: bool,
 ) -> Result<String> {
     match mode {
-        AgentMode::Dev => config.dev_system_prompt(paths),
+        AgentMode::Dev => Ok(with_project_context(config.dev_system_prompt(paths)?)),
         AgentMode::Normal => config.system_prompt_with(paths, audience, with_user_profile),
     }
 }
+
+/// 工作区根上的 `GQY.md`(见 [`crate::config::PROJECT_CONTEXT_FILE`])读进来,
+/// 拼在 dev 提示词后面。
+///
+/// **为什么敢往前缀里放会变的文件。** 这段进的是系统提示词,也就是缓存前缀,
+/// 而 `GQY.md` 会被改。备选是放进每轮的瞬态尾巴——那样每一轮都要重发一遍全文,
+/// 一份 3KB 的项目说明在一个几十轮的会话里就是几十 KB 的重复。改文件是**人的
+/// 动作、低频**,改一次接受一次计划内的冷启动,比每轮都付费划算(口径见
+/// `docs/理念.md` 的 append-only 讨论)。
+///
+/// 没有工作区、没有这个文件、或者文件是空的:一个字都不加,dev 提示词逐字
+/// 不变——极简原则,没项目的会话不该为这件事付任何 token。
+pub(in crate::agent) fn with_project_context(mut prompt: String) -> String {
+    let Some(block) = project_context_block() else {
+        return prompt;
+    };
+    prompt.push_str("\n\n");
+    prompt.push_str(&block);
+    prompt
+}
+
+/// 读工作区根上的项目上下文,拼成可注入的块。给 dev 子代理复用。
+pub(crate) fn project_context_block() -> Option<String> {
+    let workdir = crate::tools::workspace::effective_workdir();
+    let path = workdir.join(crate::config::PROJECT_CONTEXT_FILE);
+    let content = std::fs::read_to_string(&path).ok()?;
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let (body, truncated) = if trimmed.len() > crate::config::MAX_PROJECT_CONTEXT_BYTES {
+        // 按字符边界切,别把一个汉字劈成两半。
+        let mut end = crate::config::MAX_PROJECT_CONTEXT_BYTES;
+        while end > 0 && !trimmed.is_char_boundary(end) {
+            end -= 1;
+        }
+        (&trimmed[..end], true)
+    } else {
+        (trimmed, false)
+    };
+    let mut block = format!(
+        "<project-context path=\"{}\">\nThis file is the working notes for the project in the current workspace. It was written for you; trust it over guesses about the codebase, and keep following it unless the user says otherwise.\n\n{body}",
+        xml_attr_escape(&path.display().to_string())
+    );
+    if truncated {
+        block.push_str("\n\n[truncated: the file is longer than the injection limit]");
+    }
+    block.push_str("\n</project-context>");
+    Some(block)
+}
+
+/// `/init` 展开成的提示词。做成一条普通的用户消息而不是新加一条 IPC 命令:
+/// 扫工作区、判断项目结构、写文件,每一件都是她手里现成的工具干的活,而
+/// 「让模型自己去看」正是这件事该有的样子(对位 Claude Code 的 /init)。
+pub(crate) const INIT_PROJECT_PROMPT: &str = concat!(
+    "Look at this workspace and write a `",
+    "GQY.md",
+    "` at its root: the notes you would want to have on hand the next time you work here.\n\n",
+    "Read enough of the repository first — the build files, the entry points, the directory layout, the existing docs and any AGENTS.md/CONTRIBUTING — to write from what is actually there rather than from convention. Then cover, in this order and no longer than it needs to be:\n\n",
+    "1. What this project is, in two or three sentences.\n",
+    "2. How to build, run and test it — the exact commands.\n",
+    "3. The layout: which directory holds what, and where the important entry points are.\n",
+    "4. Conventions this codebase actually follows that a newcomer would get wrong: naming, error handling, comment language, commit style, anything the code is consistent about.\n",
+    "5. Anything sharp: known traps, platform-specific paths, things that look wrong but are deliberate.\n\n",
+    "Rules: write only what you verified in the repo — no filler sections, no invented commands. If a `GQY.md` already exists, read it first and update it instead of overwriting what is still true. Write it in the language this repository's own docs use. When you are done, say in one line what you wrote and what you deliberately left out."
+);
 
 /// 联想记忆块的前言常量上提到 system 提示词(08-17)。
 ///
