@@ -36,7 +36,7 @@ pub fn notify(title: &str, body: &str) {
     }
     // Linux/BSD: notify-send is the de-facto interface, and `--` keeps a body
     // starting with a dash from being read as a flag.
-    spawn("notify-send", &["-a", "Miyu", "--", title, body]);
+    spawn("notify-send", &["-a", "顾清影", "--", title, body]);
 }
 
 /// 同 [`notify`],但在 Linux 上走 `notify-send -p`(打印通知 id)并用 `-r`
@@ -51,7 +51,7 @@ pub fn notify_replacing(title: &str, body: &str, previous: Option<u32>) -> Optio
         notify(title, body);
         return None;
     }
-    let mut args: Vec<String> = vec!["-a".into(), "Miyu".into(), "-p".into()];
+    let mut args: Vec<String> = vec!["-a".into(), "顾清影".into(), "-p".into()];
     if let Some(id) = previous {
         args.push("-r".into());
         args.push(id.to_string());
@@ -69,7 +69,7 @@ pub fn notify_replacing(title: &str, body: &str, previous: Option<u32>) -> Optio
             .ok(),
         Ok(_) => {
             // 老版本不认 -p/-r:退回普通发送,链条断了也别丢通知。
-            spawn("notify-send", &["-a", "Miyu", "--", title, body]);
+            spawn("notify-send", &["-a", "顾清影", "--", title, body]);
             None
         }
         Err(_) => None,

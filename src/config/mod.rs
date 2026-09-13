@@ -378,14 +378,16 @@ impl MiniMaxTtsConfig {
     }
 }
 
+/// 叠词不是凑数:音节长、声学特征明显,唤醒检测命中率高、误触少——所以是
+/// 「清影清影」而不是「清影」。中文与拼音两条识别路径各留一条。
 fn default_wake_keywords() -> Vec<String> {
-    ["未有未有", "密友密友", "miyumiyu", "みゆみゆ"]
+    ["清影清影", "顾清影", "qing1 ying3 qing1 ying3"]
         .into_iter()
         .map(str::to_string)
         .collect()
 }
 
-/// 把 "未有未有, 小未" 这样的文本拆成唤醒词列表(逗号/顿号/分号/换行分隔,去重)。
+/// 把 "清影清影, 小影" 这样的文本拆成唤醒词列表(逗号/顿号/分号/换行分隔,去重)。
 pub fn split_wake_keywords(text: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for part in text.split(|ch: char| matches!(ch, ',' | '，' | '、' | ';' | '；' | '\n')) {

@@ -367,7 +367,7 @@ fn handle_worker_event(state: &DaemonState, kind: &str, data: Value) {
                 WAKE_NOTICE_GEN.fetch_add(1, Ordering::Relaxed);
                 cancel_active_run(state);
                 send_signal("voice.stop_speaking", json!({}));
-                notify(state, "Miyu", t("stopped listening", "不听了"));
+                notify(state, "顾清影", t("stopped listening", "不听了"));
             }
         }
         "voice.transcribed" => {
@@ -636,7 +636,7 @@ async fn run_voice_turn(state: &DaemonState, content: String) -> Result<()> {
                 tracing::debug!("合成期间窗口已关,丢弃播报");
                 return Ok(());
             }
-            notify(state, "Miyu", &summary);
+            notify(state, "顾清影", &summary);
             match synthesized {
                 Some(path) => send_signal(
                     "voice.play",

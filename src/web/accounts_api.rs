@@ -78,12 +78,12 @@ pub(in crate::web) fn account_bootstrap_json(state: &DaemonState, identity: &Web
                 json!({ "slug": persona.slug, "name": persona.meta.name, "private": true, "dashboards": dashboards })
             }
             None => {
-                json!({ "slug": null, "name": "Miyu", "private": false, "dashboards": dashboards })
+                json!({ "slug": null, "name": "顾清影", "private": false, "dashboards": dashboards })
             }
         };
     } else {
         value["oobe_pending"] = json!(false);
-        value["persona"] = json!({ "slug": null, "name": "Miyu", "private": false });
+        value["persona"] = json!({ "slug": null, "name": "顾清影", "private": false });
         // 拿内置口令登录且还没有管理员账号:先建号(引导第 0 步)。
         let setup_pending = identity.account_id.is_empty()
             && !state.state_store.has_admin_account().unwrap_or(true);

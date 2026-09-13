@@ -24,9 +24,9 @@ pub(in crate::web) struct LoginRequest {
 
 /// 首次访问的内置口令(09-11):没建管理员账号之前,用它登录就是管理员,登录后
 /// 必须先建号;建完号它就失效,不知道它的人只能凭邀请码注册。`-p` 可以换掉它。
-/// 内置账号还有个用户名(09-11):用户名 `miyu`、密码 `miyu`。
-pub(in crate::web) const BUILTIN_SETUP_USERNAME: &str = "miyu";
-pub(in crate::web) const BUILTIN_SETUP_PASSWORD: &str = "miyu";
+/// 内置账号还有个用户名(09-11):用户名 `gqy`、密码 `GQY520`。
+pub(in crate::web) const BUILTIN_SETUP_USERNAME: &str = "gqy";
+pub(in crate::web) const BUILTIN_SETUP_PASSWORD: &str = "GQY520";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

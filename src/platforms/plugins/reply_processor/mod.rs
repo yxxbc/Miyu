@@ -258,7 +258,7 @@ impl ReplyProcessorPlugin {
         let display_name = context
             .bot_display_name()
             .await
-            .unwrap_or_else(|_| "Miyu".to_string());
+            .unwrap_or_else(|_| "顾清影".to_string());
         let mut transformed = OutboundMessage {
             body: OutboundBody::Forward(vec![ForwardNode {
                 user_id: context.conversation.account_id.clone(),

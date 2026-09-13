@@ -408,7 +408,7 @@
     queuedPrompts: [],
     models: [],
     persona: {
-      name: "Miyu",
+      name: "顾清影",
       avatar_url: "/assets/miyu-logo.png",
       board_image_url: "/assets/miyuwallpaper.png",
       board_title: DEFAULT_BOARD_TITLE,

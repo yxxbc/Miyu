@@ -288,7 +288,7 @@ fn persona_identity_uses_default_and_custom_values() {
     let mut config = AppConfig::default();
     let prompts = PromptDocuments::default();
     let default = persona_identity(&config, &prompts);
-    assert_eq!(default.name, "Miyu");
+    assert_eq!(default.name, "顾清影");
     assert_eq!(default.avatar_url.as_deref(), Some("/assets/miyu-logo.png"));
     assert_eq!(default.composer_placeholder, "给 Miyu 发消息");
 

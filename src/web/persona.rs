@@ -163,12 +163,12 @@ pub(in crate::web) fn persona_identity(
     let active = config.prompt.active_persona.trim();
     if active.is_empty() {
         return PersonaIdentity {
-            name: "Miyu".to_string(),
+            name: "顾清影".to_string(),
             avatar_url: Some("/assets/miyu-logo.png".to_string()),
             board_image_url: Some("/assets/miyuwallpaper.png".to_string()),
             board_title: DEFAULT_BOARD_TITLE.to_string(),
             board_subtitle: DEFAULT_BOARD_SUBTITLE.to_string(),
-            composer_placeholder: default_composer_placeholder("Miyu"),
+            composer_placeholder: default_composer_placeholder("顾清影"),
             starter_prompts: DEFAULT_STARTER_PROMPTS.map(str::to_string).to_vec(),
         };
     }
