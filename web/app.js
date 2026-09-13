@@ -7400,10 +7400,10 @@
   // 普通 Markdown 随内容收缩；只有需要稳定横向空间的结构撑满消息列。
   // .image-gen-bubble 必须算宽块:纯生图回合没有其他宽内容,漏掉它气泡
   // 会收缩成 fit-content,占位方块的 70% 宽随之塌成一丁点(08-25 实录)。
-  // 地图/快递卡片挂在工具签外面(收起态也在),所以收起的工具签不算宽块时
-  // 它们仍要自己算进来——地图是固定高度的一块画布,气泡收缩成 fit-content
-  // 会把它挤成一条缝。
-  const WIDE_BLOCK_SELECTOR = ".markdown-body pre, .markdown-table-scroll, .conversation-media, .context-operation, img, .image-gen-bubble, .tool-card:not(.collapsed), .tool-live-progress:not([hidden]), .map-card, .express-card";
+  // 快递卡片挂在工具签外面(收起态也在),所以收起的工具签不算宽块时它仍要
+  // 自己算进来。地图卡片不在这里:它活在收起区里,展开态已经由
+  // `.tool-card:not(.collapsed)` 顶着,再写一条会让收起态的气泡也白撑宽。
+  const WIDE_BLOCK_SELECTOR = ".markdown-body pre, .markdown-table-scroll, .conversation-media, .context-operation, img, .image-gen-bubble, .tool-card:not(.collapsed), .tool-live-progress:not([hidden]), .express-card";
   function syncBubbleWidth(article) {
     if (!article) return;
     const content = article.querySelector(".assistant-content");
@@ -7864,16 +7864,22 @@
   // 数据来自 `turn.tool_flow`，库里一直有——以前 API 不发，于是 WebUI 的
   // 工具信息只在事件流里活过一次，切走再回来就没了。
   /*
-   * 工具卡外挂的富卡片(地图 / 快递)。
+   * 工具卡上的富卡片(地图 / 快递),两种挂法:
    *
-   * 与 share_file 的附件卡同一条规矩:挂在工具签**外面**,收起态也看得见——
-   * 那是给人看的产出,不是调试信息。三处调用(回看重建、子过程回放、实时完成)
-   * 走同一个函数,少一处就会出现「实时有、刷新没了」那类不一致,工具签自己
-   * 踩过这个坑。
+   *   outside —— 挂在工具签**外面**,收起态也看得见(待办、分享附件那一档:
+   *              是给人看的交付物)。
+   *   fold    —— 挂进 `.tool-body`,跟着工具签一起收起,展开才看得到。
+   *
+   * **地图走 fold,是隐私判断不是布局偏好**(09-13 晚用户拍板):一张地图钉的是
+   * 现实里的一个点——家、常去的店。默认摊在气泡里,截图、投屏、旁边有人时全躲
+   * 不掉,而它并不是每次都要看的东西。默认藏起来、要看点一下,代价小得多。
+   *
+   * 三处调用(回看重建、子过程回放、实时完成)走同一个函数,少一处就会出现
+   * 「实时有、刷新没了」那类不一致,工具签自己踩过这个坑。
    */
   const TOOL_RICH_CARDS = [
-    { selector: ".map-card", module: () => window.MiyuMap, matches: (m, name) => m.isMapTool(name), render: (m, output) => m.renderCard(output) },
-    { selector: ".express-card", module: () => window.MiyuExpress, matches: (m, name) => m.isExpressTool(name), render: (m, output) => m.renderCard(output) },
+    { selector: ".map-card", mount: "fold", module: () => window.MiyuMap, matches: (m, name) => m.isMapTool(name), render: (m, output) => m.renderCard(output) },
+    { selector: ".express-card", mount: "outside", module: () => window.MiyuExpress, matches: (m, name) => m.isExpressTool(name), render: (m, output) => m.renderCard(output) },
   ];
 
   function toolRichCards(name, output) {
@@ -7882,16 +7888,19 @@
       const module = kind.module();
       if (!module || !kind.matches(module, String(name || ""))) continue;
       const node = kind.render(module, String(output || ""));
-      if (node) cards.push({ node, selector: kind.selector });
+      if (node) cards.push({ node, selector: kind.selector, mount: kind.mount });
     }
     return cards;
   }
 
   /** 挂到工具卡上,重画时先摘掉上一张(实时完成会重复调用)。 */
   function attachToolRichCards(card, name, output) {
-    for (const { node, selector } of toolRichCards(name, output)) {
+    for (const { node, selector, mount } of toolRichCards(name, output)) {
       card.querySelector(selector)?.remove();
-      card.appendChild(node);
+      // fold 挂进 .tool-body:收起时被 grid 0fr + overflow:hidden 一起收走。
+      // 找不到 body(理论上不会)就退回挂外面——宁可露出来也别把卡片丢了。
+      const fold = mount === "fold" ? card.querySelector(".tool-body") : null;
+      (fold || card).appendChild(node);
     }
   }
 
