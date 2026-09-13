@@ -13,6 +13,7 @@ mod default_tools;
 pub(crate) use default_tools::TOOL_SUMMARY_PREFIX;
 mod diagnostics;
 pub(crate) mod exchange_rate;
+mod express;
 pub mod goal;
 mod html_conversion;
 mod http_response;
@@ -302,6 +303,7 @@ fn builtin_readable_tool_name(name: &str) -> Option<&'static str> {
         "exchange_rate" | "get_exchange_rate" => t("Exchange rates", "汇率查询"),
         "album" => t("Album", "图库"),
         "map_search" => t("Map", "地图"),
+        "express_query" => t("Parcel tracking", "快递查询"),
         "load_skill" => t("Load skill", "加载技能"),
         "manage_skill" => t("Manage skills", "管理技能"),
         "load_tools" => t("Load", "加载"),
@@ -515,6 +517,9 @@ pub fn compose_registry(
     }
     if plugin("map") && config.plugins.map.enabled {
         map::register(&mut registry, config.plugins.map.clone());
+    }
+    if plugin("express") && config.plugins.express.enabled {
+        express::register(&mut registry, config.plugins.express.clone());
     }
     if plugin("archlinux") && config.plugins.archlinux.enabled {
         archlinux::register(&mut registry, paths);

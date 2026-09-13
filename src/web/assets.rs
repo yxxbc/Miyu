@@ -201,6 +201,10 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
                 concat!("src=\"/mapcard.js?v=", env!("MIYU_BUILD_ID"), "\""),
             )
             .replace(
+                "src=\"/expresscard.js\"",
+                concat!("src=\"/expresscard.js?v=", env!("MIYU_BUILD_ID"), "\""),
+            )
+            .replace(
                 "src=\"/highlight.js\"",
                 concat!("src=\"/highlight.js?v=", env!("MIYU_BUILD_ID"), "\""),
             )
@@ -307,6 +311,14 @@ pub(in crate::web) async fn mapcard_js_asset(headers: HeaderMap) -> Response {
     embedded_asset(
         &headers,
         MAPCARD_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
+}
+
+pub(in crate::web) async fn expresscard_js_asset(headers: HeaderMap) -> Response {
+    embedded_asset(
+        &headers,
+        EXPRESSCARD_JS.as_bytes(),
         "application/javascript; charset=utf-8",
     )
 }

@@ -432,6 +432,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         .route("/shared.js", get(shared_js_asset))
         .route("/diff.js", get(diff_js_asset))
         .route("/mapcard.js", get(mapcard_js_asset))
+        .route("/expresscard.js", get(expresscard_js_asset))
         .route("/dash/{script}", get(dash_script_asset))
         .route("/api/dash/memory/personas", get(dash_memory_personas))
         .route("/api/dash/memory/stats", get(dash_memory_stats))

@@ -7400,10 +7400,10 @@
   // 普通 Markdown 随内容收缩；只有需要稳定横向空间的结构撑满消息列。
   // .image-gen-bubble 必须算宽块:纯生图回合没有其他宽内容,漏掉它气泡
   // 会收缩成 fit-content,占位方块的 70% 宽随之塌成一丁点(08-25 实录)。
-  // 地图卡片挂在工具签外面(收起态也在),所以收起的工具签不算宽块时它仍要
-  // 自己算进来——地图是固定高度的一块画布,气泡收缩成 fit-content 会把它
-  // 挤成一条缝。
-  const WIDE_BLOCK_SELECTOR = ".markdown-body pre, .markdown-table-scroll, .conversation-media, .context-operation, img, .image-gen-bubble, .tool-card:not(.collapsed), .tool-live-progress:not([hidden]), .map-card";
+  // 地图/快递卡片挂在工具签外面(收起态也在),所以收起的工具签不算宽块时
+  // 它们仍要自己算进来——地图是固定高度的一块画布,气泡收缩成 fit-content
+  // 会把它挤成一条缝。
+  const WIDE_BLOCK_SELECTOR = ".markdown-body pre, .markdown-table-scroll, .conversation-media, .context-operation, img, .image-gen-bubble, .tool-card:not(.collapsed), .tool-live-progress:not([hidden]), .map-card, .express-card";
   function syncBubbleWidth(article) {
     if (!article) return;
     const content = article.querySelector(".assistant-content");
@@ -7864,7 +7864,7 @@
   // 数据来自 `turn.tool_flow`，库里一直有——以前 API 不发，于是 WebUI 的
   // 工具信息只在事件流里活过一次，切走再回来就没了。
   /*
-   * 工具卡外挂的富卡片(地图;快递随后也挂这里)。
+   * 工具卡外挂的富卡片(地图 / 快递)。
    *
    * 与 share_file 的附件卡同一条规矩:挂在工具签**外面**,收起态也看得见——
    * 那是给人看的产出,不是调试信息。三处调用(回看重建、子过程回放、实时完成)
@@ -7873,6 +7873,7 @@
    */
   const TOOL_RICH_CARDS = [
     { selector: ".map-card", module: () => window.MiyuMap, matches: (m, name) => m.isMapTool(name), render: (m, output) => m.renderCard(output) },
+    { selector: ".express-card", module: () => window.MiyuExpress, matches: (m, name) => m.isExpressTool(name), render: (m, output) => m.renderCard(output) },
   ];
 
   function toolRichCards(name, output) {

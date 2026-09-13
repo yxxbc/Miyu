@@ -21,6 +21,8 @@ pub struct PluginsConfig {
     #[serde(default)]
     pub map: MapPluginConfig,
     #[serde(default)]
+    pub express: ExpressPluginConfig,
+    #[serde(default)]
     pub image_generation: ImageGenerationPluginConfig,
     #[serde(default)]
     pub print_image: PrintImagePluginConfig,
@@ -330,6 +332,26 @@ pub struct MapPluginConfig {
     pub tile_cache_mb: u64,
 }
 
+/// 快递查询:单号 → 物流轨迹,外加 WebUI 的时间线卡片。
+///
+/// 快递 100 的实时查询接口要 `customer` + `key`(在它后台申请)。没配的话
+/// 工具不会假装查到了:它给回单号、识别出的快递公司和官方查询入口,并说清
+/// 缺的是什么——编出来的物流轨迹比查不到糟糕得多。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpressPluginConfig {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// 目前只有 `kuaidi100`。留着这个字段是因为第二家迟早会来。
+    #[serde(default = "default_express_provider")]
+    pub provider: String,
+    /// 快递 100 的授权 key(签名用)。
+    #[serde(default)]
+    pub kuaidi100_key: String,
+    /// 快递 100 的 customer(公司编号)。
+    #[serde(default)]
+    pub kuaidi100_customer: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageGenerationPluginConfig {
     #[serde(default = "default_true")]
@@ -579,6 +601,7 @@ impl Default for PluginsConfig {
             vision: VisionPluginConfig::default(),
             exchange_rate: ExchangeRatePluginConfig::default(),
             map: MapPluginConfig::default(),
+            express: ExpressPluginConfig::default(),
             image_generation: ImageGenerationPluginConfig::default(),
             print_image: PrintImagePluginConfig::default(),
             memes: MemesPluginConfig::default(),
@@ -707,6 +730,17 @@ impl Default for MapPluginConfig {
             nominatim_base_url: default_nominatim_base_url(),
             tile_ttl_hours: default_map_tile_ttl_hours(),
             tile_cache_mb: default_map_tile_cache_mb(),
+        }
+    }
+}
+
+impl Default for ExpressPluginConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_true(),
+            provider: default_express_provider(),
+            kuaidi100_key: String::new(),
+            kuaidi100_customer: String::new(),
         }
     }
 }

@@ -66,6 +66,7 @@ macro_rules! tool_description_files {
             include_str!("descriptions/generate_image.json"),
             include_str!("descriptions/get_exchange_rate.json"),
             include_str!("descriptions/map.json"),
+            include_str!("descriptions/express.json"),
             include_str!("descriptions/glob.json"),
             include_str!("descriptions/grep.json"),
             include_str!("descriptions/install_aur_package.json"),

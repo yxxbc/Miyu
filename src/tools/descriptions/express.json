@@ -1,0 +1,30 @@
+{
+  "name": "express_query",
+  "display_name": "快递查询",
+  "description": "Look up a parcel's tracking history from its number. Use it whenever the user asks where a package is, gives you a tracking number, or asks whether something has been delivered. The carrier is detected from the number, so company= is only needed when the user names one or when the result says it could not tell. Read the `state` field before you say anything about the parcel: state='ok' means the traces are real and you may describe them; 'no_credentials' means this machine has no kuaidi100 key configured; 'unknown_company' means ask which carrier; 'needs_phone' means SF Express wants the recipient's phone (last four digits are enough); 'provider_error' means the lookup failed. In every case except 'ok' there is NO shipment information — say plainly that you could not look it up and why, and offer the official_url. Never invent, guess or extrapolate a shipment status, a location or a delivery date: a made-up trace reads exactly like a real one and the user will act on it. The WebUI renders the traces as a timeline card, so you do not need to repeat every stop — summarise where it is and what changed.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "number": {
+        "type": "string",
+        "description": "The tracking number, letters and digits only."
+      },
+      "company": {
+        "type": "string",
+        "description": "Optional carrier: a code (shunfeng, yuantong, zhongtong, jd) or a Chinese name (顺丰). Detected from the number when omitted."
+      },
+      "phone": {
+        "type": "string",
+        "description": "Recipient phone, or just its last four digits. SF Express refuses to answer without it."
+      }
+    },
+    "required": ["number"],
+    "additionalProperties": false
+  },
+  "permission": "reads",
+  "always_loaded": false,
+  "load_policy": "summary",
+  "groups": ["web"],
+  "trust": "external",
+  "stub_example": "{\"number\":\"SF1234567890\"}"
+}

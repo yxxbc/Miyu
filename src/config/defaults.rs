@@ -324,6 +324,10 @@ pub(crate) fn default_map_tile_cache_mb() -> u64 {
     256
 }
 
+pub(crate) fn default_express_provider() -> String {
+    "kuaidi100".to_string()
+}
+
 pub(crate) fn default_image_generation_model() -> String {
     "gpt-image-1".to_string()
 }

@@ -171,6 +171,8 @@ const SHARED_JS: &str = include_str!("../../web/shared.js");
 const DIFF_JS: &str = include_str!("../../web/diff.js");
 // 地图卡片:自己写的切片地图(没引第三方地图库),瓦片走 /api/map/tile。
 const MAPCARD_JS: &str = include_str!("../../web/mapcard.js");
+// 快递卡片:物流轨迹时间线。
+const EXPRESSCARD_JS: &str = include_str!("../../web/expresscard.js");
 // 插件 dashboard 脚本走 assets.rs 的 DASH_SCRIPTS 静态表,加面板只改那一行。
 // KaTeX 0.18.4(vendored):公式渲染;字体只带 woff2(css 里 woff2 列首,
 // 现代浏览器不会去请求 woff/ttf 回退项)。

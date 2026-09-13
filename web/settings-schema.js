@@ -1100,7 +1100,7 @@
         {
           path: "accounts.member_plugins",
           label: "成员人格可启用的插件",
-          hint: "留空 = 全部。可选 id:files, album, usage_query, alarm, exchange_rate, map, archlinux, api_quota, print_image, memes, platform_outreach, web_images, deep_research, image_generation, knowledge_base, package_advisor, diagnostics, ledger, scripts",
+          hint: "留空 = 全部。可选 id:files, album, usage_query, alarm, exchange_rate, map, express, archlinux, api_quota, print_image, memes, platform_outreach, web_images, deep_research, image_generation, knowledge_base, package_advisor, diagnostics, ledger, scripts",
           kind: "string-list",
           nullable: true,
           default: null,
@@ -1801,6 +1801,29 @@
           unit: "MiB",
           default: 256,
         },
+      ],
+    },
+    express: {
+      title: "快递查询",
+      group: "联网",
+      description: "单号查物流轨迹,WebUI 出时间线卡片(需快递 100 的 Key)",
+      fields: [
+        enabledField(true),
+        {
+          key: "provider",
+          label: "数据源",
+          kind: "select",
+          choices: [{ value: "kuaidi100", label: "快递 100" }],
+          default: "kuaidi100",
+        },
+        {
+          key: "kuaidi100_customer",
+          label: "快递 100 customer",
+          hint: "在快递 100 后台申请;没配的话工具只会给出单号与官方查询入口,不会编轨迹",
+          kind: "text",
+          default: "",
+        },
+        { key: "kuaidi100_key", label: "快递 100 Key", kind: "secret", default: "" },
       ],
     },
     api_quota: {

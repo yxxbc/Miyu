@@ -28,6 +28,7 @@ pub const PLUGIN_IDS: &[&str] = &[
     "alarm",
     "exchange_rate",
     "map",
+    "express",
     "archlinux",
     "api_quota",
     "print_image",
