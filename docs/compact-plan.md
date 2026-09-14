@@ -189,7 +189,7 @@ QQ 群聊文字历史（独立历史）：**也走 LLM 摘要**（用户已定�
 
 压缩期间新消息安全性由 `replace_visible_with_summary` 的乐观并发检查保证（可见集合变化即整体作废），无需新排队机制。schema v14→v16。
 
-**第三批（2026-09-09，compact v3，对标 Claude Code 2.1.263）**：施工单 `docs/plan/2026-09-09-compact-v3.md`，实测数据 `testkit/compact-quality/out/compact-quality.md`。
+**第三批（2026-09-09，compact v3，对标 Claude Code 2.1.263）**：施工单 `docs/plan-is-true/2026-09-09-compact-v3.md`，实测数据 `testkit/compact-quality/out/compact-quality.md`。
 
 | 项 | 实现 |
 |---|---|
@@ -216,7 +216,7 @@ QQ 群聊文字历史（独立历史）：**也走 LLM 摘要**（用户已定�
 
 教训：A/B 测具当时用的是 deepseek-v4-flash + 25 轮会话，输出 3394–6083 tok、耗时 21.9–36.0s，离 90s 超时线还有一大截——**快模型 + 短会话恰好绕开了这个 bug**。验收模型和会话规模必须贴近实况（慢模型 + 长上下文）。
 
-**09-10 中转线统一走 Miyu 压缩**（用户裁定：claude-code / codex / antigravity 三线不依赖 CLI 自压缩，统一、可控；施工记录 `docs/plan/2026-09-10-relay-compact.md`）：
+**09-10 中转线统一走 Miyu 压缩**（用户裁定：claude-code / codex / antigravity 三线不依赖 CLI 自压缩，统一、可控；施工记录 `docs/plan-is-true/2026-09-10-relay-compact.md`）：
 
 | 症状 | 根因 | 修法 |
 |---|---|---|
