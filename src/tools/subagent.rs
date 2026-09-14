@@ -742,18 +742,10 @@ fn readable_subagent_log_line_timed(message: &str, elapsed: Option<Duration>) ->
 /// 每轮瞬态尾巴,工作目录只能从这里知道,否则第一步永远浪费在 `pwd` 上。
 /// 末尾是那句交付约定。
 ///
-/// 中间还夹着工作区的 `GQY.md`(有才夹)。
-///
-/// 几段在一个会话里都是常量(工作目录跟着会话工作区走),多次 dev 子代理
-/// 之间前缀缓存照样命中——`GQY.md` 改了才会掰断一次,那是人的动作。
+/// 三段在一个会话里都是常量(工作目录跟着会话工作区走),多次 dev 子代理
+/// 之间前缀缓存照样命中。
 fn build_dev_system_prompt(config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
     let mut prompt = config.dev_system_prompt(paths)?;
-    // 工作区的 GQY.md 与 dev 会话读同一份:派出去的子代理和派它的人看同一套
-    // 项目约定,否则子代理会按通用惯例改代码,回来全是风格不对的补丁。
-    if let Some(block) = crate::agent::prompt::project_context_block() {
-        prompt.push_str("\n\n");
-        prompt.push_str(&block);
-    }
     prompt.push_str("\n\n");
     prompt.push_str(&crate::agent::prompt::host_environment_for(config, paths));
     prompt.push_str(&format!(

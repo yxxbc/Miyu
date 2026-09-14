@@ -290,7 +290,7 @@ fn persona_identity_uses_default_and_custom_values() {
     let default = persona_identity(&config, &prompts);
     assert_eq!(default.name, "顾清影");
     assert_eq!(default.avatar_url.as_deref(), Some("/assets/miyu-logo.png"));
-    assert_eq!(default.composer_placeholder, "给 Miyu 发消息");
+    assert_eq!(default.composer_placeholder, "给 顾清影 发消息");
 
     config.prompt.active_persona = "Alice.md".to_string();
     let prompts = PromptDocuments {

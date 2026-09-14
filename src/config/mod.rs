@@ -40,14 +40,6 @@ pub const DEV_PROMPT_FILE: &str = "dev-prompt.md";
 /// Dev 模式内置默认提示词。dsh 极简变体同款措辞——贴近编码 RL 训练分布
 /// 是它强的主因(08-15 与用户讨论定稿,修正了社区传言的拼写错误)。
 pub const DEFAULT_DEV_SYSTEM_PROMPT: &str = "You are a helpful software engineer assistant.";
-/// 项目上下文文件名:dev 会话在**工作区根目录**上找它,找到就注入提示词。
-/// 由 `/init` 生成,人可以随手改——它是给她看的项目说明,不是生成物。
-/// (对位 Claude Code 的 `CLAUDE.md`;本仓库根上的 `AGENTS.md` 是写给「开发
-/// 这个项目的 agent」看的,miyu 自己不读那份。)
-pub const PROJECT_CONTEXT_FILE: &str = "GQY.md";
-/// 项目上下文的注入上限。超出就截断并在块里说明——这段进的是**系统提示词
-/// 前缀**,一份没人管的巨大 GQY.md 会把每一轮的前缀都撑肥。
-pub const MAX_PROJECT_CONTEXT_BYTES: usize = 32 * 1024;
 /// Replay redraws whole turns, so a large value floods the screen on startup.
 pub const MAX_REPL_REPLAY_TURNS: usize = 20;
 pub const CURRENT_CONFIG_VERSION: u32 = 3;
