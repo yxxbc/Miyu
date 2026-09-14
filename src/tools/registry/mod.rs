@@ -219,13 +219,53 @@ impl ToolRegistry {
     }
 
     pub fn definitions(&self) -> Vec<ToolDefinition> {
-        let mut definitions = self
+        self.presented_definitions(false)
+            .into_iter()
+            .map(|presented| presented.definition)
+            .collect()
+    }
+
+    /// 发给模型的那份工具定义,逐条带上分类(上下文分项用,2026-09-14)。
+    /// `definitions`(full 模式)与 `stub_definitions`(stub 模式)都从这里出,
+    /// 分项里的工具 token 与真实工具数组是同一份字节。
+    pub fn presented_definitions(&self, stub_mode: bool) -> Vec<PresentedTool> {
+        let mut presented = self
             .tools
             .values()
-            .map(|tool| tool.definition())
+            .map(|tool| {
+                let definition = if !stub_mode {
+                    tool.definition()
+                } else if tool.always_loaded {
+                    let mut definition = tool.definition();
+                    if tool.name == "load_tools" {
+                        definition.function.description =
+                            super::load_tools::stub_mode_description(self);
+                    }
+                    definition
+                } else {
+                    stub_definition(tool)
+                };
+                let kind = if tool.is_mcp() {
+                    PresentedToolKind::Mcp
+                } else if stub_mode && !tool.always_loaded {
+                    PresentedToolKind::Stub
+                } else {
+                    PresentedToolKind::Full
+                };
+                PresentedTool { kind, definition }
+            })
             .collect::<Vec<_>>();
-        definitions.sort_by(|a, b| a.function.name.cmp(&b.function.name));
-        definitions
+        presented.sort_by(|a, b| a.definition.function.name.cmp(&b.definition.function.name));
+        presented
+    }
+
+    /// stub 模式下没有常驻的工具的完整契约:`load_tools` 展开前不在上下文里。
+    pub fn deferred_contract_definitions(&self) -> Vec<ToolDefinition> {
+        self.tools
+            .values()
+            .filter(|tool| !tool.always_loaded)
+            .map(|tool| tool.definition())
+            .collect()
     }
 
     pub fn lazy_definitions(&self, loaded: &BTreeSet<String>) -> Vec<ToolDefinition> {

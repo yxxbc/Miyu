@@ -62,6 +62,8 @@ pub use registry::{
     empty_parameters, CommandOutputStream, GuardCtx, ScriptScope, ToolFuture, ToolGuard,
     ToolPermission, ToolProgress, ToolProgressEvent, ToolRegistry, ToolSpec, ToolTrust,
 };
+pub(crate) use registry::{PresentedToolKind, MCP_DISPLAY_NAME_PREFIX};
+pub(crate) use web::search_for_webui;
 pub(crate) use scripts::{
     apply_script_refresh, list_global_scripts, prepare_script_refresh, scripts_dashboard_delete,
     scripts_dashboard_disable, scripts_dashboard_enable, scripts_dashboard_overview,

@@ -227,7 +227,33 @@ impl ToolPermission {
     }
 }
 
+/// MCP 工具的展示名前缀。注册(`tools/mcp.rs`)与识别(`ToolSpec::is_mcp`)共用这一份。
+pub const MCP_DISPLAY_NAME_PREFIX: &str = "MCP ";
+
+/// 工具以什么形态进了发给模型的工具数组(上下文分项用)。
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PresentedToolKind {
+    /// 完整 schema。
+    Full,
+    /// stub 模式下的「真名 + 摘要 + 宽松参数壳」。
+    Stub,
+    /// MCP 服务器登记的工具,不论以哪种形态发出。
+    Mcp,
+}
+
+pub struct PresentedTool {
+    pub kind: PresentedToolKind,
+    pub definition: crate::llm::ToolDefinition,
+}
+
 impl ToolSpec {
+    /// 是否 MCP 服务器登记进来的工具(按注册时写下的展示名前缀判定)。
+    pub fn is_mcp(&self) -> bool {
+        self.display_name
+            .as_deref()
+            .is_some_and(|name| name.starts_with(MCP_DISPLAY_NAME_PREFIX))
+    }
+
     pub fn new<F, Fut>(
         name: impl Into<String>,
         description: impl Into<String>,

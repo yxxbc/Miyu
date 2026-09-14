@@ -207,10 +207,21 @@ pub fn register(registry: &mut ToolRegistry, config: AppConfig) {
         };
         for tool in tools.iter().cloned() {
             let tool_id = mcp_tool_id(&server.id, &tool.name);
+            // 前缀是识别 MCP 工具的唯一依据(上下文分项按它归类),别改成别的写法。
             let display_name = if server.display_name.trim().is_empty() {
-                format!("MCP {} / {}", server.id, tool.name)
+                format!(
+                    "{}{} / {}",
+                    super::MCP_DISPLAY_NAME_PREFIX,
+                    server.id,
+                    tool.name
+                )
             } else {
-                format!("MCP {} / {}", server.display_name, tool.name)
+                format!(
+                    "{}{} / {}",
+                    super::MCP_DISPLAY_NAME_PREFIX,
+                    server.display_name,
+                    tool.name
+                )
             };
             let binding = McpToolBinding {
                 server: server.clone(),

@@ -73,8 +73,9 @@ fn text_tokens(text: &str) -> usize {
     crate::token_estimate::estimate_tokens(text)
 }
 
-#[allow(dead_code)]
-fn message_tokens(msg: &ChatMessage) -> usize {
+/// 单条消息的估算。上下文分项(`context_breakdown`)逐条调用它,与
+/// `estimate_messages_tokens` 同一口径,分项之和才能等于总数。
+pub(in crate::agent) fn message_tokens(msg: &ChatMessage) -> usize {
     let role_tokens = text_tokens(&msg.role);
     let content_tokens = match &msg.content {
         Some(ChatContent::Text(s)) => text_tokens(s),

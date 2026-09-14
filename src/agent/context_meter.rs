@@ -34,7 +34,7 @@ impl Agent {
     ///
     /// 刻意不校验供应商是否与当前池一致：池按请求轮换，换了端点也照样是一份
     /// 真实计数，比 o200k 硬数中文更接近真值。
-    fn context_anchor_tokens(&self) -> Result<Option<u64>> {
+    pub(in crate::agent) fn context_anchor_tokens(&self) -> Result<Option<u64>> {
         Ok(self
             .state
             .load_context_anchor()?

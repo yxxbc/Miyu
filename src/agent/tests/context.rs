@@ -493,6 +493,88 @@ fn turn_context_blocks_already_visible_in_fossils_are_skipped() {
     assert!(!"<qq-identity-warning>…</qq-identity-warning>".starts_with(STANDING_ADVISORY_PREFIX));
 }
 
+/// 上下文分项(2026-09-14):各分项之和必须等于估算总数——分项与真实请求出自
+/// 同一份字节。另写一套渲染、或漏归一类消息,这里先报红。技能结果、MCP 工具、
+/// 回合归属与「占用最多」的排序各钉一条。
+#[test]
+fn context_breakdown_sums_to_the_estimate() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = test_paths(temp.path());
+    let config = AppConfig::default();
+    let state = StateStore::new(&paths).unwrap();
+    state.init_files().unwrap();
+    state
+        .start_turn("old", "帮我查一下这个技能怎么用", 999_999)
+        .unwrap();
+    let call = |id: &str, name: &str, output: String| crate::state::ToolFlowCall {
+        id: id.to_string(),
+        name: name.to_string(),
+        arguments: "{}".to_string(),
+        output,
+        started_ms: None,
+        finished_ms: None,
+        sub_trace: None,
+    };
+    state
+        .set_turn_tool_flow(
+            "old",
+            &[crate::state::ToolFlowRound {
+                remote: false,
+                assistant_content: String::new(),
+                assistant_reasoning: None,
+                calls: vec![
+                    call("c1", "load_skill", "技能正文 ".repeat(200)),
+                    call("c2", "web_search", "搜索结果 ".repeat(400)),
+                ],
+            }],
+        )
+        .unwrap();
+    state.complete_turn("old", "查完了", None).unwrap();
+    let client =
+        OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, &paths).unwrap();
+    let mut tools = ToolRegistry::new();
+    tools.register(ToolSpec::new(
+        "plain_tool",
+        "A plain tool.",
+        empty_parameters(),
+        |_| async { Ok(String::new()) },
+    ));
+    tools.register(
+        ToolSpec::new(
+            "mcp_demo_echo",
+            "Echo from an MCP server.",
+            empty_parameters(),
+            |_| async { Ok(String::new()) },
+        )
+        .with_display_name(format!(
+            "{}demo / echo",
+            crate::tools::MCP_DISPLAY_NAME_PREFIX
+        ))
+        .with_always_loaded(false),
+    );
+    let agent = Agent::new(config, &paths, state, client, tools, AgentMode::Normal).unwrap();
+
+    let breakdown = agent.context_breakdown().unwrap();
+    assert_eq!(
+        breakdown.categories.total(),
+        agent.context_tokens_estimate().unwrap(),
+        "分项之和必须等于估算总数"
+    );
+    assert_eq!(breakdown.estimate_tokens, breakdown.categories.total());
+    assert!(breakdown.categories.skills > 0, "load_skill 的结果归技能");
+    assert!(
+        breakdown.categories.mcp > 0,
+        "展示名带 MCP 前缀的工具归 MCP"
+    );
+    assert!(breakdown.categories.tools_full > 0);
+    assert!(breakdown.categories.system > 0 && breakdown.categories.messages > 0);
+    let top = &breakdown.top[0];
+    assert_eq!(
+        (top.kind, top.label.as_str(), top.turn_index),
+        ("tool_result", "web_search", Some(1))
+    );
+}
+
 #[test]
 fn effective_context_tokens_include_tool_definitions() {
     let temp = tempfile::tempdir().unwrap();
