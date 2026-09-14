@@ -60,9 +60,9 @@
 | P3 | 源码：logo GQY、默认头像看板、删内置表情包、修脚本面板 | ☑ |
 | P4 | 源码：全量改名 miyu→gqy（含命令、目录、环境变量、crate、打包、文档） | ☑ |
 | P5 | 构建 + 全量测试（重新生成工具注册表夹具） | ☑ |
-| P6 | 写数据迁移脚本（桌面备份、~/.miyu→~/.gqy、默认人格迁移） | ☐ |
-| P7 | 用户执行迁移脚本；安装 gqy / gqy-voice；重装 shell hook；启动 daemon | ☐ |
-| P8 | 验收：人格、脚本、图库、会话、语义检索、TUI logo、WebUI | ☐ |
+| P6 | 写数据迁移脚本（桌面备份、~/.miyu→~/.gqy、默认人格迁移） | ☑ |
+| P7 | 用户执行迁移脚本；安装 gqy / gqy-voice；重装 shell hook；启动 daemon | ☑ |
+| P8 | 验收：人格、脚本、图库、会话、语义检索、TUI logo、WebUI | ☐（数据/服务侧已验，TUI logo、WebUI 头像、人格说话风格待用户目测） |
 
 ## 五、各阶段细节
 
@@ -100,7 +100,10 @@
 - ☑ `cargo test --lib --no-run`（不带 `--locked`，刷新 Cargo.lock）：**0 错误**，唯一警告是 debug 链接器 `__eh_frame` 过大（改名前就有）☐ `cargo test --lib` 全绿 ☐ `cargo test write_registry_shape_fixture -- --ignored` 重生夹具后复测 ☐ release 构建 `gqy` 与 `--features voice --bin gqy-voice`
 
 ### P6 数据迁移脚本（写到 `~/.miyu/bin-backup/migrate-to-gqy.sh`，由用户执行）
-- ☑ 脚本已写（默认预演，`--apply` 执行）。☐ 用户预演 ☐ 用户执行
+- ☑ 脚本已写（默认预演，`--apply` 执行）。☑ 用户预演 ☑ 用户执行（17:31）
+- 执行结果：integrity ok；default 44 会话、miyu-legacy 7、残留 persona-a37 0；表情包引用 gqy 3；指针已换；4 类目录到位；config 残留 `/.miyu/` 0、`active_persona` 空；3 个用户脚本已改 GQY_*；桌面备份 `~/Desktop/顾清影数据备份-20260914-173124`（209M）
+- 已知小问题：脚本最后一行汇总报 `DESK：未绑定的变量`（`$DESK` 后紧跟全角分号被当成变量名一部分），**只影响收尾提示**，前面各步均已完成
+- 迁移后发现：MCP 服务器 **Python venv 里的绝对路径**（`bin/` 下脚本 shebang、activate、`pyvenv.cfg` 的 command）仍指 `~/.miyu`，mi-fitness 启动报 ENOENT → 已对 mi-fitness、bilibili-summary 两个 venv 做路径替换（42 个文件）；替换后 mi-fitness 仍秒退（`ModuleNotFoundError: mi_fitness_mcp`）——它是 **editable 安装**，`site-packages/_editable_impl_mi_fitness_mcp.pth` 与 `direct_url.json` 指向 `~/.miyu/mcp-servers/mi-fitness/` 源码，同样替换后修复。以后搬目录要连 site-packages 里的 `.pth` 一起查
 - 实测库内 scope 分布（写脚本时）：顾清影 `persona-a37fae32f007` 会话 44 / 绑定 5 / 表情包引用 3 / 指针 2；旧 Miyu `default` 会话 7 / 绑定 3 / 指针 2
 - **陷阱**：`sessions.session_id` 有一行 id 就叫 `default`（88 轮），`app_state` 里有 2 个 value 是 `default`——它们是**会话 id 不是 scope**，脚本只改 `sessions.persona`、`platform_session_bindings.persona`、`platform_meme_refs.library` 与 `*_session_persona:<scope>` 的 key
 - 默认人格表情包库名是 `gqy`（不是 `default`），表情包引用 library 与目录 `data/memes/gqy` 都按它；图库、人格脚本目录用 scope `default`
@@ -142,7 +145,9 @@
 - ☐ 用户执行 P6 脚本 ☐ 重装 shell hook（清掉旧 miyu hook）☐ `gqy daemon start`
 
 ### P8 验收
-- ☐ 默认人格是顾清影（说话风格、名字）☐ 22 内置脚本 + 自有脚本可用 ☐ 图库 22 张 ☐ 43 个会话可见 ☐ `gqy embed status` 语义检索可用 ☐ TUI logo 显示 GQY ☐ WebUI 头像/看板 ☐ 脚本面板不再 panic
+- ☐ 默认人格是顾清影（说话风格、名字，待用户实聊）☑ 22 内置脚本 + 自有 2 个脚本到位（用户脚本已用 GQY_ARGS_JSON）☑ 图库 22 张 ☑ 44 个会话归入 default ☑ `gqy embed status` 语义检索 available（Mac RLIMIT 修复生效；记忆向量 969 条缺失，需 `gqy embed reindex`）☐ TUI logo 显示 GQY（待用户目测）☐ WebUI 头像/看板（待用户目测）☐ 脚本面板不再 panic（待用户点开）
+- 切换记录：`gqy.pending` 改回 `gqy`；旧 `miyu`、`miyu-voice`、`~/.cargo/share/miyu` → `~/.gqy/bin-backup/miyu-0.6.0-binaries/`；`gqy zsh-init` 已重生成 hook（改前 `~/.zshrc` 备份在 `~/.gqy/bin-backup/zshrc.before-gqy-zsh-init`）；`gqy daemon start` 成功，`gqy-voice` 进程已起；`gqy paths` 全部指向 `~/.gqy`
+- 日志核查：`voice-worker.log` 里的 "unsupported config version 3" 与 `daemon.log` 里的 RLIMIT 报错均是切换前旧二进制留下的，本次启动后无新增
 
 ## 六、进度日志
 
