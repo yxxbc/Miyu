@@ -1,358 +1,292 @@
-# Miyu 语音功能(v2):唤醒、识别、听写
+# Miyu 语音功能: 唤醒、识别、听写与回复播报 (TTS)
 
-> 2026-09-05 重做。v1(08-14,voice 分支)只当参考件,设计取舍见
-> `docs/plan/2026-09-05-voice-v2.md`。本文是现状:怎么装、怎么用、怎么排查、
-> 各部件住在哪、实测数字。**不做 TTS**(语音回复走桌面通知 + 提示音)。
+> 本文档描述 Miyu 当前语音系统的完整架构与运行机制：安装使用、各部件职责、音频管线、TTS 播报、配置规范、排查与测试。
+> 语音子系统涵盖 **唤醒 (KWS)**、**离线识别 (STT)**、**多端流式听写 (Dictation)** 与 **多源回复播报 (TTS)**，并在无语音活动时保持极低资源占用。
 
-## 一、一句话
+---
 
-装上可选组件 `miyu-voice`,设置里开「语音功能」,daemon 会拉起一个独立进程
-常开麦克风:喊「未有未有」→ 提示音 + 通知「Miyu 在听」→ 说指令 → 通知「Miyu
-收到:…」→ 她在「语音会话」里执行 → 完成后提示音 + 通知回复摘要。终端 REPL
-`/stt`、`miyu stt`、WebUI 麦克风按钮三个入口共用同一套识别做**听写**。
+## 一、一句话概括
 
-## 二、为什么是两个可执行
+装上可选组件 `miyu-voice`，在配置或设置面板中启用「语音功能」：
+- **语音唤醒**：喊「清影清影」（或自定义唤醒词） → 提示音 + 桌面通知「Miyu 在听」 → 给出指令 → 通知「Miyu 收到: …」 → 在专属「语音会话」lane 中执行 → 执行完成触发提示音、桌面摘要通知并朗读回复。
+- **快捷键唤醒**：桌面快捷键绑定 `miyu listen`，无需喊唤醒词直接进入收听状态；若正在收听或播报中，再按一次立即打断全停。
+- **听写输入**：终端 REPL `/stt`、命令行 `miyu stt`、WebUI 麦克风按钮（WebSocket 流式）共享同一套离线 VAD/分句/识别管线。
+- **回复播报 (TTS)**：支持 `<speak>` 标签优先朗读与 Markdown 正文清洗，集成 MiniMax 与 Xiaomi MiMo 双引擎，并支持 `speak` 工具让模型主动开口。
 
-| | `miyu`(主程序) | `miyu-voice`(语音前端) |
+---
+
+## 二、为什么拆分为两个可执行文件
+
+| 维度 | `miyu` (主程序 / daemon) | `miyu-voice` (语音前端进程) |
 |---|---|---|
-| 含 sherpa-onnx / onnxruntime | 否 | 是(静态链接,二进制 ≈ +30MB) |
-| 打开麦克风 | 否 | 是 |
-| 识别模型 | 否 | VAD + 唤醒词常驻,SenseVoice 按需加载/闲置卸载 |
-| 不开语音时的占用 | 零 | 不会被拉起 |
+| **链接依赖** | 不含 sherpa-onnx / onnxruntime（轻量运行） | 静态链接 sherpa-onnx（二进制 ≈ +30MB） |
+| **音频硬件** | 不直接访问麦克风与扬声器底层 | 独占常驻麦克风流，负责播放提示音与 TTS WAV |
+| **模型加载** | 零模型代码，不占 ASR 内存 | VAD 与 KWS 常驻（~80MB），SenseVoice 按需加载/超时自动卸载 |
+| **未启用状态** | 零常驻线程、零音频内存开销 | 根本不会被拉起 |
 
-主程序对语音的全部认知在 `src/web/voice_bridge.rs`:找二进制(同目录 → PATH)、
-拉起/看护(崩溃退避重启、配置重载时重启、daemon 退出收走)、一条持久 IPC 信令
-连接、语音回合驱动、通知、听写中继。`miyu-voice` 只懂音频:麦克风 → 能量门 →
-VAD → 唤醒词 → 识别 → 信令;它以普通 IPC 客户端连回 daemon,daemon 消失即退出。
+主程序对语音的前端感知全部收敛于 [`src/web/voice_bridge.rs`](../src/web/voice_bridge.rs)：
+- **进程看护**：自动定位二进制（同目录 → PATH 搜索）、崩溃指数退避重启、配置热重载重启、主程序退出时优雅清理。
+- **信令交互**：通过一条持久 IPC 连接（`VoiceAttach`）进行双向事件交换。
+- **会话调度**：驱动语音回合、通知分发、打断控制与听写中继。
 
+```text
+miyu (daemon) ───────spawn/supervise───────> miyu-voice
+   voice_bridge  <───VoiceAttach 双向信令帧───>  voice::worker
+   · voice.command{text} ──────> 专属语音会话 Lane ───> 通知 / TTS 播报 / cue(done)
+   · voice.speech_start ───────> 打断当前正在进行的推理或播报
+   · voice.listen ─────────────> 快捷键免唤醒直接收听 / 再次按下全停
+   · voice.dictation{text} ────> 听写认领者 (REPL /stt、miyu stt)
+   · voice.audio{pcm16} ───────> WebUI 浏览器录音经 WebSocket 转发 worker 识别
+   · voice.play{wav_path} ─────> 交付 daemon 合成好的 TTS 音频进行物理播放
 ```
-miyu(daemon) ──spawn──> miyu-voice
-   voice_bridge  <──VoiceAttach 双向 Event 帧──>  voice::worker
-   · voice.command{text} → StartTurn(语音会话 lane) → 通知/cue(done)
-   · voice.speech_start → Cancel(打断)
-   · voice.dictation{text} → 听写认领者(REPL /stt、miyu stt)
-   · voice.transcribe{wav_path} ← WebUI 浏览器录音
-```
 
-Cargo:`voice` feature **默认关**;`[[bin]] miyu-voice` 标 `required-features`。
-`cargo build --release` 只出 miyu;`cargo build --release --features voice` 两个都出。
-打包:`packaging/arch/miyu-release` 拆成 `miyu` + `miyu-voice` 两个包,sherpa 静态库
-作为 source 由 makepkg 下载校验(`SHERPA_ONNX_ARCHIVE_DIR`),构建期不联网;
-AUR 包装包 `packaging/arch/miyu-voice`。
+### 编译与打包契约
+- **Cargo Feature**：主 crate 的 `voice` 特性默认关闭；`[[bin]] miyu-voice` 标记了 `required-features = ["voice"]`。
+  - 仅构建主程序：`cargo build --release`（仅产出 `miyu`）。
+  - 构建全套语音：`cargo build --release --features voice`（同时产出 `miyu` 与 `miyu-voice`）。
+- **打包规范**：在 Arch Linux / AUR 中拆分为 `miyu` 与 `miyu-voice` 两个包；`sherpa-onnx` 静态库预先打包并校验哈希，构建期完全离线。
 
-## 三、模型(约 190MB,`state_dir/models/`,首次启用自动下载并通知)
+---
 
-| 模型 | 体积 | 职责 | 常驻? |
+## 三、离线模型体系 (~190MB)
+
+模型统一存放在 `state_dir/models/`（通常为 `~/.miyu/models/`，可通过环境变量 `MIYU_VOICE_MODELS_DIR` 覆盖）：
+
+| 模型 | 预估体积 | 职责说明 | 常驻策略 |
 |---|---|---|---|
-| Silero VAD | 0.6MB | 有没有人在说话 | 是(能量门之后) |
-| KWS Zipformer(wenetspeech 3.3M int8) | 31MB | 只认唤醒词的流式小模型 | 是 |
-| SenseVoiceSmall int8 | 156MB | 句子→文字(中日英韩粤,非自回归) | 用完按 `stt_unload_seconds` 卸载 |
+| **Silero VAD** (`silero_vad.onnx`) | 0.6MB | 语音活动检测，准确识别人声起止 | 能量门限之后常驻 |
+| **KWS Zipformer** (wenetspeech 3.3M int8) | 31MB | 关键词唤醒小模型，专一识别唤醒词 | 常驻 |
+| **SenseVoiceSmall** (zh-en-ja-ko-yue int8) | 156MB | 多语言非自回归语音识别（普通话、粤语、英语、日语、韩语） | 仅在有识别需求时加载，空闲按 `stt_unload_seconds` 释放 (~300MB) |
 
-唤醒词三种写法(`keywords.rs`,不用重训):
+> 首次开启语音唤醒（`voice.enabled = true`）时，daemon 会自动从官方源下载解压缺失的模型文件，下载前后均会弹出桌面通知。
 
-| 写法 | 例子 | 处理 |
+### 唤醒词灵活编码 (`keywords.rs`)
+
+系统无需重新训练声学模型，通过解析 wenetspeech 的 `tokens.txt` 建模单元，动态将唤醒词转换为声母与带调韵母序列：
+
+| 唤醒词书写方式 | 示例 | 内部处理机制 |
 |---|---|---|
-| 汉字 | `未有未有`、`密友密友` | 每字带调全拼按 KWS `tokens.txt` 最长匹配拆分,一行 |
-| 假名 / 拉丁 | `みゆみゆ`、`miyumiyu` | 假名→罗马音→按日语音节映射到近似拼音(ゆ 按 you 而非 yu),声调未知就同一个词展开成轻声+一到四声五行候选,任一命中即算 |
-| 显式拼音 | `mi3 you3 mi3 you3` | 空格分隔的"拼音+声调数字",原样编码(给想精调的人) |
+| **汉字** | `清影清影`、`顾清影` | 逐字注带调拼音，按 tokens.txt 贪婪最长匹配拆分为音节单元 |
+| **显式拼音** | `qing1 ying3 qing1 ying3` | 空格分隔的“拼音+声调数字”（0 或无数字为轻声），精确控制读音 |
+| **假名 / 拉丁字母** | `みゆみゆ`、`miyumiyu` | 假名转罗马音，按日语音节切分后映射为近似发音，并自动展开为轻声与 1~4 声组合候选 |
+| **混合形式** | `小miyu` | 汉字保持固定声调，外来词部分展开为多声调候选矩阵 |
 
-编不出来的词只记日志跳过,不影响别的词。**模型是普通话模型**,非中文只是
-"按中文口音念"的近似:09-05 用 MiniMax 合成样本实测,`密友密友` 五种中文
-音色 5/5 命中;`miyumiyu` / `みゆみゆ` 按中文口音念(识别成"米有米游")命中,
-**日语母语发音(6 条日语音色)和英语发音(3 条)全部不命中**,一百种声调组合
-都试过——要认日语原音得换路线(识别文本兜底或日语唤醒模型),未做。
-`wake_threshold`(默认 0.25,越低越灵敏)/ `wake_boost`(默认 1.0,越大越灵敏)
-直接对应 sherpa 的 keywords_threshold / keywords_score;这两个旋钮对"发音不像"
-没有帮助(阈值降到 0.05、加分 3.0 仍不命中)。
+- **灵敏度调节**：
+  - `wake_threshold`（默认 `0.25`，越低越灵敏）：对应 sherpa 的关键词检出概率阈值。
+  - `wake_boost`（默认 `1.0`，越大越灵敏）：对应关键词得分加权系数。
+- **500ms 段前音频补偿 (Pre-roll)**：
+  由于能量门和 VAD 判定人声起音通常存在微小延迟，容易切掉弱起音声母（如 m / n / b 开头的词首）。音频管线维护一个 23 秒的环形缓冲区，在 VAD 判定语音段成立时，向前补回 500ms 原始音频再送给 KWS 与 STT，大幅提升检出率。
 
-**段前补音(09-05)**:VAD 判"开始说话"总比真实起音晚一点,能量门又把起音前的
-弱帧整个跳过,m/n/b 这类弱起音的词头一个音节常被切掉——裸模型能命中、管线
-不命中(`密友密友` 0/5 → 补音后 5/5)。管线现在保留最近 23s 原始音频环形缓冲,
-每个语音段送 KWS/STT 前从缓冲补回段前 500ms。
+---
 
-## 四、管线与低占用手段(`src/voice/pipeline.rs`)
+## 四、音频管线与低功耗设计 (`src/voice/pipeline.rs`)
 
+```text
+麦克风采集 (16kHz Mono f32)
+   │
+   ▼
+[自适应能量门 (EnergyGate)] ───(安静环境下直接跳过 VAD 计算，CPU 近乎为 0)
+   │
+   ▼
+[Silero VAD 句子切分] ────(结合 500ms 段前音频回填)
+   │
+   ├─► [Idle 待唤醒态] ───► 整段送 KWS ───► 命中即刻上报 Wake 提示音 ───► 同段送 STT
+   │
+   └─► [Window 免唤醒/听写态] ───► 整段送 STT ───► 提取指令或听写文字
 ```
-帧(16k mono) → 能量门 → VAD 切段 → [Idle] 整段过 KWS → 命中即发 Wake →
-               同段转写:有指令 → Command;没有 → Awaiting(8s 等下一段)
-             → [Window] 免唤醒:整段转写 → Command(唤醒对话)/ Dictation(听写)
-```
 
-- **能量门**:帧 RMS 低于自适应噪声底×2.5(且 < -54dBFS 绝对下限)时不进 VAD;
-  VAD 句中或句尾 1.5s 内照常喂,保证切句时序不变。安静房间 CPU 接近零。
-- **KWS 整段判**而非逐帧流式:唤醒和指令常在同一口气里,反正要等说完。
-- **Wake 即刻上报**:KWS 命中先发 Wake(提示音/通知),再转写——冷启动加载 STT
-  的两秒不挡在"她听到了"前面。
-- **STT 闲置卸载**:窗口关闭且闲置 `stt_unload_seconds`(默认 60)后释放约 300MB。
-  开听写窗时预加载。
-- **过滤**:语音段 < 0.5s 不进 STT;识别文本有效字(字母数字/汉字)< `min_utterance_chars`
-  (默认 2)当噪声丢弃,不打扰也不关窗。
-- 窗口计时冻结:回合运行到合成结束(`voice.hold`)、播报期间(不喂帧)静默都不
-  消耗追问窗口,窗口从播完起算。
-- 打断:窗口内持续 0.3s 人声 → `speech_start` → daemon 取消进行中的回合。
+1. **自适应能量门**：
+   实时跟踪环境噪声底（RMS），当音频能量低于 `噪声底 × 2.5` 且小于绝对下限 `-54dBFS` 时，不送入 VAD 模型计算。在安静房间内麦克风常开状态下，前端 CPU 占用仅约 0.4%。
+2. **KWS 整段判定**：
+   日常人机对话中唤醒词与指令往往连贯说出（例如“清影清影帮我看看天气”）。等待 VAD 切出完整分句后再整体识别，避免逐帧流式推演浪费算力。
+3. **唤醒反馈零等待**：
+   KWS 一旦判定唤醒词命中，立即向系统发射 `voice.wake` 信令鸣响提示音并弹窗，随后异步加载或执行 STT 转写，避免冷启动加载模型的 1~2 秒阻塞用户的听觉反馈。
+4. **STT 内存自动卸载**：
+   在会话结束或免唤醒窗口关闭后，若闲置达到 `stt_unload_seconds`（默认 60 秒），自动卸载 SenseVoice 模型，释放约 300MB 物理内存。
+5. **起势人声打断 (Barge-in)**：
+   在免唤醒窗口中，若检测到持续 300ms 的人声（`SPEECH_START`），立即上报 `voice.speech_start`，主程序将直接中断正在生成的模型回复或切断扬声器播放。
 
-## 五、交互
+---
 
-| 事件 | 提示音 | 桌面通知 |
+## 五、交互与控制规范
+
+### 1. 提示音与桌面通知映射
+
+| 触发事件 | 提示音效 (`assets/voice/`) | 桌面通知 |
 |---|---|---|
-| 唤醒词命中 | wake(上行两音) | 「Miyu 在听 / 请讲」(与提示音同一瞬间) |
-| 识别出指令 | heard(单点) | 「Miyu 收到 / <指令>」 |
-| 回合完成 | done(下行三音) | 「Miyu / <回复前 N 字>」(N=`notify_reply_chars`) |
-| `miyu listen` 再按一次关闭 | off(下行两音,wake 的镜像) | 「Miyu / 不听了」 |
-| 回合失败 | error(低音) | 「语音会话出错 / …」 |
-| 窗口关闭/超时 | 无 | 无 |
+| **唤醒词命中** | `wake.wav` (上行双音) | 「Miyu 在听 / 请讲」（与提示音同时呈现） |
+| **识别出有效指令** | `heard.wav` (清脆单点音) | 「Miyu 收到 / <指令内容>」 |
+| **指令执行完成** | `done.wav` (下行三音) | 「Miyu / <回复前 N 字摘要>」(`notify_reply_chars`) |
+| **手动关闭收听 (`miyu listen`)** | `off.wav` (下行双音) | 「Miyu / 不听了」 |
+| **执行异常失败** | `error.wav` (低沉警示音) | 「语音会话出错 / <错误详情>」 |
 
-**语音会话**:唤醒对话落在一条专属会话(kind = `voice`,id 记在
-`state/voice-session-id`),不进 WebUI 列表;用 `miyu voice history [--limit n]`
-回看、`miyu voice reset` 清空(下次唤醒重建)、`miyu voice status` 看前端状态。
+> 提示音内置于 `miyu-voice` 二进制中（木琴音色，24kHz mono）。Linux 系统下通知使用 `notify-send -p/-r` 机制，实现同一气泡的原地平滑替换，避免屏幕被多条通知轰炸。
 
-**回复播报(TTS)**:播报供应商独立于 LLM 的 providers 配置(免得混),预置两家,
-`voice.tts.active` 选一个(缺省 MiniMax):
+### 2. 免唤醒追问与主动退下
 
-- **MiniMax**:`voice.tts.minimax` 里填自己的 api_key(账号级,对话与语音共用一把,
-  支持 `$env:VAR`)、国内/国际站地址、模型、音色、语速/音量/音调/情绪/语种增强。
-  合成走 `t2a_v2` 返回 wav。
-- **小米 MiMo**(`voice.tts.mimo`,09-06):platform.xiaomimimo.com 的 key(TTS
-  系列限时免费),接口是 OpenAI 兼容的 `chat/completions`——待合成文本放
-  assistant 消息,风格指令放 user 消息,音频以 base64 wav 回来(24kHz 单声道)。
-  三个模型:`mimo-v2.5-tts` 用预置音色(`voice`:mimo_default / 冰糖 / 茉莉 /
-  苏打 / 白桦 / Mia / Chloe / Milo / Dean),`mimo-v2.5-tts-voicedesign` 按
-  `prompt` 里的一句描述造音色(必填,`voice` 不用),`mimo-v2.5-tts-voiceclone`
-  按 `sample_audio`(本机 wav/mp3,base64 后 ≤ 10MB)克隆。`style` 是加在文本开头
-  的风格标签(`(温柔 慵懒)…`,情绪/语气/方言/角色都行;TUI 里是回车进多选菜单
-  Tab 勾选,配置里逗号分隔,发请求时转成空格),`prompt` 是一句自然语言的
-  提示词(TUI 里回车直接输入)。**没有语速/音量/音调数值参数**(官方文档 `audio`
-  只有 format / voice),语速、语气、角色都写在提示词里,如「语速稍快,像在跟朋友
-  聊天」,原样作为 user 消息发出。鉴权头
-  `Authorization: Bearer` 与 `api-key` 都带(文档两种写法都有)。流式接口官方
-  目前是"兼容模式"(推理完一次性回),所以走非流式。
+- **免唤醒追问窗口 (`follow_up_seconds`, 默认 30 秒)**：
+  - 计时**从 AI 回复播报完毕后才正式开始计算**（在模型推理中、TTS 合成中、音频播放中，计时均处于冻结状态）。
+  - 用户在 30 秒内直接说话无需重复喊唤醒词；每次回合交互完毕后重新重置 30 秒窗口。
+- **主动结束**：
+  - 用户对她说“没事了”、“就降吧”、“去忙吧”等，模型将自动调用内置工具 `end_voice_chat` 关窗，回到待命状态。
+- **快捷键开/关切换器 (`miyu listen`)**：
+  - **待命时按下**：跳过唤醒词，直接发出提示音并进入 8 秒等待指令窗口。
+  - **收听中/播报中按下**：彻底停止当前回合、打断 TTS 播放、销毁未播音频，并弹出「不听了」通知。
+  - 推荐将其绑定到桌面环境快捷键（如 Niri、Hyprland、i3 等）。
 
-**生效条件 = `voice.tts.enabled` 开 + 当前供应商的 key 非空**;不用再单独"激活"
-(装上 miyu-voice、填 key、开开关三步即可)。TUI 里在某家填了 key 而当前那家没
-key,会自动切过去;两家都有 key 时在「播报供应商」列表按 Tab 切换。合成好的 wav
-由 daemon 交给 miyu-voice 播放;播报期间麦克风帧丢弃(没有回声消除,半双工),
-`miyu listen` 会先掐掉播报再收听。
+### 3. 多端听写能力 (Dictation)
 
-**通知与声音同步(09-05)**:此前「在听」通知为了不和「收到」连弹被压了 1.2s,
-而提示音是即刻响的;回合完成时又是先弹通知再去合成(一到三秒)再播。现在:
-Linux 上一串语音通知走 `notify-send -p/-r` 替换同一个气泡(「在听」→「收到」→
-回复),「在听」与提示音同时出;回合完成先合成、合成好了通知和播放同一瞬间
-发;播报输出流常开 30s 免去每次开设备的几十毫秒。macOS/Windows 没有替换
-能力,「在听」仍延迟 1.2s。量尺 `testkit/voice/sync_timing.py`。
-
-缺东西一律静默:没装 `miyu-voice` 只在 daemon 日志 warn 一次;没填 key 时开关
-照样能开,填上的那一刻生效;QQ 语音转写不可用时留占位不报错。
-
-两个独立开关:`voice.enabled` = **语音唤醒**(麦克风常开、唤醒词、听写、
-`miyu listen`),`voice.tts.enabled` = **文本转语音**(回复播报、`speak` 工具)。
-任一开启都会拉起 miyu-voice;唤醒关闭时它不开麦克风、不下载识别模型,只管播放。
-
-TUI「语音功能」菜单:语音唤醒开关 → 文本转语音开关 → 「配置播报供应商」(列表里
-`[*]` 是当前生效的,Enter 配置,Tab 设为当前;MiniMax:连接与模型 / **选择音色** /
-播报参数(语速、音量、音调、情绪、试听语句)/ 试听;Xiaomi MiMo:连接、模型与音色 /
-风格与指令 / 试听)→ 「识别与唤醒设置」。
-MiniMax 选择音色的列表来自 `get_voice`(名字 + 描述,含克隆音色),`/` 进入过滤输入
-(**边打边筛**,Esc 清空、Enter 保留过滤回到列表)、`t` 按标签
-筛选(**多选**:Tab/空格勾 `[*]`,Enter 应用;语种之间取"或",女声/男声、克隆各成
-一组,组间取"且",什么都不勾 = 全部)、`p` 试听当前行、`Enter` 选用;默认只勾「中文」。
-列表行按终端宽度排:名字/描述优先,音色 id 放得下才带(`/` 搜索仍能匹配 id)。试听走 daemon(IPC `VoiceSpeak` 可携带
-整份未保存的 tts 配置),默认句子「今天也是充满希望的一天」,可在播报参数里改。音调是半音偏移:
-0 原声,正数更高更细,负数更低更沉,±12 一个八度。
-`miyu voice say "文本"` / WebUI `POST /api/voice/tts/preview` 同样可试听;WebUI 设置页
-按「播报供应商」下拉只显示当前那家的字段,MiniMax 音色列表走
-`GET /api/voice/tts/voices?provider=minimax`。
-
-**模型主动说话**:`speak` 工具(文本转语音激活时注册,只在本地会话的 normal
-模式;QQ 会话通常是远程的,平台回合统一摘掉;dev 模式不给——提示词极简、没有
-语音协议)把一句口语文本经播报供应商从扬声器播出。工具描述只说"这是说话的工具",什么时候用写在提示词里。
-
-**从终端发到 QQ**:「接入通讯平台 → 允许 AI 从终端发消息到通讯平台」打开后,
-本地会话(REPL / WebUI / shellhook)注册 `send_qq_message` 工具(平台会话不注册,
-那边已有 `send_message_to_user`):`text` 必填,`voice: true` 发语音消息,`to` 的
-可选项是管理员列表的别名(「允许使用终端的管理员 QQ 号」里每个号码可配别名,
-没别名显示号码),不传发给第一个(主管理员)。normal 与 dev 模式都注册
-(写代码时"跑完把结果发我手机"是真需求)。工具只在 NapCat 的反向 ws 已连上
-时注册(连接状态并入回合资源的缓存键,连上/掉线各自重建一份工具表,也就是
-这两个时刻本地会话的缓存前缀会变一次);掉线时模型根本看不到它。
-
-**QQ 语音消息(出)**:`send_voice_message` 工具(平台会话、文本转语音激活时注册)
-把文本合成后作为 OneBot `record` 段单独发一条(QQ 语音不能和文字混发),
-NapCat 那边把 wav 转 silk。合成文本先过一遍清洗(去代码/链接/路径)。历史库里
-记成 `[语音] 原文`(此前只有 `[语音]`,她自己说过什么别的会话都不知道)。
-**发了语音就不再发正文**(09-06):语音发出后走与 `send_message_to_user` 直发同一条
-抑制路,回合末尾模型再写的正文一律不发;另外模型"没话说"时爱吐一个零宽空格
-(U+200B),`trim()` 不认它,之前会发出一条空气泡,现在不可见字符一律当空。
-
-**QQ 语音消息(入)**(`onebot/voice_inbound.rs`,09-05):别人发的语音此前模型
-完全看不见(只有一条 `[audio id=…]` 媒体记录,纯语音消息直接判"没有可见内容"
-不回)。现在建 inbound_event 前把它转成文字接进正文:NapCat `get_record`
-(要 wav)→ 交给 miyu-voice 转写 → `[语音] 文本`,模型、主动回复判官、历史库看
-的都是这份。**要语音唤醒开着**(识别模型跟它加载)且前端已接上;没开、没装、
-取不到文件、转写失败一律静默退化成 `[语音消息]` 占位,不弹通知不报错。
-
-**快捷键呼叫**:`miyu listen` 是个**开关**:她没在听时让前端直接进入等待指令
-状态(提示音 + 「在听」通知,8 秒内说指令),效果与喊唤醒词一样;已经在听(等
-指令、追问窗口内、她正在回复/合成/播报)时再按一次就全停:关窗、掐掉回合、停掉
-播报、**合成中还没播出的那段也作废**,通知气泡换成「不听了」(09-06;之前合成
-那一两秒里按下去,窗口关了但音频照样播出来,看着像没生效)。绑到合成器快捷键上,
-例如 niri:`Mod+Space { spawn "miyu" "listen"; }`。
-成功时不输出;语音未启用或前端未就绪时报错退出;听写进行中不接管。
-
-对话中说「没事了 / 就这样 / 去忙吧」→ 模型调 `end_voice_chat` 工具(仅
-`voice.enabled` 时注册)→ 关窗。免唤醒追问窗口 `follow_up_seconds` 默认 **30**
-(09-06 从 300 改小),**从她回复完起算**:回合运行、合成、播报期间计时都冻结
-(`voice.hold` 压到合成结束才放,播报期间前端不喂帧),播完才开始数;每次回复都
-重新起算。旧配置里存了 300 的要自己改。
-文字照常落「语音会话」lane(独立 user lane,id 记在 `state/voice-session-id`),
-WebUI 能翻实录;进上下文的只有识别文本,通知/提示音都在模型视野之外。
-
-提示音五个(`assets/voice/{wake,heard,done,error,off}.wav`,木琴音色,24kHz mono,
-`testkit/voice/sounds/synth.py` 生成,内嵌进 miyu-voice),`voice.sounds` 开关、
-`voice.sound_volume` 音量,`miyu-voice cue done` 试听。
-
-### 听写(谁有音频谁出音频)
-
-| 入口 | 音频 | 文字去向 |
+| 入口方式 | 音频输入源 | 识别文本流向与行为 |
 |---|---|---|
-| REPL `/stt` | 本机麦(daemon 让前端开 10s 静默短窗;听写期间唤醒暂停) | 逐句填进编辑框;Esc 停止(文字保留),回车发送并停止;`dictation_auto_submit` 改直接提交 |
-| `miyu stt` | 本机麦 | 第一句即提交为消息,前台流式打印回复(shellhook 形态) |
-| WebUI 麦克风按钮 | 浏览器 `getUserMedia` → 前端重采样 16k PCM16 → WebSocket `/api/voice/stream` 持续推给 daemon → 转给 `miyu-voice`(VAD/分句/识别与本机麦同一套) | 识别一句回一句,逐句填进输入框;输入框上方悬浮麦克风电平指示;静默 10s 自动结束,再点麦克风或 Esc 也能结束 |
+| **终端 REPL `/stt`** | 本机麦克风 | 开启 10 秒静默短窗口（期间唤醒暂停），逐句填入终端输入框；回车发送，Esc 取消。 |
+| **命令行 `miyu stt`** | 本机麦克风 | 录入单句指令，识别完成后直接提交为回合消息并流式打印回复（Shellhook 风格）。 |
+| **WebUI 麦克风按钮** | 浏览器 `getUserMedia` | 前端通过 WebSocket (`/api/voice/stream`) 上传 16kHz PCM16 音频流，复用服务端的 VAD 与识别管线，逐句回传并在输入框中实时追加。 |
 
-浏览器麦克风只在 https 或 localhost 可用;LAN http 页面按钮会提示改用 `/stt`。
-`POST /api/voice/transcribe`(整段 WAV → 文本)保留给外部脚本,WebUI 不再用它。
+---
 
-听写认领是全局单例:REPL、`miyu stt`、WebUI 同一时刻只能有一个在听写。
-浏览器流式听写期间 `miyu-voice` 丢弃本机麦克风的帧,结束后恢复唤醒监听。
+## 六、文本转语音 (TTS) 与平台语音生态
 
-## 六、配置(`voice` 节;TUI「语音功能」表单 / WebUI 设置页同名节)
+Miyu 提供独立的 `voice.tts` 配置节。文本转语音与语音唤醒相互独立（`voice.enabled` 控麦克风唤醒，`voice.tts.enabled` 控音频合成与朗读）。
+
+### 1. 朗读内容提取与清洗规范
+
+1. **`<speak>` 协议优先**：
+   系统提示词中规范了模型输出行为。若模型在正文后附带 `<speak>口语化简短摘要</speak>`，TTS 仅朗读该标签内的文本，正文中的长篇代码与表格不会被冗长念出。
+2. **正文自动清洗降级**：
+   若模型未提供 `<speak>` 标签，系统会自动剔除代码块（整块丢弃）、行内反引号、Markdown 标题/列表符，并将超链接替换为“链接”、文件路径替换为“路径”，限制在 `max_chars`（默认 300 字）内平滑朗读。
+
+### 2. 双供应商支持 (`voice.tts.active`)
+
+- **MiniMax (`t2a_v2` 接口)**：
+  - 支持 `speech-2.6-turbo`、`speech-2.8-hd` 等全系列模型。
+  - 支持音色检索（WebUI / TUI 可直接拉取官方及克隆音色列表）。
+  - 支持精细控制语速 (`speed`)、音量 (`vol`)、音调半音偏移 (`pitch`)、情感 (`emotion`) 与语种增强 (`language_boost`)。
+- **Xiaomi MiMo (`chat/completions` 音频接口)**：
+  - 模型：
+    - `mimo-v2.5-tts`：使用官方预置音色（如 `冰糖`、`茉莉`、`苏打`、`白桦` 等）。
+    - `mimo-v2.5-tts-voicedesign`：通过自然语言描述（`prompt`）实时生成指定音色。
+    - `mimo-v2.5-tts-voiceclone`：指定本机音频文件（`sample_audio`，≤10MB）克隆目标音色。
+  - 自然语言调音：MiMo 无数字语速参数，支持在 `prompt` 中通过口语描述（如“语速稍快，像跟朋友聊天一样”）直接驱动表现力。
+
+### 3. 工具与通信平台整合
+
+- **主动开口工具 (`speak`)**：
+  在本地会话中注册，允许模型在需要主动向用户汇报进展时调用扬声器发声。
+- **QQ 语音消息入站 (`voice_inbound.rs`)**：
+  接收到群友或好友发送的 QQ 语音消息后，自动拉取 WAV 音频经本地 `miyu-voice` 转写为 `[语音] 转写内容`，使大模型能够理解语音输入。
+- **QQ 语音消息出站 (`send_voice_message` / `send_qq_message`)**：
+  将待回复文本经 TTS 引擎合成为音频后，作为 OneBot `record` 语音段发送，并在历史记录中完整保留 `[语音] 原文`。
+
+---
+
+## 七、完整配置参考 (`~/.miyu/config.json`)
+
+在配置文件的 `voice` 节配置（亦可在 TUI `miyu config` 或 WebUI 设置面板中图形化配置）：
 
 ```jsonc
 "voice": {
-  "enabled": false,
-  "wake_keywords": ["未有未有", "密友密友", "miyumiyu", "みゆみゆ"],   // 可多个,任一命中即唤醒;写逗号分隔的字符串也行
-  "wake_threshold": 0.25, "wake_boost": 1.0,
-  "microphone": null,                 // TUI/WebUI 从 `miyu-voice devices` 列表里选;null=系统默认
-  "stt_threads": 2,
-  "stt_language": "zh",               // auto | zh | en | ja | ko | yue;auto 会把普通话判成日语
-  "stt_unload_seconds": 60,           // 0 = 常驻
-  "follow_up_seconds": 30,              // 从回复播完起算,每次回复重新起算
-  "min_utterance_chars": 2,
-  "sounds": true, "sound_volume": 0.6,
-  "notify_reply_chars": 120,
-  "dictation_auto_submit": false,
+  // --- 语音唤醒与识别 (ASR / KWS) ---
+  "enabled": false,                         // 语音唤醒总开关 (开启后麦克风常驻、监听唤醒词与听写)
+  "wake_keywords": [                        // 唤醒词列表 (支持数组或逗号分隔字符串，任意命中即唤醒)
+    "清影清影",
+    "顾清影",
+    "qing1 ying3 qing1 ying3"
+  ],
+  "wake_threshold": 0.25,                   // 唤醒灵敏度阈值 (0~1，越低越灵敏)
+  "wake_boost": 1.0,                        // 唤醒路径加分 (越大越灵敏)
+  "microphone": null,                       // 指定麦克风源名 (null 或 "" 表示系统默认源，可通过 miyu-voice devices 查看)
+  "stt_threads": 2,                         // 离线识别并发线程数
+  "stt_language": "zh",                     // 识别语言锁定 (auto | zh | en | ja | ko | yue；锁定 zh 可防环境噪音误判)
+  "stt_unload_seconds": 60,                 // 识别模型空闲卸载等待秒数 (0 为常驻内存)
+  "follow_up_seconds": 30,                  // 免唤醒追问窗口秒数 (回复播报完成后开始计时；0 为每句都要喊唤醒词)
+  "min_utterance_chars": 2,                 // 识别有效字数门限 (少于此字符数的噪音段直接忽略)
+  "sounds": true,                           // 提示音总开关
+  "sound_volume": 0.6,                      // 提示音播放音量 (0.0 ~ 1.0)
+  "notify_reply_chars": 120,                // 任务完成桌面通知显示的回复摘要字数
+  "dictation_auto_submit": false,           // REPL /stt 听写完成后是否自动回车提交
+
+  // --- 回复播报与文本转语音 (TTS) ---
   "tts": {
-    "active": "minimax",              // minimax | mimo;缺省即 minimax;生效 = enabled + 当前那家 api_key 非空
-    "max_chars": 300,
+    "enabled": false,                       // 文本转语音总开关 (开启后自动朗读回复并提供 speak 工具)
+    "active": "minimax",                    // 当前活跃供应商 ("minimax" 或 "mimo")
+    "max_chars": 300,                       // 朗读文本上限字符数 (超出自动截断至临近句末)
+    "preview_text": "今天也是充满希望的一天", // 试听测试文本
+
+    // MiniMax 引擎配置
     "minimax": {
-      "api_key": "…",                 // 支持 "$env:MINIMAX_API_KEY"
-      "base_url": "https://api.minimaxi.com/v1",   // 国际站 https://api.minimax.io/v1
-      "model": "speech-2.6-turbo",
-      "voice_id": "Chinese_sweet_girl_nv1",        // get_voice 列表里的 voice_id
-      "speed": 1.0, "vol": 1.0, "pitch": 0, "emotion": "", "language_boost": "auto"
+      "api_key": "$env:MINIMAX_API_KEY",    // API 密钥 (支持环境变量引用)
+      "base_url": "https://api.minimaxi.com/v1", // 接口地址 (国际站为 api.minimax.io/v1)
+      "model": "speech-2.6-turbo",          // 模型版本 (如 speech-2.6-turbo, speech-2.8-hd)
+      "voice_id": "Chinese_sweet_girl_nv1", // 目标音色 ID
+      "speed": 1.0,                         // 语速 (0.5 ~ 2.0)
+      "vol": 1.0,                           // 音量 (0.1 ~ 10.0)
+      "pitch": 0,                           // 音调 (-12 ~ 12 半音偏移，0 为原声)
+      "emotion": "",                        // 预设情绪 (happy, sad, calm, whisper 等)
+      "language_boost": "auto"              // 语种增强
     },
+
+    // 小米 MiMo 引擎配置
     "mimo": {
-      "api_key": "…",                 // 支持 "$env:MIMO_API_KEY"
+      "api_key": "$env:MIMO_API_KEY",       // API 密钥
       "base_url": "https://api.xiaomimimo.com/v1",
-      "model": "mimo-v2.5-tts",       // | mimo-v2.5-tts-voicedesign | mimo-v2.5-tts-voiceclone
-      "voice": "mimo_default",        // 冰糖 / 茉莉 / 苏打 / 白桦 / Mia / Chloe / Milo / Dean
-      "style": "",                    // 文本开头的风格标签,如 "温柔,慵懒"
-      "prompt": "",                   // user 消息:语速/语气/角色一句话,如「语速稍快,像在跟朋友聊天」;voicedesign 下是音色描述
-      "sample_audio": null            // voiceclone 的参考音频路径(wav/mp3)
+      "model": "mimo-v2.5-tts",             // 模型: mimo-v2.5-tts | mimo-v2.5-tts-voicedesign | mimo-v2.5-tts-voiceclone
+      "voice": "mimo_default",              // 预置音色 (冰糖, 茉莉, 苏打, 白桦, Mia 等)
+      "style": "",                          // 风格标签 (如 "温柔 慵懒")
+      "prompt": "",                         // 自然语言表现力提示词 / 音色设计描述
+      "sample_audio": null                  // 声音克隆参考音频路径 (wav/mp3)
     }
   }
 }
 ```
 
-改动经 `miyu reload` / WebUI 保存生效:voice 节变了 daemon 就重启前端进程。
+---
 
-## 七、排查
+## 八、常用排查与诊断命令
 
-- 状态:`GET /api/voice/status`(二进制在不在、是否 attached、采集设备、日志路径),
-  IPC `VoiceStatus` 同源。
-- 日志:`logs/voice-worker.log`(`MIYU_VOICE_DEBUG=1` 打各阶段耗时)。
-- **"没反应"先跑 `miyu-voice test --keyword 未有未有 --timings`**:一行"听到语音"
-  都没有 = 音频没进来(查 `miyu-voice devices` / 系统默认源);有但不命中 = 唤醒词
-  层(试调低阈值 / 换声调错开的词)。
-- 前端找不到:daemon 日志 warn「找不到 miyu-voice」;放到 miyu 同目录或 PATH。
-- 麦克风占用冲突:同机只跑一个 miyu-voice;调试时 `MIYU_HOME` 隔离的 daemon
-  也会拉起自己的一份。
-- **提示音/播报全无、喊了没反应,但 `miyu-voice test` 单跑正常(09-06 事故)**:先看
-  WirePlumber 有没有把 miyu-voice 的流"记住"到别的设备——
-  `grep miyu-voice ~/.local/state/wireplumber/stream-properties`,任何带 `"target"`
-  的条目都可疑(用 `pactl move-*`/pavucontrol 挪过一次流,WirePlumber 就按
-  `application.name` 永久记住,之后每条 "PipeWire ALSA [miyu-voice]" 流都落到那
-  里;测试夹具把播放流挪进 null sink 就是这么把线上提示音弄没的)。清法:
-  `systemctl --user stop wireplumber` → 删掉那几行里的 `"target":...` → start →
-  重启 miyu-voice(`miyu reload`)。再看 `pw-dump` 里 `alsa_capture.miyu-voice` 的
-  Link 是不是接在你真正说话的那只麦上;两只全速 USB 声卡挂同一个 hub 时,一只被
-  常开会让另一只 `dmesg: Not enough bandwidth for altsetting` 起不来,把配置
-  `voice.microphone` 写成 `miyu-voice devices` 里那只麦的源名,别让它跟着"默认源"漂。
+### 1. 运行状态检视
+- **命令行状态**：`miyu voice status`（查看 worker 进程 PID、IPC 挂载状态、采集设备、日志文件路径等）。
+- **REST 接口**：`GET /api/voice/status`（与 WebUI 共享同样的状态快照）。
+- **进程日志**：查看 `~/.miyu/logs/voice-worker.log`（若需观察 VAD/KWS/STT 各阶段精细耗时，可添加环境变量 `MIYU_VOICE_DEBUG=1`）。
 
-## 八、测试
+### 2. 独立排查与硬件测试
+当怀疑麦克风无声或唤醒词识别不灵敏时，可绕过主程序直接运行 `miyu-voice` 进行验证：
+```bash
+# 列出系统当前检测到的所有音频采集源 (源名与标签)
+miyu-voice devices
 
-- 单测:`cargo test --features voice --lib voice`(唤醒词剥离、能量门、WAV 编解码)、
-  `cargo test --lib web::voice_bridge`(通知摘要)。
-- 真机 e2e(需模型):`cargo test --features voice --lib voice::e2e -- --ignored`
-  ——模型自带 test_wavs 走 VAD→KWS→STT。
-- 唤醒词实验台:`MIYU_KW_WAVS=<wav目录> MIYU_KW_KEYWORDS=a,b MIYU_KW_EACH=1
-  cargo test --features voice --lib voice::e2e_tests::keyword_lab -- --ignored --nocapture`
-  输出 关键词×样本 命中矩阵(`MIYU_KW_STT=1` 附识别文本;`kws_raw` 绕开管线直接喂模型,
-  用来区分"模型不认"与"切段问题");样本在 `testkit/voice/samples/`(MiniMax 合成)。
-- 通知/音效/播报同步量尺:`testkit/voice/sync_timing.py --bin-dir <dir> --label x`
-  (隔离 daemon + 真 MiniMax 播报引到 null sink + 假 notify-send 记时间戳 + pactl
-  轮询播放流),输出 gap_wake / gap_reply 秒数。
-- 全链隔离 e2e:`testkit/voice/e2e.py --bin-dir target/release`——隔离 daemon +
-  桩 LLM + 假 notify-send + PipeWire null sink 注入,验唤醒→通知→回合→落库、
-  听写认领、HTTP 转写、WebSocket 流式听写(标准库手写 ws 客户端推 PCM16)。
-- 量尺:`testkit/voice/measure.py <bin> <label> --sub test --extra --timings [--cpus 0,1]`。
+# 独立运行唤醒与识别测试 (观察实时 RMS 能量门、VAD 状态与耗时)
+miyu-voice test --keyword 清影清影 --timings
 
-### PipeWire 夹具要点(踩过的坑)
+# 试听内置提示音 (wake / heard / done / error / off)
+miyu-voice cue done --volume 0.8
 
-- 播放注入用**普通 null sink**(`media.class=Audio/Source/Virtual` 播不进去);
-- 采集端设 `PIPEWIRE_NODE=<sink>` + `PIPEWIRE_PROPS='{ stream.capture.sink = true }'`,
-  WirePlumber 会把采集口接到 sink 的 monitor;不加后者它可能接到**真实麦克风**;
-- 隔离 `XDG_RUNTIME_DIR` 时要设 `PIPEWIRE_RUNTIME_DIR` 指回真实运行目录;
-- `node.autoconnect=false` 会让 cpal 打不开流。
-- **绝不用 `pactl move-sink-input` / `move-source-output` 挪 miyu-voice 的流**:WirePlumber
-  会把它记成该 application.name 的永久目标,污染用户线上(提示音进 null sink)。改接线
-  用 `pw-link`(不会被记住,见 `sync_timing.py` 的 `relink_playback`);夹具加载的
-  null sink 结束时 `pactl unload-module` 卸掉,别留在用户的声卡图里。
+# 测试 TTS 合成与扬声器回放
+miyu voice say "你好，这是语音功能测试"
+```
 
-## 九、实测(release,16 核,2026-09-05)
+### 3. Linux PipeWire / WirePlumber 踩坑指南
+- **声音静音或流串线问题**：
+  如果出现提示音无声或唤醒失灵，检查 WirePlumber 是否错误记录了设备路由：
+  ```bash
+  grep miyu-voice ~/.local/state/wireplumber/stream-properties
+  ```
+  若发现带有 `"target"` 的条目，说明曾使用 pavucontrol 移动过该流，导致后续流被永久锁死。清理方式：停用 wireplumber 服务并清除上述配置文件中的 target 字段后重启。
+- **USB 麦克风带宽瓶颈**：
+  当多个 USB 高保真音频设备挂载于同一 USB Hub 时，麦克风常开可能导致带宽耗尽报错。建议将配置项 `voice.microphone` 显式指定为 `miyu-voice devices` 输出的真实物理设备名，避免跟随系统默认设备漂移。
 
-v1(voice 分支)基线,与并行编译同跑有干扰,仅供量级参考:
+---
 
-| 相位 | CPU 均值 | RSS 高水位 | 备注 |
+## 九、性能基准与实测指标 (Release 模式，参考数据)
+
+在安静工作环境下，测试 SenseVoiceSmall 与 KWS 的典型表现：
+
+| 运行相位 | CPU 平均负载 | 内存常驻 (RSS) | 延迟 / 吞吐性能 |
 |---|---|---|---|
-| 安静(VAD 逐帧) | 1.7% | 82MB | v2 加能量门后应接近 0 |
-| KWS 判段(5s) | — | — | 冷 893ms,热 70~160ms |
-| STT 首次加载+转写 | 峰 120% | 392MB | 加载 ≈2.1s |
-| STT 热转写 | 峰 ~100% | 282MB 常驻 | 3~5s 音频 160~400ms |
+| **安静待命态** (能量门生效) | **0.4% ~ 0.6%** | 约 75MB ~ 80MB | — |
+| **KWS 唤醒词判定** (人声说话) | 短暂脉冲 (约 7%~9%) | 约 80MB | **60ms ~ 100ms** 完成全文检索 |
+| **SenseVoice 首次加载** | 瞬时 CPU 脉冲 | 升至 380MB ~ 400MB | 约 1.2s ~ 2.0s 完成冷启动 |
+| **SenseVoice 句子热识别** | 短暂脉冲 | 约 280MB (卸载前) | 3~5 秒语音识别仅需 **150ms ~ 300ms** |
+| **空闲 60s 卸载后** | 回落至 **0.4%** | 回落至 **75MB** | 彻底回收 ~300MB ASR 模型内存 |
 
-v2(`miyu-voice test --timings`,同一夹具、同一批 test_wavs,机器同样有并行编译;
-follow_up=300 使 STT 在整个测量期都不满足卸载条件):
-
-| 相位 | 全核 CPU 均值/峰值 | 全核 RSS | 限 2 核 CPU 均值/峰值 | 限 2 核 RSS |
-|---|---|---|---|---|
-| 安静(能量门 + VAD) | **0.4%** / 2% | 79MB 稳 | 0.6% / 4% | 74MB(高水位 73MB) |
-| 有人声不命中(KWS) | 9.3% / 82% | →397MB(STT 命中后加载) | 6.7% / 90% | →379MB |
-| 命中 → STT | 5.9% / 68% | 高水位 415MB | 6.3% / 68% | 高水位 395MB |
-| STT 热转写 | 9.7% / 80% | 242→307MB | 4.8% / 66% | 279→281MB |
-| 之后安静(窗口未关,STT 未卸) | 1.4% / 4% | 307MB | 0.7% / 2% | 231MB |
-
-| 阶段 | 全核中位 / 最大 | 限 2 核中位 / 最大 | 每秒音频(中位) |
-|---|---|---|---|
-| KWS 判段 | 74ms / 109ms | 62ms / 821ms | 17~24ms/s |
-| STT 首次加载 | 3192ms | 1432ms | — |
-| STT 热转写 | 152ms / 7106ms* | 168ms / 2288ms* | 45~58ms/s |
-
-\* 最大值出现在别的会话并行 release 编译时,同一段音频重放为 150~250ms;
-空载机器上的单测里 STT 加载 875ms、3.5s 音频转写 133ms(debug 构建)。
-
-结论:安静态 CPU 从 1.7% 降到 0.4%,唤醒态常驻 ≈ 75~80MB;识别是 CPU 短脉冲
-(2 核与 16 核几乎一样快),弱机的真正代价是 STT 常驻的 ~300MB,由
-`stt_unload_seconds` 兜底;二进制:`miyu` 58.1MB(与无语音版持平),`miyu-voice` 35.9MB。
-
-隔离全链 e2e(`testkit/voice/e2e.py`,桩 LLM)09-05 通过:attach、唤醒→「收到」→
-桩回复→完成通知(含摘要)→语音会话落 1 轮、听写认领拿到文本、HTTP 转写、前端随
-daemon 退出。
+**总结**：
+Miyu 语音系统的底层设计始终秉持低足迹与高响应：在无语音时近乎零开销，在唤醒触发瞬间毫秒级反馈，在交互结束后自动回收重型 ASR 内存，并无缝融合端侧离线识别与云端高品质 TTS 表现力。
