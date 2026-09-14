@@ -93,6 +93,17 @@ pub struct GqyPaths {
     pub system_scripts_dir: PathBuf,
 }
 
+/// fish 在所有平台都读 `$XDG_CONFIG_HOME/fish`,没设就是 `~/.config/fish`。
+/// 不能用 `BaseDirs::config_dir()`:它在 macOS 是 `~/Library/Application Support`,
+/// hook 写到那里 fish 永远不加载,`gqy fish-init` 装完静默无效(09-14 发现)。
+/// Linux 上两者恰好相同,所以此前没暴露。相对路径的 XDG 值按规范忽略。
+pub(crate) fn fish_hook_path(xdg_config_home: Option<PathBuf>, home: &Path) -> PathBuf {
+    xdg_config_home
+        .filter(|dir| dir.is_absolute())
+        .unwrap_or_else(|| home.join(".config"))
+        .join("fish/conf.d/gqy.fish")
+}
+
 impl GqyPaths {
     pub fn new() -> Result<Self> {
         let base = BaseDirs::new().context(t(
@@ -138,7 +149,10 @@ impl GqyPaths {
                 skills_dir: config_dir.join("skills"),
                 scripts_dir: config_dir.join("scripts"),
                 pictures_dir: data_dir.join("pictures"),
-                fish_hook_file: base.config_dir().join("fish/conf.d/gqy.fish"),
+                fish_hook_file: fish_hook_path(
+                    std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from),
+                    base.home_dir(),
+                ),
                 bash_hook_file: config_dir.join("shell/bash-hook.sh"),
                 zsh_hook_file: config_dir.join("shell/zsh-hook.zsh"),
                 system_scripts_dir,
@@ -235,7 +249,10 @@ impl GqyPaths {
         } else {
             data_dir.join("pictures")
         };
-        let fish_hook_file = base.config_dir().join("fish/conf.d/gqy.fish");
+        let fish_hook_file = fish_hook_path(
+            std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from),
+            base.home_dir(),
+        );
         let bash_hook_file = config_dir.join("shell/bash-hook.sh");
         let zsh_hook_file = config_dir.join("shell/zsh-hook.zsh");
         let resource_config_dir = if use_legacy_temporarily || resource_migration_deferred {

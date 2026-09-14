@@ -185,6 +185,26 @@ fn resource_layout_rejects_absolute_symlinks_into_moved_trees() {
     assert!(!layout.resource_marker().exists());
 }
 
+/// fish 只读 `$XDG_CONFIG_HOME/fish` 或 `~/.config/fish`,不看 macOS 的
+/// `~/Library/Application Support`——hook 落错地方就是装了等于没装。
+#[test]
+fn fish_hook_lives_where_fish_reads_config_on_every_platform() {
+    let home = Path::new("/Users/someone");
+    assert_eq!(
+        fish_hook_path(None, home),
+        PathBuf::from("/Users/someone/.config/fish/conf.d/gqy.fish")
+    );
+    assert_eq!(
+        fish_hook_path(Some(PathBuf::from("/opt/xdg")), home),
+        PathBuf::from("/opt/xdg/fish/conf.d/gqy.fish")
+    );
+    // 规范要求 XDG 路径必须是绝对路径,相对值当没设。
+    assert_eq!(
+        fish_hook_path(Some(PathBuf::from("relative/xdg")), home),
+        PathBuf::from("/Users/someone/.config/fish/conf.d/gqy.fish")
+    );
+}
+
 #[test]
 fn resource_path_remapping_includes_the_legacy_xdg_config_root() {
     let base = BaseDirs::new().unwrap();

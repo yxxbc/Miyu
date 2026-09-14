@@ -148,6 +148,7 @@
 - ☐ 默认人格是顾清影（说话风格、名字，待用户实聊）☑ 22 内置脚本 + 自有 2 个脚本到位（用户脚本已用 GQY_ARGS_JSON）☑ 图库 22 张 ☑ 44 个会话归入 default ☑ `gqy embed status` 语义检索 available（Mac RLIMIT 修复生效；记忆向量 969 条缺失，需 `gqy embed reindex`）☐ TUI logo 显示 GQY（待用户目测）☐ WebUI 头像/看板（待用户目测）☐ 脚本面板不再 panic（待用户点开）
 - 切换记录：`gqy.pending` 改回 `gqy`；旧 `miyu`、`miyu-voice`、`~/.cargo/share/miyu` → `~/.gqy/bin-backup/miyu-0.6.0-binaries/`；`gqy zsh-init` 已重生成 hook（改前 `~/.zshrc` 备份在 `~/.gqy/bin-backup/zshrc.before-gqy-zsh-init`）；`gqy daemon start` 成功，`gqy-voice` 进程已起；`gqy paths` 全部指向 `~/.gqy`
 - 日志核查：`voice-worker.log` 里的 "unsupported config version 3" 与 `daemon.log` 里的 RLIMIT 报错均是切换前旧二进制留下的，本次启动后无新增
+- **fish hook 路径 bug（验收时由 `gqy paths` 发现，已修源码）**：`src/paths/mod.rs` 用 `BaseDirs::config_dir().join("fish/conf.d/gqy.fish")`，macOS 上落到 `~/Library/Application Support/fish/…`，fish 只读 `$XDG_CONFIG_HOME/fish` 或 `~/.config/fish`，`gqy fish-init` 装完静默无效（Linux 两者相同所以没暴露，上游同样存在）。改为 `fish_hook_path()`：XDG_CONFIG_HOME（绝对路径）优先，否则 `~/.config`；加单元测试。**不影响本机**：用户默认 zsh、未装 fish。已安装的 release 二进制不含此修复，需重新构建才生效
 
 ## 六、进度日志
 
