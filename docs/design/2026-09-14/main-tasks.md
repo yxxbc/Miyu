@@ -20,7 +20,7 @@
 
 ## 1. WebUI Artifact 图片拖拽放大迟滞与错位修复
 
-> **已被 plan 修订(2026-09-14)**:「按 `1/(UI_SCALE*zoom)` 投影」是错的——translate 写在 scale 之前,不被放大,再除 zoom 图只跟手一半。拖拽过渡与 `UI_SCALE` 换算 2026-09-12 已修,先复现再改。见 `../../plan/2026-09-14/webui-delivery.md` §1。
+> **已被 plan 修订(2026-09-14)**:「按 `1/(UI_SCALE*zoom)` 投影」是错的——translate 写在 scale 之前,不被放大,再除 zoom 图只跟手一半。拖拽过渡与 `UI_SCALE` 换算 2026-09-12 已修,先复现再改。见 `../../plan-is-true/2026-09-14/webui-delivery.md` §1。
 
 ### 现存代码与现象分析
 * **代码位置**：[`web/app.js`](../../../web/app.js#L5540-L5575)、[`web/styles.css`](../../../web/styles.css#L4875-L4905)
@@ -145,7 +145,7 @@ Goal 本身就是为了解决“长程复杂目标自主推进”而设计的。
 
 ## 5. 对话完成气泡中产物交互按钮与主动预览恢复
 
-> **已被 plan 修订(2026-09-14)**:不需要新落库——后端已按回合分组产物,前端已拿到 `turn.artifacts`(没有 `message.artifacts` 这个字段),纯前端即可。见 `../../plan/2026-09-14/webui-delivery.md` §5。
+> **已被 plan 修订(2026-09-14)**:不需要新落库——后端已按回合分组产物,前端已拿到 `turn.artifacts`(没有 `message.artifacts` 这个字段),纯前端即可。见 `../../plan-is-true/2026-09-14/webui-delivery.md` §5。
 
 ### 现存代码与现象分析
 * **代码位置**：[`web/app.js`](../../../web/app.js#L5084-L5145)、[`web/app.js`](../../../web/app.js#L8530-L8555)、[`web/index.html`](../../../web/index.html#L261)
@@ -324,7 +324,7 @@ WebUI 在移动端的目标是实现媲美原生 App 的稳定感。将外壳彻
 
 ## 9. 前端支持 Mermaid 图表渲染与原生 SVG 矢量呈现
 
-> **已被 plan 修订(2026-09-14)**:SVG 与 mermaid 不进主文档——2026-09-11 已定「活性内容一律进沙箱 iframe」;mermaid 主题变量也不能传 `var(--…)` 字符串,要先取计算后的色值。见 `../../plan/2026-09-14/webui-delivery.md` §9。
+> **已被 plan 修订(2026-09-14)**:SVG 与 mermaid 不进主文档——2026-09-11 已定「活性内容一律进沙箱 iframe」;mermaid 主题变量也不能传 `var(--…)` 字符串,要先取计算后的色值。见 `../../plan-is-true/2026-09-14/webui-delivery.md` §9。
 
 ### 现存代码与现象分析
 * **代码位置**：[`web/app.js`](../../../web/app.js#L4277-L4300)（`codeBlock`）、[`web/app.js`](../../../web/app.js#L4512-L4540)（`renderMarkdown`）、[`web/app.js`](../../../web/app.js#L5739-L5745)（`renderArtifactPreview`）

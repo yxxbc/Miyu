@@ -1,5 +1,5 @@
 //! 上下文分项:输入框下方的上下文圆环点开后看到的分项占用(2026-09-14,
-//! 计划 `docs/plan/2026-09-14/context-panel.md`)。
+//! 计划 `docs/plan-is-true/2026-09-14/context-panel.md`)。
 //!
 //! 只从真实请求的同一份字节里拆:消息走 `chat_messages("", "")`,工具走
 //! `ToolRegistry::presented_definitions`(`definitions` / `stub_definitions`

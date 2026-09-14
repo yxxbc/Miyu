@@ -5,7 +5,7 @@
 
 调研方式：五路子代理分别扫「Rust 运行时性能」「WebUI」「终端 REPL」「安全与工程面」
 「产品功能面」，每路先读 `docs/plan-is-true/low-footprint.md`、`docs/fixed/2026-08-18-性能优化.md`、
-`docs/plan/token-diet/` 的"判不做"清单排除旧项；所有硬断言由主会话用 grep / 命令复核。
+`docs/plan-is-true/token-diet/` 的"判不做"清单排除旧项；所有硬断言由主会话用 grep / 命令复核。
 原则同 08-18 专项：**没有测量数字不合并**，本文所有性能项均未实测，都是嫌疑人。
 
 ## 0. 本次实测的硬指标（2026-09-03，main @ 9b98d58c，v0.4.6）

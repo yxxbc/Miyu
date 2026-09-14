@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * 回复气泡底部的产物 chip(docs/plan/2026-09-14/webui-delivery.md §5)。
+ * 回复气泡底部的产物 chip(docs/plan-is-true/2026-09-14/webui-delivery.md §5)。
  *
  * 数据早就有:后端按回合分好 `turn.artifacts`,实时的 `tool.artifact` 事件带着同一份源对象。
  * 缺的只是画在产出它的那一轮上——侧栏一关,就只剩顶栏一个小图标。

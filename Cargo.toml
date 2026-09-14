@@ -109,5 +109,5 @@ tiktoken-rs = "0.12"
 lto = "thin"
 strip = "symbols"
 # 单编译单元：跨单元内联与去重充分化，.text 实测显著缩小（见
-# docs/plan/low-footprint.md 第 3 轮）。代价只是 release 编译更慢。
+# docs/plan-is-true/low-footprint.md 第 3 轮）。代价只是 release 编译更慢。
 codegen-units = 1

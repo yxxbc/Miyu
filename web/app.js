@@ -5646,7 +5646,7 @@
     });
 
     // 平移。位移只除 UI_SCALE、**不除 zoom**:transform 是 translate() 在 scale() 前,
-    // translate 不被放大(docs/plan/2026-09-14/webui-delivery.md §1 验证推理)。
+    // translate 不被放大(docs/plan-is-true/2026-09-14/webui-delivery.md §1 验证推理)。
     let pan = null;
     let frame = 0;
     const applyPan = () => {

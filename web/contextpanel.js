@@ -2,7 +2,7 @@
 
 /*
  * 上下文分项弹窗:输入框下方的上下文圆环点开后看到的分项占用。
- * 计划:docs/plan/2026-09-14/context-panel.md;接口:GET /api/sessions/{id}/context/breakdown。
+ * 计划:docs/plan-is-true/2026-09-14/context-panel.md;接口:GET /api/sessions/{id}/context/breakdown。
  *
  * 口径跟后端走,前端不另算:
  * - 顶部总数有实测用实测,否则估算;分项一律是 o200k 估算。

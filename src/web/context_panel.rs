@@ -1,5 +1,5 @@
 //! 上下文分项接口:输入框下方圆环点开的弹窗(2026-09-14,
-//! 计划 `docs/plan/2026-09-14/context-panel.md`)。
+//! 计划 `docs/plan-is-true/2026-09-14/context-panel.md`)。
 //!
 //! 点开才算,不随回合事件推:要按会话装配一次 Agent、渲染整份请求再数 token。
 //! 耗时写进日志(`context breakdown` 行),超过预期再加缓存。

@@ -1,10 +1,10 @@
 "use strict";
 
 /*
- * 围栏预览:聊天正文里的 ```svg / ```html 围栏画成图,块头「预览 / 源码」切换
- * (docs/plan/2026-09-14/webui-delivery.md §9)。
+ * 围栏预览:聊天正文里的 ```svg / ```html / ```mermaid 围栏画成图,块头「预览 / 源码」切换
+ * (docs/plan-is-true/2026-09-14/webui-delivery.md §9)。
  *
- * **活性内容一律不进主文档**(2026-09-11 定案,`docs/plan/2026-09-11-artifact-delivery.md`):
+ * **活性内容一律不进主文档**(2026-09-11 定案,`docs/plan-is-true/2026-09-11-artifact-delivery.md`):
  *   · svg → blob URL 进 `<img>`。浏览器对 `<img>` 里的 SVG 强制禁脚本、禁外链,与 artifact
  *     预览同一安全等级。主页面 CSP 是 `img-src 'self' blob:`,data: URL 会被挡,所以用 blob。
  *     代价:SVG 里的文字选不中(2026-09-14 裁定接受)。
