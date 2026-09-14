@@ -131,6 +131,12 @@
 6. 重新生成 zsh hook：`gqy zsh-init`（覆盖 `~/.gqy/config/shell/zsh-hook.zsh` 并刷新 `~/.zshrc` 的 hook 块；旧 `~/.gqy` 已进废纸篓）
 7. `gqy daemon start` → P8 验收
 - 状态：旧 `~/.gqy` 已移到废纸篓；迁移脚本预演仅剩「旧 miyu daemon 在运行」提示
+- **17:11–17:25 意外（已处置，勿重复踩）**：
+  - 17:10 装好 `~/.cargo/bin/gqy` 后，17:11:45 有东西跑了一次 gqy（未查明：zsh 的 command_not_found hook 或 Zed 里的 Antigravity 代理）。首次运行的**旧 XDG 布局迁移**把 `~/Library/Application Support/gqy`（08-13）与 `~/Library/Caches/gqy`（08-05）搬进了新建的 `~/.gqy`（178M，含 lover-md 人格、知识库、备份 git 仓库）→ 已原样归档为 `~/.gqy-archive-appsupport-20260914-172451`（未删）
+  - 为防再触发，`~/.cargo/bin/gqy` **暂时改名为 `gqy.pending`**；迁移完成后改回。教训：应先完成迁移再把 gqy 放进 PATH
+  - 17:18 起仓库被会话外依次切到 `test-pr-origin`（合并冲突）、重置到 origin/main、新建 `feat/webui-selection-assist`（暂存了拆给上游的划词功能 2 个文件）。经用户同意：那 2 个文件存入 `stash@{0}`（"selection-assist PR 草稿"），已切回 gqy（489b10ce，工作区干净）。恢复：`git switch feat/webui-selection-assist && git stash pop`
+  - 本地分支名 `gqy` 与远程 `gqy`（yxxbc/gqy-agent）重名，`git checkout gqy` 会报 ambiguous，用 `git switch gqy` 或 `refs/heads/gqy`
+  - 迁移脚本预演守卫已全部通过；`miyu mcp-serve`（Zed Antigravity 代理起的）仍握着 `~/.miyu` 日志文件，执行 `--apply` 前需关掉该代理
 - ☐ 安装 `~/.cargo/bin/gqy`、`gqy-voice`，移除旧 `miyu`、`miyu-voice`（旧的留备份）
 - ☑ 资源目录 `~/.cargo/share/gqy` 已预装（字体 29M、模型 23M、改名后的内置脚本 748K，无表情包）；旧 `~/.cargo/share/miyu` 待切换后删除
 - ☐ 用户执行 P6 脚本 ☐ 重装 shell hook（清掉旧 miyu hook）☐ `gqy daemon start`
