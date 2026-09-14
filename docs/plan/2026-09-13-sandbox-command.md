@@ -2,7 +2,7 @@
 
 ## 零、需求与已拍板
 
-用户视角：打开 Miyu，新会话，`/sandbox <路径>`，从此这个会话里她做的一切都关在这个目录里，
+用户视角：打开 顾清影，新会话，`/sandbox <路径>`，从此这个会话里她做的一切都关在这个目录里，
 读不到、写不到别的目录。
 
 09-13 对话里已拍板的：
@@ -26,7 +26,7 @@
 |---|---|---|
 | 规则装载 | `src/tools/sandbox.rs` `confine / confine_std / confine_relay` | fork 后 exec 前给**子进程**装 Landlock，daemon 不受限；策略在回合的 tokio task-local 上 |
 | 进程内守卫 | 同文件 `guard_read / guard_write` | read/edit/glob/grep/print_image/vision/artifact/memes 读写路径前过一遍，同一份策略 |
-| 策略构造 | `src/web/sandbox_scope.rs::member_scope` | 只读：系统目录 + 脚本目录 + miyu 二进制 + 家里 documents/pictures/personas；可写：workspace、artifacts、/tmp、/dev/null、cache_dir、runtime_dir |
+| 策略构造 | `src/web/sandbox_scope.rs::member_scope` | 只读：系统目录 + 脚本目录 + gqy 二进制 + 家里 documents/pictures/personas；可写：workspace、artifacts、/tmp、/dev/null、cache_dir、runtime_dir |
 | 作用域化 | `src/web/actor/mod.rs`（Create、Redo 两处）、`src/web/session_cmds.rs`（工具桥） | 三处各自写一遍「member_scope → 否则 record.workspace → 否则 cwd」 |
 | 后台继承 | `src/tools/subagent.rs::with_turn_scope`、`src/tools/jobs/mod.rs` | 子代理/后台 job 在还看得见的地方抓策略，进后台原样套回 |
 | 中转线 | `src/llm/openai_compatible/cli_relay/process.rs` | CLI 整个进程关进去，额外放行 `~/.claude ~/.claude.json ~/.codex ~/.gemini`，HOME 不换 |
@@ -65,7 +65,7 @@
 | `/sandbox` | 查看：根路径、可写清单、可读清单（清单来自配置）；未绑定就说未绑定、当前用客户端目录 |
 | `/sandbox clear` | 解绑 |
 
-CLI：`miyu session sandbox <会话> [目录 | --clear]`，`--json` 直出。
+CLI：`gqy session sandbox <会话> [目录 | --clear]`，`--json` 直出。
 IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验在 daemon 侧做（probe 也在 daemon 侧，
 因为规则是 daemon 装的）。
 
@@ -77,7 +77,7 @@ IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验
 - 迁移 v36：`UPDATE sessions SET workspace = NULL` 一次性清老值。理由：老 `/workspace` 只是 cwd，
   升级后若沿用会把以前设过的会话暗中上锁。
 - Rust 字段 / IPC / JSON 字段改名 `workspace` → `sandbox`（`SessionRecord`、`SessionInfo`、
-  `SessionListEntry`、`session.updated` 载荷、`web/app.js` 三处）。`miyu session show --json` 契约随命令一起变。
+  `SessionListEntry`、`session.updated` 载荷、`web/app.js` 三处）。`gqy session show --json` 契约随命令一起变。
 
 ### 3. 策略构造（管理员）
 
@@ -94,8 +94,8 @@ IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验
 | 权限 | 内容 |
 |---|---|
 | 可写 | `root`、`/tmp`、`/dev/null`、`paths.cache_dir`（脚本缓存）、`paths.runtime_dir()`（IPC socket，MCP 桥要连）、`paths.artifacts_dir()`（管理员 artifact 库）、生图落盘目录、配置 `tools.sandbox.writable` |
-| 只读 | 成员同一份系统目录常量（`/usr /bin /sbin /lib /lib64 /etc /proc /sys /dev /run /opt /var`）、`scripts_dir`、`system_scripts_dir`、`miyu_executable()`、配置 `tools.sandbox.readable` |
-| 不给 | 家目录其余一切：`~/.ssh`、`~/.config`、`~/.miyu` 的配置与库、Documents/Pictures |
+| 只读 | 成员同一份系统目录常量（`/usr /bin /sbin /lib /lib64 /etc /proc /sys /dev /run /opt /var`）、`scripts_dir`、`system_scripts_dir`、`gqy_executable()`、配置 `tools.sandbox.readable` |
+| 不给 | 家目录其余一切：`~/.ssh`、`~/.config`、`~/.gqy` 的配置与库、Documents/Pictures |
 
 清单里不存在的路径先剔掉（Landlock 对打不开的授权根失败关闭，成员版踩过）。
 `SandboxPolicy` 增加 `root: PathBuf` 字段，供环境块与 `/sandbox` 查看用。
@@ -194,16 +194,16 @@ IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验
 - 迁移 v36 测试。
 - `cargo fmt`、`scripts/refactor-check.sh` 五道门禁（动了 agent/prompt）。
 
-### 黑盒 `testkit/sandbox/`（MIYU_HOME 沙箱 + 桩 LLM，照 `testkit/cli` 的骨架）
+### 黑盒 `testkit/sandbox/`（GQY_HOME 沙箱 + 桩 LLM，照 `testkit/cli` 的骨架）
 1. 新会话 `/sandbox <临时目录>` → 桩模型发 `run_command: echo hi > x` → 成功。
 2. `run_command: cat ~/.ssh/id_ed25519` → tool error，输出含 `outside your workspace`，回合不崩。
 3. `read` 家目录文件 → 同上（进程内守卫）。
 4. `/sandbox` 显示根与两份清单；`/sandbox clear` 后同样命令成功。
 5. 成员会话发 `/sandbox` → 拒绝。
-6. `miyu session sandbox … --json` 输出字段。
+6. `gqy session sandbox … --json` 输出字段。
 
 ### 真机（用户可照做的验收流程）
-1. `miyu` 进 REPL，`/new`，`/sandbox ~/tmp/sbx`，看到「已绑定沙盒」。
+1. `gqy` 进 REPL，`/new`，`/sandbox ~/tmp/sbx`，看到「已绑定沙盒」。
 2. 让她「在当前目录建个 hello.txt 写一句话」→ 成功；`ls ~/tmp/sbx` 看到文件。
 3. 让她「读一下 ~/.ssh 里有什么」→ 她回复读不到（沙盒外）。
 4. 让她「把 ~/Documents 里随便一个文件复制过来」→ 失败，报沙盒外。
@@ -215,7 +215,7 @@ IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验
 ## 六、坑与备忘
 
 - Landlock 授权根不存在→exec 失败关闭；所有清单先 `retain(exists)`。
-- 二进制换过后 `current_exe()` 带 ` (deleted)`，用 `miyu_executable()`（成员版已处理，照搬）。
+- 二进制换过后 `current_exe()` 带 ` (deleted)`，用 `gqy_executable()`（成员版已处理，照搬）。
 - 绑定/解绑各一次缓存冷启动；成员环境块字节也变一次。
 - 主检出起 daemon 会抢 8300，黑盒用 `sandbox-fresh.sh` 那套 8388 纯净环境。
 - 重启 daemon 前先 cd 出 worktree。
@@ -226,7 +226,7 @@ IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验
   `sandbox_scope.rs` 改成 `session_scope`(成员 → 管理员绑定 → 客户端 cwd 三级)+ `admin_scope`,
   三个作用域化点(actor Create/Redo、工具桥)各删掉一份手写逻辑;`tools.sandbox.{readable,writable}`
   进配置与设置页。
-- 命令层:`/sandbox`(命令表 `web: true`)、`miyu session sandbox`、IPC `SetSandbox`(daemon 侧
+- 命令层:`/sandbox`(命令表 `web: true`)、`gqy session sandbox`、IPC `SetSandbox`(daemon 侧
   canonicalize + 目录 + probe + 成员拒绝)、`session.updated` 载荷 `sandbox`、WebUI 列表提示改名。
 - 提示词:`host_environment_for` 读 task-local 策略;`host_info` 按摘要生成 `root/writable/readable`,
   写死的成员字符串删除。
@@ -244,7 +244,7 @@ IPC：`SetWorkspace` → `SetSandbox { target, root: Option<PathBuf> }`；校验
 | 真机(隔离 daemon 8391、真配置、opencodego/deepseek-v4.1-flash;T4 走 claude-code/haiku) | 见下表 |
 | 门禁:格式 / 模型面英文 / 文件规模 / 依赖方向 | 格式过;后三项在纯净 main 上同样红(ledger.json 中文描述、基线行数 +34%、跨层引用),非本改动 |
 
-真机五轮(`miyu session new sbx` → `miyu session sandbox sbx <root>` → `miyu ask --session sbx …`):
+真机五轮(`gqy session new sbx` → `gqy session sandbox sbx <root>` → `gqy ask --session sbx …`):
 
 | 轮 | 动作 | 结果 | prompt / cache_read |
 |---|---|---|---|

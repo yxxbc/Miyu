@@ -2,7 +2,7 @@
 
 > 分支 `gqy`,基于 `macos-port`(4078f5aa),后者基于 upstream main `cdf820f9`。
 > `macos-port` 只装 macOS 编译修复一件事,保持通用、可单独 PR;个人化全部落在 `gqy`。
-> 用户裁定:(1) 改名只改**对外身份**,二进制与 `~/.miyu` 路径不动——纯内部字符串,
+> 用户裁定:(1) 改名只改**对外身份**,二进制与 `~/.gqy` 路径不动——纯内部字符串,
 > 改了无功能收益却让以后捡上游修复变难,948M 数据还要迁;(2) 代码推**新建的私有仓库**,
 > 不推公开 fork `yxxbc/Miyu`;(3) 内置口令写死在源码(私有仓库下可接受,建完管理员即失效);
 > (4) 图库**按人格分库**,与表情包同一套口径。
@@ -14,13 +14,13 @@
 
 | 项 | 状态 | 验证 |
 |---|---|---|
-| 1 macOS 编译修复 | 施工完 | `cargo build --release` 通过、**零警告**;产物 Mach-O arm64 可运行(`miyu 0.5.0`);`tools::sandbox` 单测 3/3 过 |
-| 2 高危命令名单扩充 | 施工完(配置层) | 5 条 → 44 条;`miyu config validate` 通过。**待 daemon 重启生效** |
-| 3 数据快照与清理 | 施工完 | `miyu export` 259M/124 条目/0600,tar 校验通过;释放 `~/.miyu` 129M + `target/` 1326M;活库 45 会话完好 |
-| 4 macos_news 脚本工具 | 施工完 | 四源 283 条,跨源日期格式混排排序正确;`miyu tool-call` 端到端 `success: true` |
-| 5 album 图库(脚本版) | 施工完 | save/search/list/show/delete 全通;`MIYU-IMAGE:` 行被投递层摘走 |
+| 1 macOS 编译修复 | 施工完 | `cargo build --release` 通过、**零警告**;产物 Mach-O arm64 可运行(`gqy 0.5.0`);`tools::sandbox` 单测 3/3 过 |
+| 2 高危命令名单扩充 | 施工完(配置层) | 5 条 → 44 条;`gqy config validate` 通过。**待 daemon 重启生效** |
+| 3 数据快照与清理 | 施工完 | `gqy export` 259M/124 条目/0600,tar 校验通过;释放 `~/.gqy` 129M + `target/` 1326M;活库 45 会话完好 |
+| 4 macos_news 脚本工具 | 施工完 | 四源 283 条,跨源日期格式混排排序正确;`gqy tool-call` 端到端 `success: true` |
+| 5 album 图库(脚本版) | 施工完 | save/search/list/show/delete 全通;`GQY-IMAGE:` 行被投递层摘走 |
 | 6 身份改造 | 施工完 | `cargo build --release` 通过、零警告 |
-| 7 macOS 语音三处修复 | 施工完 | 真机通过:`devices` 列得出设备、唤醒命中、TTS 回复;`miyu-voice` 新版已装 |
+| 7 macOS 语音三处修复 | 施工完 | 真机通过:`devices` 列得出设备、唤醒命中、TTS 回复;`gqy-voice` 新版已装 |
 | 8 图库内置化(工具层) | 施工完,**已验证** | 五个动作在新二进制上全跑通(save/search/show/delete 含硬删),活库 22 张完好;见 §16.3 |
 | 9 图库 WebUI 面板 | 施工完,**未验证** | `cargo check` 零警告;面板 API 五条 + `web/dash-album.js`;**浏览器里没点过**(要重启 daemon) |
 | 10 `/init` → `GQY.md` | 施工完 | 命令进表、dev 提示词与 dev 子代理都注入工作区的 `GQY.md`;**没在真 REPL 里跑过** |
@@ -74,7 +74,7 @@ macOS 安全开关(`csrutil disable`、`spctl --master-disable`、`nvram -c`)、
 
 ## 3. 数据快照与清理
 
-清理前先做全量快照:`miyu export` → 259M(会话 124.7M / 图片 76.2M / 表情包 57.3M /
+清理前先做全量快照:`gqy export` → 259M(会话 124.7M / 图片 76.2M / 表情包 57.3M /
 人格素材 4.1M / 配置 / 知识库 / 脚本),排除 `state/models` 266M 与 `mcp-servers` 191M
 (可重新下载的二进制)。**归档含明文 API key,权限 0600,不得外传**。
 
@@ -87,7 +87,7 @@ macOS 安全开关(`csrutil disable`、`spctl --master-disable`、`nvram -c`)、
 | `target/debug` | 1326M |
 
 保留:`state/models`、`mcp-servers`、活库、`pictures`、剪贴板缓存、旧布局残留
-(`~/.miyu/prompts/`、`~/.miyu/scripts/`、`config/.miyu-pm-backups/`)——用户未勾选。
+(`~/.gqy/prompts/`、`~/.gqy/scripts/`、`config/.gqy-pm-backups/`)——用户未勾选。
 
 ## 4. macos_news:Arch 新闻的 macOS 对位
 
@@ -108,7 +108,7 @@ macOS 安全开关(`csrutil disable`、`spctl --master-disable`、`nvram -c`)、
 (2) 安全页日期是 `18 Aug 2026`,不是 RFC-2822,`sort_key` 要多格式兜底,否则跨源合并
 排序全乱。
 
-`is_new` 按源各自记住上次见过的最新一条,状态落 `MIYU_SCRIPT_CACHE_DIR`,与
+`is_new` 按源各自记住上次见过的最新一条,状态落 `GQY_SCRIPT_CACHE_DIR`,与
 `archlinux_news` 同一套口径。
 
 ## 5. album 图库(脚本版,过渡)
@@ -118,7 +118,7 @@ macOS 安全开关(`csrutil disable`、`spctl --master-disable`、`nvram -c`)、
 进去会污染它。
 
 脚本版落 `home/<user>/pictures/album/` + `index.json`,五个动作,`show` 输出
-`MIYU-IMAGE: <路径> | <说明>` 交投递层。**这是过渡方案**,内置版见第 7 节。
+`GQY-IMAGE: <路径> | <说明>` 交投递层。**这是过渡方案**,内置版见第 7 节。
 
 ## 6. 身份改造(施工中)
 
@@ -128,19 +128,19 @@ macOS 安全开关(`csrutil disable`、`spctl --master-disable`、`nvram -c`)、
 
 | 位置 | 内容 |
 |---|---|
-| `src/web/security.rs:28-29` | 内置账号 `miyu`/`miyu` → `gqy`/`GQY520` |
+| `src/web/security.rs:28-29` | 内置账号 `gqy`/`gqy` → `gqy`/`GQY520` |
 | `src/web/persona.rs:166,171` | `active_persona` 为空时的兜底名 |
 | `src/web/accounts_api.rs:81,86` | OOBE 里的 `shared.name`(填 `oobeSharedName`) |
 | `src/web/voice_bridge.rs:370,639` | 语音通知标题 |
 | `src/platforms/plugins/reply_processor/mod.rs:261` | QQ 转发节点显示名兜底 |
 | `src/notify.rs` | `notify-send -a`(Linux 桌面通知应用名) |
 | `web/index.html` 10 处 / `web/app.js` 2 处 | 首屏静态文案(JS 会覆盖,但有闪烁) |
-| `web/assets/{miyu-logo,miyuwallpaper}.png` | 换成人格素材,`sips` 压到 256×256 / 1280×720 |
+| `web/assets/{gqy-logo,gqywallpaper}.png` | 换成人格素材,`sips` 压到 256×256 / 1280×720 |
 | `src/config/mod.rs:381` | 唤醒词 → 清影清影 / 顾清影 / qingying |
 
-`index.html:18` 的 `MiyuCommands` 是内部 JS 命名空间,不动。
+`index.html:18` 的 `GqyCommands` 是内部 JS 命名空间,不动。
 
-**唤醒词为什么用叠词**:原默认 `未有未有`/`密友密友` 都是「Miyu」的谐音**叠词**——
+**唤醒词为什么用叠词**:原默认 `未有未有`/`密友密友` 都是「顾清影」的谐音**叠词**——
 叠词音节长、声学特征明显,命中率高误触少。所以对位是 `清影清影`,不是 `清影`。
 
 ## 7. 图库内置化 + WebUI 面板(未开工)
@@ -165,7 +165,7 @@ album **不抄这些重装备**:描述自己写或让顾清影写,搜索先用�
 ## 8. `/init` → `GQY.md`(未开工)
 
 **缺口**:dev 模式只读全局的 `config/dev-prompt.md`,**没有任何项目级上下文文件机制**。
-本仓库根上的 `AGENTS.md` 是写给「开发这个项目的 agent」看的,miyu 自己并不读它。
+本仓库根上的 `AGENTS.md` 是写给「开发这个项目的 agent」看的,gqy 自己并不读它。
 
 **改法**:仿 Claude Code 的 `/init` —— 在 `src/slash_commands.rs`(314 行的静态表,
 现有 23 条)加一条 `/init`,让 dev 模式扫当前工作区、生成 `GQY.md`(项目结构、构建与测试
@@ -177,12 +177,12 @@ album **不抄这些重装备**:描述自己写或让顾清影写,搜索先用�
 
 ## 9. 语音唤醒在 macOS 上(实测定位)
 
-整套语音栈在 macOS arm64 上**是通的**:`miyu-voice` 已装(说明 `sherpa-onnx-sys` 的
+整套语音栈在 macOS arm64 上**是通的**:`gqy-voice` 已装(说明 `sherpa-onnx-sys` 的
 预编译库路径可用——它是从 GitHub releases **下载**预编译库,不需要 cmake、不编 C++),
 三个模型都在 `state/models`(KWS 36M + SenseVoice 229M + silero VAD 632K —— 这才是那
 266M 的真相,不是 embedding 模型)。
 
-`miyu-voice test` 实测:麦克风打得开(`MacBook Air麦克风 48000Hz 1ch F32`)、VAD 正常
+`gqy-voice test` 实测:麦克风打得开(`MacBook Air麦克风 48000Hz 1ch F32`)、VAD 正常
 (切得出 0.7~1.4s 的语音段),**卡在 KWS 永不命中**。压阈值到 0.12、加分提到 2.0 仍不中
 ——说明不是判定门槛的问题。
 
@@ -234,7 +234,7 @@ capturing from: MacBook Air麦克风 (48000Hz 1ch F32)
 起算,每次回复都重新起算**」——只要对话在继续,窗口一直续着,比 Siri 的「每轮重新
 唤醒」宽松。`0` = 每句都要唤醒词。
 
-`miyu-voice test` 脱离 daemon,没有「回复」这个事件,所以那里的 `speech onset in
+`gqy-voice test` 脱离 daemon,没有「回复」这个事件,所以那里的 `speech onset in
 window` 是从唤醒起算的;接上 daemon 后才是回复后起算。
 
 **注意**:`voice.enabled` 目前仍是 `false`,整套没启用。
@@ -247,7 +247,7 @@ window` 是从唤醒起算的;接上 daemon 后才是回复后起算。
 
 **根因**:文本模型池只有一条 `{"provider_id":"antigravity","model":"gemini-3.8-flash-high"}`
 ——`antigravity` 是 Google 的 CLI 中转线。人格对话里积累的私密内容随会话历史与记忆
-逐字回放给 Gemini,撞它的内容策略。**与 miyu 无关,是选型问题。**
+逐字回放给 Gemini,撞它的内容策略。**与 gqy 无关,是选型问题。**
 
 **为什么不回退,以及为什么这是对的**:`chat.rs:364` 的 `attempt_committed` 分支——
 模型**已经吐出过 token** 才失败。此时切端点会拼出「半截 + 重复」的回复,所以故意
@@ -259,8 +259,8 @@ window` 是从唤醒起算的;接上 daemon 后才是回复后起算。
 **可选供应商**(本机已配 key):deepseek(`deepseek-v4-pro`)、anthropic、minimax、
 openrouter、opencodego / 日日新(默认也是 `deepseek-v4-flash`)。
 
-**状态**:用户决定自己挑,暂不改配置。切换入口 `miyu models` 或
-`miyu config` →「全局文本模型」。
+**状态**:用户决定自己挑,暂不改配置。切换入口 `gqy models` 或
+`gqy config` →「全局文本模型」。
 
 **要记住的**:敏感内容在会话库与记忆库里,换供应商是唯一的解——除非删历史。
 只要还发给 Google,迟早再撞。
@@ -337,7 +337,7 @@ user 会话**而不是专属 lane。历史、上下文、记忆联想全部自�
    没有麦克风授权的进程拉起,它 fork 的 voice worker 就拿不到授权,而 **CoreAudio
    拒绝时不报错、只给一路静音**——现象是进程活着、流开着、日志照写「语音前端就绪」,
    但永远收不到声音,极难定位(09-13 实际踩到:daemon 由非终端环境重启,唤醒词全无反应,
-   而同一台机器上 `miyu-voice test` 从终端跑一切正常)。
+   而同一台机器上 `gqy-voice test` 从终端跑一切正常)。
    **改法**:采集线程统计开头若干秒的样本能量,全零(或低于极小阈值)持续 N 秒就
    `tracing::warn!` 一条明确提示——「麦克风只收到静音,可能是系统未授予麦克风权限;
    macOS 请从已授权的终端重启 daemon」。只是 warn,不改变行为。
@@ -375,7 +375,7 @@ user 会话**而不是专属 lane。历史、上下文、记忆联想全部自�
 
 见 §8。`src/slash_commands.rs` 是 314 行的静态表(现有 23 条),加一条 `/init`。
 dev 模式目前只读全局 `config/dev-prompt.md`,**没有任何项目级上下文文件机制**。
-仓库根上的 `AGENTS.md` 是给「开发这个项目的 agent」看的,miyu 自己不读。
+仓库根上的 `AGENTS.md` 是给「开发这个项目的 agent」看的,gqy 自己不读。
 
 **待定**(§8 已记):注入点要不要化石化。倾向进系统提示词尾部,或与 `dev-prompt.md`
 同层拼接后整体作为前缀、文件变更时接受一次计划内冷启动。
@@ -394,7 +394,7 @@ dev 模式目前只读全局 `config/dev-prompt.md`,**没有任何项目级上�
 - `src/web/{security,persona,accounts_api,voice_bridge}.rs`、
   `src/platforms/plugins/reply_processor/mod.rs`、`src/notify.rs` —— 身份改造
 - `src/web/tests/session.rs` —— 跟着改的断言
-- `web/{index.html,app.js}`、`web/assets/{miyu-logo,miyuwallpaper}.png`
+- `web/{index.html,app.js}`、`web/assets/{gqy-logo,gqywallpaper}.png`
 - `src/tools/album/`(含新增的 `dashboard.rs` 与 `store::with_index` 锁)、
   `descriptions/album.json`、`workspace.rs`、四处接线
 - `src/web/dashboards/album.rs` + `web/dash-album.js` + 面板接线(图库面板)
@@ -410,13 +410,13 @@ dev 模式目前只读全局 `config/dev-prompt.md`,**没有任何项目级上�
 
 ### 13.5 二进制安装状态(重要)
 
-- `~/.cargo/bin/miyu-voice` = **新版已装**(14:01),三处修复在内
-- `~/.cargo/bin/miyu` = **仍是旧版 0.5.0**,不含身份改造与 album。
-  `target/release/miyu`(14:07)编好了但**故意没装**——装了要重启 daemon,
+- `~/.cargo/bin/gqy-voice` = **新版已装**(14:01),三处修复在内
+- `~/.cargo/bin/gqy` = **仍是旧版 0.5.0**,不含身份改造与 album。
+  `target/release/gqy`(14:07)编好了但**故意没装**——装了要重启 daemon,
   而当时正在排查语音,重启会打断。
-- 旧二进制备份:`~/.miyu/bin-backup/`
+- 旧二进制备份:`~/.gqy/bin-backup/`
 
-**操作纪律(踩过坑)**:`miyu daemon restart` **必须由用户在自己的终端跑**。
+**操作纪律(踩过坑)**:`gqy daemon restart` **必须由用户在自己的终端跑**。
 从别的进程(如 agent 的执行环境)重启会让 voice worker 拿不到 macOS 麦克风授权,
 而 CoreAudio 拒绝时不报错、只给静音,现象是「进程活着、日志正常、就是没反应」。
 
@@ -425,12 +425,12 @@ dev 模式目前只读全局 `config/dev-prompt.md`,**没有任何项目级上�
 - **模型池仍是 `antigravity/gemini-3.8-flash-high`**(§10)。用户决定自己挑,
   在换掉之前,人格对话随时可能再撞 Google 内容策略。
 - **`command_deny` 44 条已生效**(daemon 已重启过)。
-- **旧布局残留未清**(`~/.miyu/prompts/`、`~/.miyu/scripts/`、
-  `config/.miyu-pm-backups/`)——用户当时没勾选,不是遗漏。
-- **快照**:`~/miyu-export-miyu-20260913-131822.tar.gz`(259M,0600,**含明文
+- **旧布局残留未清**(`~/.gqy/prompts/`、`~/.gqy/scripts/`、
+  `config/.gqy-pm-backups/`)——用户当时没勾选,不是遗漏。
+- **快照**:`~/gqy-export-gqy-20260913-131822.tar.gz`(259M,0600,**含明文
   API key,不得外传**)。
 
-### 9.2 `miyu-voice devices` 在 macOS 上永远是空的
+### 9.2 `gqy-voice devices` 在 macOS 上永远是空的
 
 **根因**:`mic.rs` 退路过滤器 `name.contains("CARD=")`。`CARD=` 是 **ALSA 的设备名
 约定**,只在 Linux 成立;macOS 的 CoreAudio 设备叫「MacBook Air麦克风」,永不含它 →
@@ -591,11 +591,11 @@ nominatim: 上海图书馆(东馆) 31.2221296,121.5426325  category=amenity/libr
 活库(daemon 那份,22 张)上先跑读动作:
 
 ```
-$ miyu tool-call album '{"action":"list","limit":1}'    → 1 of 22 pictures
-$ miyu tool-call album '{"action":"search","query":"封面"}' → 命中「清影高定杂志封面」
+$ gqy tool-call album '{"action":"list","limit":1}'    → 1 of 22 pictures
+$ gqy tool-call album '{"action":"search","query":"封面"}' → 命中「清影高定杂志封面」
 ```
 
-写动作拿一张探针图在**新二进制**上走完整圈(隔离的 `MIYU_HOME`,不碰活库):
+写动作拿一张探针图在**新二进制**上走完整圈(隔离的 `GQY_HOME`,不碰活库):
 
 ```
 save   → saved to the album: 探针 (id 1ac3eb9a); 1 pictures total
@@ -610,10 +610,10 @@ delete → deleted entry 1ac3eb9a (file removed too); 0 pictures left
 **地图**(新二进制,直连无 daemon):
 
 ```
-$ miyu tool-call map_search '{"query":"上海图书馆东馆","limit":2}'
+$ gqy tool-call map_search '{"query":"上海图书馆东馆","limit":2}'
 provider osm datum wgs84 count 1
  - 上海图书馆(东馆) | 121.542633 31.22213 | gcj 121.54692 31.219989 | amenity/library
-$ miyu tool-call map_search '{"reverse":"121.542633,31.222130"}'
+$ gqy tool-call map_search '{"reverse":"121.542633,31.222130"}'
 上海图书馆(东馆), 迎春路, 花木街道, 浦东新区, 上海市, 200127, 中国
 ```
 
@@ -622,16 +622,16 @@ GCJ 偏移约 480 米,方向也对——这正是「拿 WGS-84 的点画在高�
 **快递**(没配 key,验的是降级路):
 
 ```
-$ miyu tool-call express_query '{"number":"SF1234567890"}'
+$ gqy tool-call express_query '{"number":"SF1234567890"}'
 state: no_credentials   traces: 0   note: …do NOT invent any shipment status.
-$ miyu tool-call express_query '{"number":"帮我查查这个"}'
+$ gqy tool-call express_query '{"number":"帮我查查这个"}'
 error: a tracking number is letters, digits and dashes only
 ```
 
-**一个要记住的坑**:`miyu tool-call` 在 daemon 活着时**走 IPC**,调的是 daemon 里
+**一个要记住的坑**:`gqy tool-call` 在 daemon 活着时**走 IPC**,调的是 daemon 里
 那份 registry——也就是**旧二进制**。新加的工具在那条路上是 `unknown tool`,看起来
 像没注册。验新工具要么装新二进制重启 daemon(只能用户自己在终端做,§13.5),要么像
-这次一样用一个隔离的 `MIYU_HOME` 走直连回退。
+这次一样用一个隔离的 `GQY_HOME` 走直连回退。
 
 **仍然没验的**:图库面板与两张卡片都要浏览器 + 新 daemon,一次都没点过。
 

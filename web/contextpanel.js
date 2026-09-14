@@ -13,7 +13,7 @@
  * 单独成文件:app.js 已经上万行(与 todos.js / diff.js 同构)。弹窗挂在 dock 上而不是
  * .composer 里——后者 overflow:hidden 会把它裁掉,和模型菜单同一个原因。
  */
-window.MiyuContextPanel = (() => {
+window.GqyContextPanel = (() => {
   const LABELS = {
     system: "系统提示词",
     tools_full: "工具 · 常驻",
@@ -36,7 +36,7 @@ window.MiyuContextPanel = (() => {
     fossil: "runtime、联想记忆、提醒等发送过的瞬态内容,落库后逐字节回放",
     messages: "用户消息、她的回复、工具调用与结果",
     diff: "供应商实测总数 − 本地 o200k 估算合计。分项只能按估算拆,差额不摊进各项",
-    cli: "单次请求实测 − Miyu 发过去部分的估算。CLI 自己的系统提示词与原生工具 Miyu 看不到,这是推算,含分词器差异",
+    cli: "单次请求实测 − 顾清影 发过去部分的估算。CLI 自己的系统提示词与原生工具 顾清影 看不到,这是推算,含分词器差异",
     buffer: "到自动压缩水位就开始压缩,这段实际用不到",
     deferred: "load_tools 能展开但还没展开的完整契约;展开前不占上下文",
   };
@@ -291,7 +291,7 @@ window.MiyuContextPanel = (() => {
 
     if (relay) {
       body.appendChild(el("div", "ctx-note",
-        "分项只覆盖 Miyu 发给 CLI 的部分。CLI 自己的系统提示词与原生工具看不到,那一行是推算(含分词器差异)。"));
+        "分项只覆盖 顾清影 发给 CLI 的部分。CLI 自己的系统提示词与原生工具看不到,那一行是推算(含分词器差异)。"));
     }
     if (!windowSize) {
       body.appendChild(el("div", "ctx-note", "窗口大小未知,算不出占比与剩余。在 设置 → 模型 里为这个模型填上下文窗口。"));

@@ -26,7 +26,7 @@ use crate::default_models::{
     OPENCODE_DEFAULT_CHAT_MODEL, OPENCODE_DEFAULT_VISION_MODEL, OPENCODE_PROVIDER_ID,
     OPENCODE_ZEN_BASE_URL, OPENCODE_ZEN_GO_BASE_URL,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::prompts::default_system_prompt;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -98,9 +98,9 @@ pub struct AppConfig {
     pub system_prompt_file: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub system_prompt: Option<String>,
-    /// 新手引导（OOBE）做完了或跳过了。新配置默认 false，裸 `miyu` 会先走引导；
+    /// 新手引导（OOBE）做完了或跳过了。新配置默认 false，裸 `gqy` 会先走引导；
     /// 旧版本升上来的配置在 `migrate` 里直接标成 true，老用户不会被拦。
-    /// `miyu init` 不碰它：脚本化初始化不等于人已经设置过。
+    /// `gqy init` 不碰它：脚本化初始化不等于人已经设置过。
     #[serde(default)]
     pub oobe_done: bool,
     /// Tiered model pools. The pre-09-05 key `subagent_tiers` stays readable.
@@ -115,12 +115,12 @@ pub struct AppConfig {
     /// 多用户(阶段 5/8):成员能用什么。
     #[serde(default)]
     pub accounts: AccountsConfig,
-    /// 语音前端(`miyu-voice` 进程):唤醒词、本地识别、听写、提示音。
+    /// 语音前端(`gqy-voice` 进程):唤醒词、本地识别、听写、提示音。
     #[serde(default)]
     pub voice: VoiceConfig,
 }
 
-/// 语音功能。整套只在 `voice.enabled` 时由 daemon 拉起独立的 `miyu-voice`
+/// 语音功能。整套只在 `voice.enabled` 时由 daemon 拉起独立的 `gqy-voice`
 /// 进程,关着时 daemon 零占用;主程序不含任何识别模型代码。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoiceConfig {
@@ -142,7 +142,7 @@ pub struct VoiceConfig {
     /// 唤醒词路径加分(越大越灵敏;sherpa 默认 1.0)。
     #[serde(default = "default_wake_boost")]
     pub wake_boost: f32,
-    /// 麦克风设备名(`miyu-voice devices` 可列),null = 系统默认。
+    /// 麦克风设备名(`gqy-voice devices` 可列),null = 系统默认。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub microphone: Option<String>,
     /// "local"(SenseVoice,本地)| "cloud"(OpenAI 兼容 transcriptions)。
@@ -184,7 +184,7 @@ pub struct VoiceConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VoiceTtsConfig {
     /// 文本转语音开关:开了才播报回复、才注册 `speak` 工具。与语音唤醒独立,
-    /// 任一开启都会拉起 miyu-voice(唤醒关闭时它只管播放,不开麦克风)。
+    /// 任一开启都会拉起 gqy-voice(唤醒关闭时它只管播放,不开麦克风)。
     #[serde(default)]
     pub enabled: bool,
     /// 播报供应商:`minimax` | `mimo`(小米 MiMo);None / 空 = 默认 MiniMax。
@@ -557,7 +557,7 @@ pub struct DisplayConfig {
     /// How many finished turns a reopened REPL redraws; 0 disables replay.
     #[serde(default = "default_repl_replay_turns")]
     pub repl_replay_turns: usize,
-    /// 空会话时在输入框上方画 MIYU banner（渐变艺术字 + 星空 + 模式行）。
+    /// 空会话时在输入框上方画 GQY banner（渐变艺术字 + 星空 + 模式行）。
     /// 关掉就只剩输入框。艺术字可用 `config/banner.txt` 替换。
     #[serde(default = "default_true")]
     pub banner: bool,
@@ -572,7 +572,7 @@ pub struct DisplayConfig {
 pub struct NotificationsConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// Notify when a reply finishes and Miyu is waiting on you again.
+    /// Notify when a reply finishes and GQY is waiting on you again.
     #[serde(default = "default_true")]
     pub on_turn_complete: bool,
     /// shellhook/单次 CLI 触发的后台任务完成后,把跟进回复写回触发它的那个
@@ -799,7 +799,7 @@ pub struct ToolsConfig {
     pub sandbox: SandboxConfig,
 }
 
-/// `/sandbox <路径>` 之外还放行什么。根、`/tmp`、系统目录、Miyu 自己的产出目录
+/// `/sandbox <路径>` 之外还放行什么。根、`/tmp`、系统目录、顾清影 自己的产出目录
 /// 是固定的;这里只是工具链。清单进环境块,改了就是一次计划内的缓存冷启动。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -944,7 +944,7 @@ impl Default for AppConfig {
 pub struct AccountsConfig {
     /// 成员人格可启用的插件 id 白名单;None = 全部(见 `PLUGIN_IDS`)。
     pub member_plugins: Option<Vec<String>>,
-    /// 成员能否创建自己的人格(关了就只能用共享的 Miyu)。
+    /// 成员能否创建自己的人格(关了就只能用共享的 顾清影)。
     pub member_personas: bool,
     /// 成员的家目录 `home/<用户>`,**只在回合/面板里由 daemon 填**,不写进配置
     /// 文件:知识库、账本这些「人的资料」按它分家。参与序列化是为了进

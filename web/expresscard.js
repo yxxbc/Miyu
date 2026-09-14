@@ -10,7 +10,7 @@
  *
  * 最新一条在最上面(上游按 desc 给),并且单独描粗:看快递就是看最新那条。
  */
-window.MiyuExpress = (() => {
+window.GqyExpress = (() => {
   const STATE_NOTE = {
     no_credentials: "这台机器没配快递 100 的 key,查不了实时轨迹。配置在 plugins.express。",
     unknown_company: "认不出这是哪家快递的单号,告诉她快递公司再查一次。",

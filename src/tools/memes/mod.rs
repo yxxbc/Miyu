@@ -11,7 +11,7 @@ pub(crate) use validate::*;
 
 use super::{vision, ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, MemesPluginConfig};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::prompts::MEME_DESCRIPTION_PROMPT;
 use anyhow::{anyhow, bail, Context, Result};
 use image::AnimationDecoder;
@@ -71,7 +71,7 @@ pub(crate) fn auto_meme_reminder(
 /// 两个上下文都注册这两个工具：群聊里也要能加表情。`manage_meme` 是写工具，
 /// 但它只写人格自己的表情库目录，和 `generate_image` 同类——平台注册表那条
 /// 「全员 ReadOnly」的断言把它们俩列为明示例外。
-pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     if !config.plugins.memes.enabled {
         return;
     }
@@ -80,11 +80,11 @@ pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths
 }
 
 /// 平台/群聊上下文：读写都给。
-pub fn register_chat(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+pub fn register_chat(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     register(registry, config, paths);
 }
 
-fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     // 参数与描述都来自 descriptions/use_meme.json（注册后被整体覆盖），
     // 这里给的只是占位。
     registry.register(ToolSpec::new_with_progress(
@@ -118,7 +118,7 @@ fn register_use(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths
     ));
 }
 
-fn register_manage(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+fn register_manage(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     registry.register(
         ToolSpec::new(
             "manage_meme",
@@ -197,7 +197,7 @@ fn rank_memes(
         .collect()
 }
 
-async fn search_meme(args: Value, config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
+async fn search_meme(args: Value, config: &AppConfig, paths: &GqyPaths) -> Result<String> {
     let library = selected_library(&args, config);
     let query = args
         .get("query")
@@ -242,7 +242,7 @@ async fn search_meme(args: Value, config: &AppConfig, paths: &MiyuPaths) -> Resu
 async fn show_meme(
     args: Value,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     progress: crate::tools::ToolProgress,
 ) -> Result<String> {
     let library = selected_library(&args, config);
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn sanitize_library_keeps_simple_names() {
-        assert_eq!(sanitize_library("Miyu"), "miyu");
+        assert_eq!(sanitize_library("GQY"), "gqy");
         assert_eq!(sanitize_library("默认 表情"), "default");
     }
 
@@ -462,16 +462,16 @@ mod tests {
         assert_eq!(origin.sent_at, "2026-08-10T12:00:00+00:00");
     }
 
-    /// 真实链路实测：cargo test --bin miyu -- --ignored collect_meme_records_origin
-    /// 需要 MIYU_E2E_CONFIG_DIR 指向含识图模型配置的真实 config 目录，
-    /// MIYU_E2E_IMAGE 指向一张能通过表情判定的图片；数据写入临时目录。
+    /// 真实链路实测：cargo test --bin gqy -- --ignored collect_meme_records_origin
+    /// 需要 GQY_E2E_CONFIG_DIR 指向含识图模型配置的真实 config 目录，
+    /// GQY_E2E_IMAGE 指向一张能通过表情判定的图片；数据写入临时目录。
     #[tokio::test]
-    #[ignore = "hits the real vision model; needs MIYU_E2E_CONFIG_DIR + MIYU_E2E_IMAGE"]
+    #[ignore = "hits the real vision model; needs GQY_E2E_CONFIG_DIR + GQY_E2E_IMAGE"]
     async fn collect_meme_records_origin_end_to_end() {
-        let config_dir = PathBuf::from(std::env::var("MIYU_E2E_CONFIG_DIR").unwrap());
-        let image = PathBuf::from(std::env::var("MIYU_E2E_IMAGE").unwrap());
+        let config_dir = PathBuf::from(std::env::var("GQY_E2E_CONFIG_DIR").unwrap());
+        let image = PathBuf::from(std::env::var("GQY_E2E_IMAGE").unwrap());
         let temp = tempfile::tempdir().unwrap();
-        let paths = MiyuPaths {
+        let paths = GqyPaths {
             root_dir: config_dir.clone(),
             config_dir: config_dir.clone(),
             config_file: config_dir.join("config.jsonc"),
@@ -480,7 +480,7 @@ mod tests {
             cache_dir: temp.path().join("cache"),
             state_dir: temp.path().join("state"),
             pictures_dir: temp.path().join("pictures"),
-            fish_hook_file: temp.path().join("fish/miyu.fish"),
+            fish_hook_file: temp.path().join("fish/gqy.fish"),
             bash_hook_file: temp.path().join("shell/bash-hook.sh"),
             zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
             scripts_dir: config_dir.join("scripts"),
@@ -800,10 +800,10 @@ mod tests {
 #[cfg(test)]
 mod register_tests {
     use super::*;
-    use crate::paths::MiyuPaths;
+    use crate::paths::GqyPaths;
 
-    fn test_paths(root: &std::path::Path) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(root: &std::path::Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -812,7 +812,7 @@ mod register_tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/miyu.fish"),
+            fish_hook_file: root.join("fish/gqy.fish"),
             bash_hook_file: root.join("shell/bash-hook.sh"),
             zsh_hook_file: root.join("shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),

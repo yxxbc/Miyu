@@ -379,7 +379,7 @@ fn malformed_index_entries_do_not_hide_valid_scripts() {
 #[test]
 fn script_scan_roots_resolve_persona_substructure_per_layer() {
     let temp = tempfile::tempdir().unwrap();
-    let mut paths = crate::paths::MiyuPaths::new().unwrap();
+    let mut paths = crate::paths::GqyPaths::new().unwrap();
     paths.system_scripts_dir = temp.path().join("system");
     paths.scripts_dir = temp.path().join("data/scripts");
 

@@ -95,7 +95,7 @@ pub(in crate::platforms::onebot) async fn merge_quoted_message_images(
             }
             Err(error) => {
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %error,
                     image_file = %file,
                     "{}",
@@ -129,7 +129,7 @@ pub(in crate::platforms::onebot) async fn resolve_current_message_images(
             }
             Err(error) => {
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %error,
                     image_file = %file,
                     "{}",

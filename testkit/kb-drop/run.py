@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """知识库面板「拖放 + 多文件上传」真机走查(09-09)。
 
-隔离 MIYU_HOME 起一个 daemon,用 Python playwright 开控制台 → 知识库面板,
+隔离 GQY_HOME 起一个 daemon,用 Python playwright 开控制台 → 知识库面板,
 合成真实的 DataTransfer 投放事件走一遍:拖拽指示层的出现与消失、拖文字不吃事件、
 单文件 / 三文件 / 混合(含 png)/ 超限与非 UTF-8 / 被守卫拒绝 / 目录递归 / 选择器
 多选,逐步截图并把控制台错误与非预期的 4xx-5xx 汇总成退出码。
@@ -11,7 +11,7 @@
 前置:`cargo build`(web 静态资源 include_str! 进二进制,改了 JS/CSS 必须重新构建),
       以及 Python 的 playwright(chromium 在 ~/.cache/ms-playwright)。
 坑:XDG_RUNTIME_DIR 路径太长会撞 SUN_LEN;daemon 一律用隐藏子命令 __daemon 起,
-    别用 `miyu web`(它会去找线上 daemon);端口别碰 8300。
+    别用 `gqy web`(它会去找线上 daemon);端口别碰 8300。
 """
 
 import json
@@ -26,13 +26,13 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-kb-drop/home"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-kb-drop/home"))
 RUNTIME = "/tmp/mx-kbd"
-PORT = int(os.environ.get("MIYU_KBD_PORT", "18477"))
-SHOTS = Path(os.environ.get("MIYU_KBD_SHOTS", Path.home() / ".cache" / "miyu-kb-drop"))
+PORT = int(os.environ.get("GQY_KBD_PORT", "18477"))
+SHOTS = Path(os.environ.get("GQY_KBD_SHOTS", Path.home() / ".cache" / "gqy-kb-drop"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
 
 def write_config():

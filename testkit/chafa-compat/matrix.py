@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""chafa 版本 × Miyu 调用形态 的兼容矩阵。
+"""chafa 版本 × 顾清影 调用形态 的兼容矩阵。
 
 假终端身份：xterm-256color + 应答 DA1 带 sixel(4)。
 判定：sixel/kitty = 真图；symbols = 退化成字符画；退出码 2 = 图片完全不显示。

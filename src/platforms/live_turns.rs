@@ -1,7 +1,7 @@
 //! 进行中平台回合的上下文登记(08-26)。
 //!
-//! claude-code 供应商忽略请求里的 tools 数组,Miyu 的工具靠 MCP 桥
-//! (`miyu mcp-serve` 子进程)暴露。桥只带一个 session id 回 daemon 要目录,
+//! claude-code 供应商忽略请求里的 tools 数组,顾清影 的工具靠 MCP 桥
+//! (`gqy mcp-serve` 子进程)暴露。桥只带一个 session id 回 daemon 要目录,
 //! daemon 便只能给出所有者侧工具——群管理、撤回、艾特、发送这些**按平台
 //! 回合注册**的工具需要一个活的 `PlatformTurnContext`(会话身份、发送者、
 //! 管理员标志、适配器句柄),桥拿不到,于是在群聊里整套平台工具都不可见。

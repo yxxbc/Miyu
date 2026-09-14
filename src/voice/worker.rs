@@ -1,4 +1,4 @@
-//! `miyu-voice` 进程主体:麦克风、唤醒、识别、提示音全部住在这里。
+//! `gqy-voice` 进程主体:麦克风、唤醒、识别、提示音全部住在这里。
 //!
 //! 它不懂对话——识别出什么就以 IPC 信令告诉 daemon,daemon 侧的
 //! `voice_bridge` 负责起回合、发通知、取消、听写中继。因此这里只有
@@ -30,7 +30,7 @@ use super::{models, Control, SttChoice, VoiceEvent, VoiceRuntimeConfig, VoiceSer
 use crate::config::{AppConfig, VoiceConfig};
 use crate::i18n::text as t;
 use crate::ipc;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
 use std::sync::mpsc;
@@ -47,7 +47,7 @@ enum WorkerEvent {
 }
 
 /// 从配置拼出管线参数。云端 STT 的供应商按 id 在 providers 里找。
-pub fn runtime_config(config: &AppConfig, paths: &MiyuPaths) -> Result<VoiceRuntimeConfig> {
+pub fn runtime_config(config: &AppConfig, paths: &GqyPaths) -> Result<VoiceRuntimeConfig> {
     let voice = &config.voice;
     let stt = SttChoice::Local {
         threads: voice.stt_threads.max(1),
@@ -70,8 +70,8 @@ pub fn runtime_config(config: &AppConfig, paths: &MiyuPaths) -> Result<VoiceRunt
     })
 }
 
-pub fn models_dir(paths: &MiyuPaths) -> std::path::PathBuf {
-    std::env::var_os("MIYU_VOICE_MODELS_DIR")
+pub fn models_dir(paths: &GqyPaths) -> std::path::PathBuf {
+    std::env::var_os("GQY_VOICE_MODELS_DIR")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| paths.state_dir.join("models"))
 }
@@ -82,7 +82,7 @@ fn ensure_models_with_notice(dir: &std::path::Path) -> Result<()> {
         return Ok(());
     }
     crate::notify::notify(
-        t("Miyu voice", "Miyu 语音"),
+        t("GQY voice", "顾清影 语音"),
         &format!(
             "{} ({})",
             t("downloading speech models…", "正在下载语音模型…"),
@@ -91,7 +91,7 @@ fn ensure_models_with_notice(dir: &std::path::Path) -> Result<()> {
     );
     models::ensure_models(dir, &mut |stage| tracing::info!("{stage}"))?;
     crate::notify::notify(
-        t("Miyu voice", "Miyu 语音"),
+        t("GQY voice", "顾清影 语音"),
         t("speech models ready", "语音模型已就位"),
     );
     Ok(())
@@ -99,7 +99,7 @@ fn ensure_models_with_notice(dir: &std::path::Path) -> Result<()> {
 
 /// worker 形态:连回 daemon,常驻监听。
 pub fn run_worker() -> Result<()> {
-    let paths = MiyuPaths::new()?;
+    let paths = GqyPaths::new()?;
     let config = AppConfig::load_or_default(&paths)?;
     // 语音唤醒关着(只开了播报)就不碰麦克风和识别模型:进程只管播放。
     let wake_enabled = config.voice.enabled;
@@ -117,7 +117,7 @@ pub fn run_worker() -> Result<()> {
         let event_tx = event_tx.clone();
         let socket = paths.ipc_socket();
         std::thread::Builder::new()
-            .name("miyu-voice-attach".into())
+            .name("gqy-voice-attach".into())
             .spawn(move || {
                 if let Err(error) = attach_loop(&socket, event_tx.clone(), outbound_rx) {
                     tracing::error!("信令连接失败: {error:#}");
@@ -131,7 +131,7 @@ pub fn run_worker() -> Result<()> {
         // 语音事件桥接线程。
         let event_tx = event_tx.clone();
         std::thread::Builder::new()
-            .name("miyu-voice-events".into())
+            .name("gqy-voice-events".into())
             .spawn(move || {
                 for event in voice_events {
                     if event_tx.send(WorkerEvent::Voice(event)).is_err() {
@@ -378,7 +378,7 @@ fn attach_loop(
 /// 测试形态:不连 daemon,打开麦克风把事件逐行打印。排查"没反应"先跑它:
 /// 一行"听到语音"都没有 = 音频没进来;有但不命中 = 唤醒词层。
 pub fn run_test(keyword: Option<String>, device: Option<String>, timings: bool) -> Result<()> {
-    let paths = MiyuPaths::new()?;
+    let paths = GqyPaths::new()?;
     let config = AppConfig::load_or_default(&paths)?;
     let mut runtime = runtime_config(&config, &paths)?;
     ensure_models_with_notice(&runtime.models_dir)?;

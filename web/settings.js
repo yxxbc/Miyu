@@ -14,7 +14,7 @@
  *
  * CSP 禁内联 style 属性与内联事件,所以全部程序化生成,尺寸走 element.style。
  */
-window.MiyuSettings = (() => {
+window.GqySettings = (() => {
   const SVG_NS = "http://www.w3.org/2000/svg";
   const ICONS = {
     x: [["path", { d: "M18 6 6 18" }], ["path", { d: "m6 6 12 12" }]],
@@ -47,7 +47,7 @@ window.MiyuSettings = (() => {
 
   let ctx = null;
   const S = () => ctx.state;
-  const schema = () => window.MiyuSettingsSchema || {};
+  const schema = () => window.GqySettingsSchema || {};
   const reducedMotion = () => {
     try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_) { return false; }
   };
@@ -1981,7 +1981,7 @@ window.MiyuSettings = (() => {
       documents.forEach((doc, index) => grid.append(personaCard(kind, doc, index, activePath)));
       root.append(grid);
     };
-    section("personas", "AI 人格", "点卡片编辑内容、看板与预设问题；「使用中」的人格决定她怎么说话。", "prompt.active_persona", "Miyu 默认人格");
+    section("personas", "AI 人格", "点卡片编辑内容、看板与预设问题；「使用中」的人格决定她怎么说话。", "prompt.active_persona", "顾清影 默认人格");
     section("identities", "用户身份", "告诉她你是谁。同样点卡片编辑。", "prompt.active_identity", "不使用用户身份");
   }
 
@@ -2053,7 +2053,7 @@ window.MiyuSettings = (() => {
         imageField(doc, "board_image_path", "看板图片", "st-board-preview"),
         row("看板大字", textInput(doc.board_title || "", (value) => { doc.board_title = value.trim() || null; ctx.markConfigDirty(); }, { placeholder: ctx.DEFAULT_BOARD_TITLE })),
         row("看板小字", textInput(doc.board_subtitle || "", (value) => { doc.board_subtitle = value.trim() || null; ctx.markConfigDirty(); }, { placeholder: ctx.DEFAULT_BOARD_SUBTITLE })),
-        row("输入框提示", textInput(doc.composer_placeholder || "", (value) => { doc.composer_placeholder = value.trim() || null; ctx.markConfigDirty(); }, { placeholder: ctx.defaultComposerPlaceholder(displayName(doc) || "Miyu") }), { hint: "输入框为空时显示的灰字；留空按人格名生成。" })
+        row("输入框提示", textInput(doc.composer_placeholder || "", (value) => { doc.composer_placeholder = value.trim() || null; ctx.markConfigDirty(); }, { placeholder: ctx.defaultComposerPlaceholder(displayName(doc) || "GQY") }), { hint: "输入框为空时显示的灰字；留空按人格名生成。" })
       ], { title: "空白页看板", description: "新会话第一屏显示的头像、大图与文案。" }));
     };
     const starterTab = (body) => {
@@ -2400,7 +2400,7 @@ window.MiyuSettings = (() => {
   function routeSummary(route) {
     const chips = [];
     const persona = route.persona?.mode;
-    if (persona === "miyu") chips.push(chip("人格：Miyu", "is-soft"));
+    if (persona === "gqy") chips.push(chip("人格：顾清影", "is-soft"));
     else if (persona === "custom") chips.push(chip(`人格：${String(route.persona?.name || "").replace(/\.md$/i, "")}`, "is-soft"));
     if (Array.isArray(route.text_models) && route.text_models.length) chips.push(chip(`文本 ${route.text_models.length}`, "is-accent"));
     else if (route.text_models_inheritance === "global") chips.push(chip("文本：继承全局", "is-soft"));
@@ -2496,7 +2496,7 @@ window.MiyuSettings = (() => {
   function normalizeRoutePersona(route) {
     const persona = route.persona;
     if (!persona || persona.mode === "inherit" || !persona.mode) { delete route.persona; return; }
-    if (persona.mode === "miyu") { route.persona = { mode: "miyu" }; return; }
+    if (persona.mode === "gqy") { route.persona = { mode: "gqy" }; return; }
     if (persona.mode === "custom") {
       const name = String(persona.name || "").trim();
       route.persona = { mode: "custom", name: name ? documentName(name) : "" };

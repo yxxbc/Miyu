@@ -17,12 +17,12 @@ pub use store::{album_root, AlbumEntry};
 
 use super::{ToolProgress, ToolRegistry, ToolSpec};
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     registry.register(
         ToolSpec::new_with_progress(
             "album",
@@ -63,7 +63,7 @@ fn dispatch(
     args: Value,
     progress: ToolProgress,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<String> {
     let root = album_root(config, paths);
     // 写动作整段持锁(面板也在动同一份 index.json);读动作直接读当下那份。

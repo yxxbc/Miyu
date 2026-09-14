@@ -15,7 +15,7 @@
  * 菜单与浮窗挂 document.body、fixed 定位:聊天区外层有 overflow 裁剪。
  * 单独成文件:app.js 已经上万行(与 contextpanel.js / todos.js 同构)。
  */
-window.MiyuSelectionMenu = (() => {
+window.GqySelectionMenu = (() => {
   const ACTIONS = [
     { key: "explain", label: "解释", needsModel: true },
     { key: "translate", label: "翻译", needsModel: true },

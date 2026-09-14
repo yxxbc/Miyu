@@ -170,17 +170,17 @@ fn qq_sender_and_group_metadata_stay_out_of_user_text() {
 #[test]
 fn named_mention_reaches_the_turn_context_without_appearing_in_the_text() {
     let config = config_with(|config| {
-        config.group_chats.trigger_keywords = vec!["miyu".to_string()];
+        config.group_chats.trigger_keywords = vec!["gqy".to_string()];
     });
     let message = json!([
-        { "type": "text", "data": { "text": "miyu，他是谁 " } },
+        { "type": "text", "data": { "text": "gqy，他是谁 " } },
         { "type": "at", "data": { "qq": "8" } }
     ]);
     let parsed = parse_message(Some(&message), None, 10_000);
     // 唤醒词不再剥离(见 admission::keyword_wake_keeps_the_whole_sentence)。
     assert_eq!(
         group_trigger_text(&config, &parsed, None, 10_000).as_deref(),
-        Some("miyu，他是谁 ")
+        Some("gqy，他是谁 ")
     );
     let mut event = message_event(
         Target::Group { group_id: 42 },
@@ -389,11 +389,11 @@ async fn qq_conversation_persona_drives_context_and_session_binding() {
         custom.config.active_persona_scope()
     );
 
-    config.platforms.qq.conversations[0].persona = crate::config::PlatformPersonaOverride::Miyu;
-    let miyu = platform_turn_context(&state, connection, target, &event, config, None).unwrap();
-    assert!(miyu.config.prompt.active_persona.is_empty());
-    let miyu_session = resolve_onebot_session(&state, &miyu, target, &event).unwrap();
-    assert_ne!(custom_session, miyu_session);
+    config.platforms.qq.conversations[0].persona = crate::config::PlatformPersonaOverride::GQY;
+    let gqy = platform_turn_context(&state, connection, target, &event, config, None).unwrap();
+    assert!(gqy.config.prompt.active_persona.is_empty());
+    let gqy_session = resolve_onebot_session(&state, &gqy, target, &event).unwrap();
+    assert_ne!(custom_session, gqy_session);
 }
 
 #[tokio::test]

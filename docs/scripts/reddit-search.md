@@ -1,7 +1,7 @@
 # reddit-search —— 给 AI 用的 Reddit 检索工具
 
 一个单文件脚本，形态对齐 `src/scripts/personas/default/zhihu-search`：既能直接当命令行用，
-也能作为 Miyu script 工具给 AI 调（stdin JSON → stdout md/JSON）。**零依赖**，只要系统
+也能作为 顾清影 script 工具给 AI 调（stdin JSON → stdout md/JSON）。**零依赖**，只要系统
 `python3`。数据源只有一个：**Arctic Shift 归档**。
 
 ## 为什么不用 Reddit 官方 API（2026-09-09 实测）

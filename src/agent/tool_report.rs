@@ -3,7 +3,7 @@
 //! 工具输出要长期留在上下文里，但原样留会把窗口吃光。这里把它压成能长期携带的
 //! 形态：只保留后续回合真正会用到的东西。
 //!
-//! 「私有记忆」是给 Miyu 自己看的那一份（`private_tool_memory`），头尾各留一段
+//! 「私有记忆」是给 顾清影 自己看的那一份（`private_tool_memory`），头尾各留一段
 //! （`PRIVATE_*_HEAD/TAIL_CHARS`）——中间截掉，因为有用的信息通常在两头。
 
 use crate::agent::*;
@@ -26,7 +26,7 @@ fn tool_arguments(arguments: &str) -> Option<serde_json::Value> {
     Some(args)
 }
 
-/// 单路径参数:Miyu/agy 是 `path`(agy 的 AbsolutePath/TargetFile 在流层已
+/// 单路径参数:顾清影/agy 是 `path`(agy 的 AbsolutePath/TargetFile 在流层已
 /// 归一成 path),claude 原生工具是 `file_path`,NotebookEdit 是 `notebook_path`。
 fn path_arg(args: &serde_json::Value) -> Option<String> {
     ["path", "file_path", "notebook_path"]

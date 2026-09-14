@@ -5,9 +5,9 @@
 #
 # 用法:
 #     testkit/kitty-image/run_headless.sh python3 testkit/kitty-image/ghost_probe.py
-#     OUT=~/.cache/miyu-kitty-probe testkit/kitty-image/run_headless.sh <cmd...>
+#     OUT=~/.cache/gqy-kitty-probe testkit/kitty-image/run_headless.sh <cmd...>
 set -u
-export OUT="${OUT:-$HOME/.cache/miyu-kitty-probe}"
+export OUT="${OUT:-$HOME/.cache/gqy-kitty-probe}"
 mkdir -p "$OUT"
 export WLR_BACKENDS=headless
 export WLR_LIBINPUT_NO_DEVICES=1
@@ -15,11 +15,11 @@ export WLR_RENDERER="${WLR_RENDERER:-pixman}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 unset DISPLAY
 unset WAYLAND_DISPLAY
-# 无头输出的尺寸:大一点好放下 Miyu 的活动区。
+# 无头输出的尺寸:大一点好放下 顾清影 的活动区。
 export WLR_HEADLESS_OUTPUTS=1
 exec cage -- kitty \
     -o allow_remote_control=yes \
     -o font_size="${KITTY_FONT_SIZE:-11}" \
     -o scrollback_lines=2000 \
-    --listen-on "unix:@miyu-kitty-probe-$$" \
+    --listen-on "unix:@gqy-kitty-probe-$$" \
     "$@"

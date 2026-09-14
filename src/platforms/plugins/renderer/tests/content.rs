@@ -26,8 +26,8 @@ fn flattened_text(markdown: &str) -> String {
 #[test]
 fn markdown_links_keep_their_url_visible() {
     // 图里点不了也复制不了,链接被 pulldown-cmark 吃掉之后读者根本不知道它指向哪。
-    let text = flattened_text("详见 [Miyu 主页](https://github.com/shorinkiwata/Miyu) 谢谢。");
-    assert!(text.contains("Miyu 主页"), "{text}");
+    let text = flattened_text("详见 [顾清影 主页](https://github.com/shorinkiwata/Miyu) 谢谢。");
+    assert!(text.contains("顾清影 主页"), "{text}");
     assert!(
         text.contains("(https://github.com/shorinkiwata/Miyu)"),
         "链接必须出现在正文里: {text}"
@@ -203,7 +203,7 @@ async fn request_frames_enforce_the_input_budget() {
 
 #[test]
 fn renders_supported_markdown_and_unicode_to_nonempty_png() {
-    let markdown = r#"# Miyu 长回复 🚀
+    let markdown = r#"# 顾清影 长回复 🚀
 
 普通中文段落，包含 **粗体**、*斜体*、`inline code` 和 [链接文字](https://example.com)。
 
@@ -532,7 +532,7 @@ fn render_table_sample() {
 | 13 | 回笼觉觉主 | 5297780882 | ¥0.50 | 1 |
 "#;
     let pages = render(markdown, &RenderConfig::default()).unwrap();
-    let out = std::env::temp_dir().join("miyu-table-sample.png");
+    let out = std::env::temp_dir().join("gqy-table-sample.png");
     std::fs::write(&out, &pages[0].png).unwrap();
     eprintln!(
         "sample: {} ({}x{})",
@@ -565,7 +565,7 @@ fn main() {
 | `x1` | 对齐 |
 "#;
     let pages = render(markdown, &RenderConfig::default()).unwrap();
-    let out = std::env::temp_dir().join("miyu-font-sample.png");
+    let out = std::env::temp_dir().join("gqy-font-sample.png");
     std::fs::write(&out, &pages[0].png).unwrap();
     eprintln!(
         "sample: {} ({}x{})",

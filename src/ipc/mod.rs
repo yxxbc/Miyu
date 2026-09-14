@@ -5,7 +5,7 @@ pub(crate) use launch::*;
 pub(crate) use lifecycle::*;
 pub(crate) use protocol::*;
 
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::question::QuestionAnswers;
 use anyhow::{bail, Context, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -23,19 +23,19 @@ use std::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 
-pub const ADMIN_BUSY_MESSAGE: &str = "Miyu is busy with another operation";
+pub const ADMIN_BUSY_MESSAGE: &str = "GQY is busy with another operation";
 
 /// Unique id of this build, stamped by build.rs. A daemon whose build id
 /// differs from the client's is restarted transparently so a rebuild never
 /// keeps serving stale code.
-pub const BUILD_ID: &str = env!("MIYU_BUILD_ID");
+pub const BUILD_ID: &str = env!("GQY_BUILD_ID");
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn paths_with_logs(root: &std::path::Path) -> crate::paths::MiyuPaths {
-        let paths = crate::paths::MiyuPaths {
+    fn paths_with_logs(root: &std::path::Path) -> crate::paths::GqyPaths {
+        let paths = crate::paths::GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -44,7 +44,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/miyu.fish"),
+            fish_hook_file: root.join("fish/gqy.fish"),
             bash_hook_file: root.join("shell/bash-hook.sh"),
             zsh_hook_file: root.join("shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -55,25 +55,25 @@ mod tests {
     }
 
     /// 启动失败时要给出**这次**写进 daemon.log 的内容。日志是所有启动共用
-    /// 的追加文件:tail 固定行数会把上一次成功启动的 "Miyu WebUI: …" 当成这
+    /// 的追加文件:tail 固定行数会把上一次成功启动的 "GQY WebUI: …" 当成这
     /// 次的输出,用户会以为起来了——比不给还糟(08-29 用户反馈现场)。
     #[test]
     fn the_daemon_log_excerpt_covers_only_this_launch() {
         let temp = tempfile::tempdir().unwrap();
         let paths = paths_with_logs(temp.path());
         let log = paths.logs_dir().join("daemon.log");
-        std::fs::write(&log, "Miyu WebUI: http://127.0.0.1:8300\n").unwrap();
+        std::fs::write(&log, "GQY WebUI: http://127.0.0.1:8300\n").unwrap();
 
         let offset = crate::ipc::lifecycle::daemon_log_len(&paths);
         // 一个字都没写就死了:不能把上一次的成功输出算进来。
         let quiet = crate::ipc::lifecycle::daemon_log_since(&paths, offset);
-        assert!(!quiet.contains("Miyu WebUI"), "{quiet}");
+        assert!(!quiet.contains("GQY WebUI"), "{quiet}");
         assert!(quiet.contains("没有留下任何输出"), "{quiet}");
         assert!(quiet.contains("daemon.log"), "{quiet}");
 
         std::fs::write(
             &log,
-            "Miyu WebUI: http://127.0.0.1:8300\n错误: database disk image is malformed\n",
+            "顾清影 WebUI: http://127.0.0.1:8300\n错误: database disk image is malformed\n",
         )
         .unwrap();
         let excerpt = crate::ipc::lifecycle::daemon_log_since(&paths, offset);
@@ -81,7 +81,7 @@ mod tests {
             excerpt.contains("database disk image is malformed"),
             "{excerpt}"
         );
-        assert!(!excerpt.contains("Miyu WebUI"), "{excerpt}");
+        assert!(!excerpt.contains("GQY WebUI"), "{excerpt}");
     }
 
     #[test]
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn daemon_process_prefers_the_default_web_port_unless_overridden() {
-        let mut default = std::process::Command::new("miyu");
+        let mut default = std::process::Command::new("gqy");
         append_daemon_process_args(&mut default, &DaemonLaunchConfig::default());
         let default_args = default
             .get_args()
@@ -158,7 +158,7 @@ mod tests {
             password_file: Some(PathBuf::from("/private/password")),
             bind: None,
         };
-        let mut overridden = std::process::Command::new("miyu");
+        let mut overridden = std::process::Command::new("gqy");
         append_daemon_process_args(&mut overridden, &supplied);
         let overridden_args = overridden
             .get_args()
@@ -169,8 +169,8 @@ mod tests {
         assert!(overridden_args.iter().all(|arg| !arg.contains("secret")));
     }
 
-    fn test_paths(root: &Path) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(root: &Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -179,7 +179,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/miyu.fish"),
+            fish_hook_file: root.join("fish/gqy.fish"),
             bash_hook_file: root.join("shell/bash-hook.sh"),
             zsh_hook_file: root.join("shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -241,7 +241,7 @@ mod tests {
 
         let restored = load_daemon_launch_config(&paths).unwrap();
         assert_eq!(restored, saved);
-        let mut command = std::process::Command::new("miyu");
+        let mut command = std::process::Command::new("gqy");
         append_daemon_process_args(&mut command, &restored);
         // password_file 只是旧字段:状态文件里存着,进程参数里不再出现。
         assert!(password.exists());
@@ -344,7 +344,7 @@ mod tests {
     fn legacy_inline_password_and_port_are_recovered_into_managed_state() {
         let temp = tempfile::tempdir().unwrap();
         let paths = test_paths(temp.path());
-        let cmdline = b"/usr/bin/miyu\0__daemon\0--port\09412\0--password=legacy-secret\0";
+        let cmdline = b"/usr/bin/gqy\0__daemon\0--port\09412\0--password=legacy-secret\0";
 
         let recovered = recover_legacy_daemon_launch_from_cmdline(&paths, cmdline, None).unwrap();
 
@@ -361,7 +361,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let paths = test_paths(temp.path());
         std::fs::write(temp.path().join("external-password"), "file-secret\n").unwrap();
-        let cmdline = b"miyu\0__daemon\0--port=9500\0--password-file\0external-password\0";
+        let cmdline = b"gqy\0__daemon\0--port=9500\0--password-file\0external-password\0";
 
         let recovered =
             recover_legacy_daemon_launch_from_cmdline(&paths, cmdline, Some(temp.path())).unwrap();

@@ -6,52 +6,52 @@ pub(crate) use home_layout::*;
 pub(crate) use legacy_migration::*;
 pub(crate) use resource_migration::*;
 
-/// Miyu 自己这个可执行文件的路径，**在它可能被替换之前**记下来。
+/// 顾清影 自己这个可执行文件的路径，**在它可能被替换之前**记下来。
 ///
-/// 好几处功能靠再执行一遍自己来干活：daemon 是 `miyu __daemon`，长图渲染器是
-/// `miyu __render_worker`，闹钟和知识库索引也是。它们原本各自调
+/// 好几处功能靠再执行一遍自己来干活：daemon 是 `gqy __daemon`，长图渲染器是
+/// `gqy __render_worker`，闹钟和知识库索引也是。它们原本各自调
 /// `std::env::current_exe()`，而那在 Linux 上读的是 `/proc/self/exe`——**一旦
 /// 磁盘上的文件被换掉（升级安装包、开发时重新编译），这个符号链接就变成
-/// `/path/to/miyu (deleted)`，拿它去 spawn 必然 ENOENT。**
+/// `/path/to/gqy (deleted)`，拿它去 spawn 必然 ENOENT。**
 ///
 /// 后果很隐蔽：长回复不再转图片、直接发成大段文字，只在滚动日志里留一条
 /// warning，用户看到的是「这功能怎么不работа了」。
 ///
 /// 所以：第一次调用就把结果缓存下来（daemon 启动时立刻预热，那时文件还在），
 /// 并且把 `(deleted)` 后缀剥掉——路径本身通常仍指向新装上的那个二进制。
-pub fn miyu_executable() -> Result<PathBuf> {
-    // cargo test 下 current_exe 是 libtest 测试二进制:拿它当 miyu 去 spawn,
+pub fn gqy_executable() -> Result<PathBuf> {
+    // cargo test 下 current_exe 是 libtest 测试二进制:拿它当 gqy 去 spawn,
     // 子进程会把参数当测试过滤器再跑一遍测试,里面再 spawn 孙进程——指数级
     // 复制。09-05 知识库改动后的后台 `kb embed reindex` 就这样把机器连续三次
     // 吃到 OOM 死机。测试里一律拒绝,让依赖它的代码路径明确失败而不是复制自己。
     if cfg!(test) {
         // 给一个必然不存在的路径:只拼字符串的用法(MCP 配置、命令行)照常,
         // 真去 spawn 的会得到 ENOENT 而不是复制测试进程。
-        return Ok(PathBuf::from("/nonexistent/miyu-test-harness"));
+        return Ok(PathBuf::from("/nonexistent/gqy-test-harness"));
     }
     static EXECUTABLE: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     if let Some(path) = EXECUTABLE.get() {
         return Ok(path.clone());
     }
-    let raw = std::env::current_exe().context("locating the Miyu executable")?;
+    let raw = std::env::current_exe().context("locating the GQY executable")?;
     let resolved = strip_deleted_suffix(&raw).unwrap_or(raw);
     Ok(EXECUTABLE.get_or_init(|| resolved).clone())
 }
 
 /// 进程启动早期预热一次，趁二进制还没被换掉。
-/// `~/.miyu` (or `MIYU_HOME`) without building the whole `MiyuPaths`, for
+/// `~/.gqy` (or `GQY_HOME`) without building the whole `GqyPaths`, for
 /// asset lookups that run before or outside path setup.
-pub fn miyu_home_dir() -> Option<PathBuf> {
-    std::env::var_os("MIYU_HOME")
+pub fn gqy_home_dir() -> Option<PathBuf> {
+    std::env::var_os("GQY_HOME")
         .map(PathBuf::from)
-        .or_else(|| BaseDirs::new().map(|dirs| dirs.home_dir().join(".miyu")))
+        .or_else(|| BaseDirs::new().map(|dirs| dirs.home_dir().join(".gqy")))
 }
 
-pub fn prime_miyu_executable() {
-    let _ = miyu_executable();
+pub fn prime_gqy_executable() {
+    let _ = gqy_executable();
 }
 
-/// `/proc/self/exe` 在文件被替换后会读出 `".../miyu (deleted)"`。
+/// `/proc/self/exe` 在文件被替换后会读出 `".../gqy (deleted)"`。
 /// 剥掉那个后缀，且只在剥完确实存在时才采信——不然宁可用原样报错，
 /// 也好过悄悄跑到一个不相干的路径上。
 fn strip_deleted_suffix(path: &Path) -> Option<PathBuf> {
@@ -73,9 +73,9 @@ use std::os::unix::fs::{symlink, DirBuilderExt, OpenOptionsExt, PermissionsExt};
 use std::path::{Component, Path, PathBuf};
 
 #[derive(Debug, Clone)]
-pub struct MiyuPaths {
-    /// Everything below lives under this root (`~/.miyu`, or `MIYU_HOME`).
-    /// Kept as its own field because the model is told where Miyu's files are
+pub struct GqyPaths {
+    /// Everything below lives under this root (`~/.gqy`, or `GQY_HOME`).
+    /// Kept as its own field because the model is told where GQY's files are
     /// and guessing it back from a child directory would silently break the
     /// day the layout changes.
     pub root_dir: PathBuf,
@@ -93,39 +93,39 @@ pub struct MiyuPaths {
     pub system_scripts_dir: PathBuf,
 }
 
-impl MiyuPaths {
+impl GqyPaths {
     pub fn new() -> Result<Self> {
         let base = BaseDirs::new().context(t(
             "could not determine XDG base directories",
             "无法确定 XDG 基础目录",
         ))?;
-        let legacy_config_dir = base.config_dir().join("miyu");
-        let legacy_data_dir = base.data_dir().join("miyu");
-        let legacy_cache_dir = base.cache_dir().join("miyu");
+        let legacy_config_dir = base.config_dir().join("gqy");
+        let legacy_data_dir = base.data_dir().join("gqy");
+        let legacy_cache_dir = base.cache_dir().join("gqy");
         let legacy_state_dir = base
             .state_dir()
             .unwrap_or_else(|| base.data_dir())
-            .join("miyu");
+            .join("gqy");
         let legacy_documents_dir = UserDirs::new()
             .and_then(|dirs| dirs.document_dir().map(PathBuf::from))
             .unwrap_or_else(|| base.home_dir().join("Documents"))
-            .join("Miyu");
+            .join("GQY");
         let legacy_pictures_root = std::env::var_os("XDG_PICTURES_DIR")
             .map(PathBuf::from)
             .or_else(|| UserDirs::new().and_then(|dirs| dirs.picture_dir().map(PathBuf::from)))
             .unwrap_or_else(|| base.home_dir().join("Pictures"));
-        let explicit_home = std::env::var_os("MIYU_HOME").map(PathBuf::from);
+        let explicit_home = std::env::var_os("GQY_HOME").map(PathBuf::from);
         let root_dir = explicit_home
             .clone()
-            .unwrap_or_else(|| base.home_dir().join(".miyu"));
+            .unwrap_or_else(|| base.home_dir().join(".gqy"));
         let config_dir = root_dir.join("config");
         let data_dir = root_dir.join("data");
         let cache_dir = root_dir.join("cache");
         let state_dir = root_dir.join("state");
 
-        // `miyu mcp-serve` 工具桥被成员的 Landlock 沙盒关着,读不到 daemon home
+        // `gqy mcp-serve` 工具桥被成员的 Landlock 沙盒关着,读不到 daemon home
         // 下的布局标记(read_home_layout_admin / try_migrate_resource_layout 里的
-        // open 会 EACCES),整段迁移逻辑会让 MiyuPaths::new() 直接 Err、mcp-serve
+        // open 会 EACCES),整段迁移逻辑会让 GqyPaths::new() 直接 Err、mcp-serve
         // 起不来 → claude 报 CONNECTION_CLOSED(09-12 逐层诊断坐实)。桥只经 IPC
         // 代理到 daemon(工具执行、作用域都在 daemon 侧),压根不需要迁移/标记/
         // skills 路径。这里给一条确定的新布局快路:零文件读取,socket 路径(runtime
@@ -138,7 +138,7 @@ impl MiyuPaths {
                 skills_dir: config_dir.join("skills"),
                 scripts_dir: config_dir.join("scripts"),
                 pictures_dir: data_dir.join("pictures"),
-                fish_hook_file: base.config_dir().join("fish/conf.d/miyu.fish"),
+                fish_hook_file: base.config_dir().join("fish/conf.d/gqy.fish"),
                 bash_hook_file: config_dir.join("shell/bash-hook.sh"),
                 zsh_hook_file: config_dir.join("shell/zsh-hook.zsh"),
                 system_scripts_dir,
@@ -157,8 +157,8 @@ impl MiyuPaths {
             state_dir: legacy_state_dir.clone(),
             documents_dir: legacy_documents_dir,
             pictures_dirs: vec![
-                legacy_pictures_root.join("miyu"),
-                legacy_pictures_root.join("Miyu"),
+                legacy_pictures_root.join("gqy"),
+                legacy_pictures_root.join("GQY"),
             ],
         };
         let next = Layout {
@@ -229,13 +229,13 @@ impl MiyuPaths {
             .as_deref()
             .map(|admin| root_dir.join("home").join(admin));
         let pictures_dir = if use_legacy_temporarily {
-            legacy_pictures_root.join("miyu")
+            legacy_pictures_root.join("gqy")
         } else if let Some(home) = &admin_home {
             home.join("pictures")
         } else {
             data_dir.join("pictures")
         };
-        let fish_hook_file = base.config_dir().join("fish/conf.d/miyu.fish");
+        let fish_hook_file = base.config_dir().join("fish/conf.d/gqy.fish");
         let bash_hook_file = config_dir.join("shell/bash-hook.sh");
         let zsh_hook_file = config_dir.join("shell/zsh-hook.zsh");
         let resource_config_dir = if use_legacy_temporarily || resource_migration_deferred {
@@ -253,7 +253,7 @@ impl MiyuPaths {
             Some(extensions) => extensions.join("skills"),
             None => resource_config_dir.join("skills"),
         };
-        // 内置脚本目录默认在系统前缀下,`MIYU_SYSTEM_SCRIPTS_DIR` 可覆盖——
+        // 内置脚本目录默认在系统前缀下,`GQY_SYSTEM_SCRIPTS_DIR` 可覆盖——
         // 打包到非标准前缀、或隔离测试时用得上。
         let system_scripts_dir = resources::directory(resources::ResourceKind::Scripts);
 
@@ -304,7 +304,7 @@ impl MiyuPaths {
         Ok(())
     }
 
-    /// Returns the root used for Miyu-owned, user-authored resources. During
+    /// Returns the root used for GQY-owned, user-authored resources. During
     /// an upgrade this intentionally remains the old config directory until
     /// the resource migration marker has been committed.
     pub fn resource_dir(&self) -> &Path {
@@ -337,7 +337,7 @@ impl MiyuPaths {
     /// 家目录,成员改 effort 只落在 `home/<user>/thinking-variants.json`,既不碰
     /// 管理员的全局档位,也不改缓存/日志(那些取 cache_dir,不动)。09-13 #162:
     /// 模型 effort 不再是 admin only,成员各有各的档位。
-    pub fn member_thinking_view(&self, username: &str) -> MiyuPaths {
+    pub fn member_thinking_view(&self, username: &str) -> GqyPaths {
         let mut scoped = self.clone();
         scoped.state_dir = self.user_home_dir(username);
         scoped
@@ -412,8 +412,8 @@ impl MiyuPaths {
 
     pub fn legacy_config_dir(&self) -> Option<PathBuf> {
         let base = BaseDirs::new()?;
-        (self.config_dir == base.home_dir().join(".miyu/config"))
-            .then(|| base.config_dir().join("miyu"))
+        (self.config_dir == base.home_dir().join(".gqy/config"))
+            .then(|| base.config_dir().join("gqy"))
     }
 
     pub fn migrated_resource_path(&self, path: &Path) -> Option<PathBuf> {
@@ -478,9 +478,9 @@ impl MiyuPaths {
         match std::env::var_os("XDG_RUNTIME_DIR") {
             Some(runtime_dir) => runtime_dir_for(
                 Path::new(&runtime_dir),
-                std::env::var_os("MIYU_HOME").as_deref().map(Path::new),
+                std::env::var_os("GQY_HOME").as_deref().map(Path::new),
             ),
-            None => self.state_dir.join("miyu"),
+            None => self.state_dir.join("gqy"),
         }
     }
 
@@ -607,11 +607,11 @@ impl MiyuPaths {
 
 fn runtime_dir_for(runtime_root: &Path, explicit_home: Option<&Path>) -> PathBuf {
     let name = explicit_home.map_or_else(
-        || "miyu".to_string(),
+        || "gqy".to_string(),
         |home| {
             let normalized = normalize_home(home);
             let digest = blake3::hash(normalized.as_os_str().as_encoded_bytes());
-            format!("miyu-{}", &digest.to_hex()[..12])
+            format!("gqy-{}", &digest.to_hex()[..12])
         },
     );
     runtime_root.join(name)

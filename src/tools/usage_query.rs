@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 /// 描述与 schema 在智能体侧与平台侧(src/platforms/tool.rs)两处注册共用,
 /// 收敛成一份防止漂移。
-pub(crate) const DESCRIPTION: &str = "Query Miyu's token usage statistics: totals, request count, cache hit rate, and the per-source (agent / messaging platforms) model breakdown. range: 1d (rolling 24h, default) / 7d / 30d / all.";
+pub(crate) const DESCRIPTION: &str = "Query GQY's token usage statistics: totals, request count, cache hit rate, and the per-source (agent / messaging platforms) model breakdown. range: 1d (rolling 24h, default) / 7d / 30d / all.";
 
 pub(crate) fn parameters() -> Value {
     json!({

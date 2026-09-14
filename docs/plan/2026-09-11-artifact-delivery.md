@@ -2,7 +2,7 @@
 
 todolist「Feats / 增强webui成果交付能力」的调研。结论先行：
 
-> **右侧分栏、HTML 渲染这些 Miyu 早就有了。差的不是面板，是面板里的东西是活的还是死的。**
+> **右侧分栏、HTML 渲染这些 顾清影 早就有了。差的不是面板，是面板里的东西是活的还是死的。**
 > 现在 HTML artifact 里的 JavaScript 一行都不跑——被前后端两道锁焊死。放开这两道锁之后，
 > 交互能活，而六条数据外带的路仍然全封。这一条已经在本机预演实测过，见 §2。
 
@@ -13,7 +13,7 @@ todolist「Feats / 增强webui成果交付能力」的调研。结论先行：
 
 ## 一、现状基线（实测）
 
-一轮里让她用 `artifact` 工具写四份探针文件，逐个在右侧面板里看。二进制 `miyu 0.5.0`（main @ e78568fb）。
+一轮里让她用 `artifact` 工具写四份探针文件，逐个在右侧面板里看。二进制 `gqy 0.5.0`（main @ e78568fb）。
 
 ### 1.1 面板已经有的
 
@@ -57,7 +57,7 @@ todolist「Feats / 增强webui成果交付能力」的调研。结论先行：
 | `.csv` / `.tsv` | ⚠️ 只有源码视图，`tables=0` | 归为 `text`，没有表格视图 |
 | markdown 里的 ` ```mermaid ` | ⚠️ `mermaidRendered=0` | 当普通代码块渲染（这是刻意的，见 §3.3） |
 | markdown 里的 `$...$` | ✅ `katex=2` | KaTeX 已 vendored |
-| **源码视图的语法高亮** | ❌ `tokenSpans=0` | `renderArtifactSource` 只做 `code.textContent = text`，没接 `MiyuHighlight`。聊天正文里的代码块是有高亮的，面板里没有 |
+| **源码视图的语法高亮** | ❌ `tokenSpans=0` | `renderArtifactSource` 只做 `code.textContent = text`，没接 `GqyHighlight`。聊天正文里的代码块是有高亮的，面板里没有 |
 
 ### 1.4 面板之外的交付链路
 
@@ -102,7 +102,7 @@ base-uri 'none'
 
 1. **不给 `allow-same-origin`。** iframe 拿到不透明源（opaque origin），读不到父页面的 DOM、cookie、localStorage。这是隔离的地基。
 2. **不给 `allow-popups` / `allow-forms` / `allow-top-navigation`。** 这三个各自是一条外带通道（`window.open`、表单 GET、`top.location`），CSP 管不了，只有 sandbox 管得了。
-3. **`connect-src 'none'`。** 连本机 API 都不许 fetch——artifact 是模型写的代码，不该有 Miyu 自己的数据的读取权。
+3. **`connect-src 'none'`。** 连本机 API 都不许 fetch——artifact 是模型写的代码，不该有 顾清影 自己的数据的读取权。
 4. **CSP 的 `sandbox` 指令要和 iframe 属性同步放开。** 两者取交集，只改一边等于没改。
 5. `{origin}` 而不是 `'self'`：不透明源下 `'self'` 匹配不上任何东西，必须写死 origin。这一条是坑，写错了本地库也加载不了。
    origin 从请求的 `Host` 头拼；反代场景下 scheme 取 `X-Forwarded-Proto`，取不到就按 `http`。
@@ -138,10 +138,10 @@ base-uri 'none'
 这三条是不给 `allow-same-origin` 换来的：iframe 拿的是不透明源，浏览器**根本不给它 cookie 和
 存储的访问权**，父页面 DOM 更是跨源。
 
-**所以 Miyu 不需要像别家那样再开一个独立域名/端口来隔离 artifact。** 那是给「给了
+**所以 顾清影 不需要像别家那样再开一个独立域名/端口来隔离 artifact。** 那是给「给了
 `allow-same-origin` 的产品」用的补救——它们的 artifact 要跑完整 React、要 localStorage 存状态，
 只能保留同源能力，于是被迫用独立注册域把 cookie 域切开（Vercel 甚至把 `vusercontent.net`
-送进了 Public Suffix List）。Miyu 的 artifact 是展示型页面，不需要持久状态，
+送进了 Public Suffix List）。顾清影 的 artifact 是展示型页面，不需要持久状态，
 **可以直接走更狠的那条路：连同源资格一起不给**。
 
 代价要写明白：artifact 里用不了 `localStorage` / `IndexedDB`，页面刷新后状态归零。
@@ -175,8 +175,8 @@ base-uri 'none'
 
 复现：
 ```
-BIN=~/.local/bin/miyu WEB=./web python3 testkit/webui-artifact/run.py                        # 现状基线
-BIN=~/.local/bin/miyu WEB=./web PROPOSED=1 VENDOR_PNA=1 python3 testkit/webui-artifact/run.py # 放开后
+BIN=~/.local/bin/gqy WEB=./web python3 testkit/webui-artifact/run.py                        # 现状基线
+BIN=~/.local/bin/gqy WEB=./web PROPOSED=1 VENDOR_PNA=1 python3 testkit/webui-artifact/run.py # 放开后
 BROWSER=firefox ... 同上                                                                      # 换引擎
 ```
 
@@ -248,7 +248,7 @@ script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; 
 
 放活脚本之后，模型写 `<script src="https://cdn.../chart.js">` 仍然会被 CSP 挡，而这是它最想写的东西。CDN 白名单不能开（开了就等于开了外带通道）。**唯一干净的解法是把库放本地。**
 
-Miyu 已经有这个先例：KaTeX 和 Prism 就是 vendored 的（`web/vendor/`，`include_str!` 编进二进制，`/vendor/...` 路由发出去）。加库就是照抄一遍。
+顾清影 已经有这个先例：KaTeX 和 Prism 就是 vendored 的（`web/vendor/`，`include_str!` 编进二进制，`/vendor/...` 路由发出去）。加库就是照抄一遍。
 
 体积实测（cdn.jsdelivr.net 拉的真实字节，二进制现值 62.9 MB）：
 
@@ -299,7 +299,7 @@ Access-Control-Allow-Methods: GET, OPTIONS
 |---|---|---|
 | SVG 预览 | `artifact_media_type` 认 `svg` → 新 kind；预览**必须走沙箱 iframe** | SVG 是活性内容（能带 `<script>`），绝不能用 `<img>` 之外的方式直接进主文档 |
 | CSV/TSV 表格视图 | 前端解析成 `<table>`，与源码视图并列 | 纯前端，无后端改动 |
-| 源码视图接高亮 | `renderArtifactSource` 调 `MiyuHighlight.paint` | 现成组件，聊天正文已经在用 |
+| 源码视图接高亮 | `renderArtifactSource` 调 `GqyHighlight.paint` | 现成组件，聊天正文已经在用 |
 
 > 调研时我把「源码长行看不见」也列成了缺口，**是错的**。`.artifact-source` 是
 > `width: max-content` 配行号列 sticky，长行走的是横向滚动——标准代码查看器行为，
@@ -384,7 +384,7 @@ QQ 侧完全没有 artifact 概念。她在 QQ 里做完一份报告，用户拿
 | ChatGPT Apps widgets | 独立注册域 `*.web-sandbox.oaiusercontent.com` | CSP `sandbox` 指令：`allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms`（实测 95%） |
 | Open WebUI | `srcdoc` 同域文档，靠 sandbox 拿不透明源 | 默认 `allow-scripts allow-downloads allow-forms`（**不给 same-origin**） |
 | LibreChat | 跨域 CodeSandbox | Sandpack 写死 `... allow-same-origin allow-scripts ...` |
-| **Miyu（本方案）** | **同域，不透明源** | **`allow-scripts allow-modals`** |
+| **顾清影（本方案）** | **同域，不透明源** | **`allow-scripts allow-modals`** |
 
 它们给 `allow-same-origin` 是因为要跑完整 React、要 `localStorage` 存状态——保留了同源能力，
 就**必须**用独立注册域把 cookie 域切开（Vercel 甚至把 `vusercontent.net` 送进了 Public Suffix
@@ -395,7 +395,7 @@ List）。规范说得很直白：
 > `sandbox` attribute and reload itself, effectively breaking out of the sandbox altogether.
 > —— WHATWG HTML spec
 
-Miyu 的 artifact 是展示型页面，不需要持久状态，所以能走更狠的那条：**连同源资格一起不给**，
+顾清影 的 artifact 是展示型页面，不需要持久状态，所以能走更狠的那条：**连同源资格一起不给**，
 于是也不需要独立域。这在 §2.2 的三条 `SecurityError` 里已经实测坐实。
 
 ### 5.2 别人踩的坑，正好是我们避开的那条
@@ -438,7 +438,7 @@ Claude 的 artifact CSP 放行了 `cdnjs.cloudflare.com`、`cdn.jsdelivr.net/npm
 LibreChat 走另一个极端：把 recharts / three.js / 30+ 个 Radix UI / shadcn 全套**打包**进
 Sandpack 依赖。
 
-Miyu 本地单机部署，不该假设有公网，所以走本地货架（§3.1）——形态上更接近 LibreChat，
+顾清影 本地单机部署，不该假设有公网，所以走本地货架（§3.1）——形态上更接近 LibreChat，
 但只放几个真正用得上的。
 
 ### 5.5 多文件引用：这是各家都没解决的问题
@@ -454,7 +454,7 @@ Claude 官方文档明说 artifact 必须**单页**：
 
 ChatGPT 于 2026-05-28 在 GPT-5.5 上**移除了 Canvas**，改成聊天流内联的 writing blocks /
 code blocks（官方 release notes 原文，把握 95%）。但同期 Anthropic 在把 artifact 面板往更重
-的方向做（连接器、持久化存储、多人协同）。两家分叉，**不构成「Miyu 也该砍掉右侧分栏」的依据**。
+的方向做（连接器、持久化存储、多人协同）。两家分叉，**不构成「顾清影 也该砍掉右侧分栏」的依据**。
 
 值得抄的是 ChatGPT 企业版那个交互：预览要连未知第三方时**逐次弹窗让用户确认**，比一刀切
 allow/deny 友好。不过在本方案的 `connect-src 'none'` 下暂时用不上。
@@ -469,7 +469,7 @@ allow/deny 友好。不过在本方案的 `connect-src 'none'` 下暂时用不�
 
 | 文件 | 改动 |
 |---|---|
-| `web/app.js` | iframe `sandbox` 放开到 `allow-scripts allow-modals`；csv 表格视图；源码视图接 `MiyuHighlight`；模式切换器的显隐判据从「是不是图片」换成「有没有得切」 |
+| `web/app.js` | iframe `sandbox` 放开到 `allow-scripts allow-modals`；csv 表格视图；源码视图接 `GqyHighlight`；模式切换器的显隐判据从「是不是图片」换成「有没有得切」 |
 | `src/web/assets.rs` | `artifact_csp()` 按 kind 下发策略（html 放脚本掐出站 / svg 维持最严）；`request_origin()` 从 Host 头拼来源并做白名单校验；`allow_sandboxed_frames()` 补 CORS + PNA 头；`vendor_gzip_asset()` 直发 gzip |
 | `src/web/server.rs` | 每条 `/vendor/` 路由配 `options` 分支（PNA 预检）；新增 echarts 路由 |
 | `src/web/mod.rs` | `ECHARTS_JS_GZ` 的 `include_bytes!` |

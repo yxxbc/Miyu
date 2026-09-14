@@ -96,7 +96,7 @@ pub(in crate::platforms::onebot) fn partial_send_error(
 /// Sends carrying base64 images need far longer than a plain text call: a
 /// 2 MiB picture is ~2.9 MB of JSON that NapCat has to receive, decode and
 /// upload to QQ. Timing out early is worse than waiting — the message is
-/// still delivered, but Miyu treats the send as failed and posts the plain
+/// still delivered, but GQY treats the send as failed and posts the plain
 /// text fallback, so the group gets the picture *and* the text.
 ///
 /// Size-scaling the budget only moved the cliff, and it moved it unevenly: the
@@ -182,7 +182,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
         TurnDispatch::Cancelled => {
             context.after_turn_aborted().await;
             tracing::debug!(
-                target: "miyu::qq",
+                target: "gqy::qq",
                 conversation_kind = context.conversation.kind.as_str(),
                 "{}",
                 t("OneBot turn cancelled; nothing to deliver", "OneBot 回合已取消,无需投递")
@@ -193,7 +193,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
             context.after_turn_aborted().await;
             if context.conversation.kind == ConversationKind::Group {
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %message,
                     "{}",
                     t("suppressed an internal OneBot group error", "已抑制 OneBot 群聊内部错误")
@@ -229,7 +229,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                                 matched_delivered_image = true;
                             }
                             tracing::debug!(
-                                target: "miyu::qq",
+                                target: "gqy::qq",
                                 asset_id,
                                 "{}",
                                 if already_delivered {
@@ -256,7 +256,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                     Ok(None) => {
                         unresolved_image_count += 1;
                         tracing::warn!(
-                            target: "miyu::qq",
+                            target: "gqy::qq",
                             asset_id,
                             "{}",
                             t(
@@ -286,7 +286,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                 // 工具(send_message_to_user)本回合已经把这句话发出去了,最终
                 // 回复再发就是用户看到的"重复发送"。图片闸在上面同样处理。
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     "{}",
                     t(
                         "suppressed a OneBot final reply already delivered by a tool this turn",
@@ -301,11 +301,11 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
             }
             if segments.is_empty() {
                 if outcome.final_reply_already_sent {
-                    tracing::info!(target: "miyu::qq", "\n{readable}");
+                    tracing::info!(target: "gqy::qq", "\n{readable}");
                     return Ok(true);
                 }
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     "{}",
                     t("suppressed an empty OneBot model reply", "已抑制空的 OneBot 模型回复")
                 );
@@ -317,7 +317,7 @@ pub(in crate::platforms::onebot) async fn deliver_dispatch(
                     segments,
                 ))
                 .await?;
-            tracing::info!(target: "miyu::qq", "\n{readable}");
+            tracing::info!(target: "gqy::qq", "\n{readable}");
         }
     }
     Ok(true)

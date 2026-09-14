@@ -3,12 +3,12 @@
 
 沙箱 daemon + testkit/cli 的桩 LLM(用户消息带 ASK_QUESTION 就先问一个二选一;
 桩把它看到的带 TK 标记的 user 消息条数回在正文里)。流程:
-    1. PTY 里跑 `miyu "TK ASK_QUESTION …"`,等问题面板出现
+    1. PTY 里跑 `gqy "TK ASK_QUESTION …"`,等问题面板出现
     2. SIGKILL 客户端(模拟 shellhook 断开)
-    3. 再跑 `miyu ask --output-format json "TK 第二句"`,读 user_count
+    3. 再跑 `gqy ask --output-format json "TK 第二句"`,读 user_count
 修前:上一轮永远 running、被历史跳过,user_count=1;修后:那轮落成 interrupted 被回放,user_count=2。
 
-用法:BIN=… OUT=~/.cache/miyu-oneshot-q python3 testkit/repl-cursor/oneshot_question.py
+用法:BIN=… OUT=~/.cache/gqy-oneshot-q python3 testkit/repl-cursor/oneshot_question.py
 """
 import fcntl
 import importlib.util
@@ -26,10 +26,10 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("BIN") or REPO / "target" / "debug" / "miyu")
-OUT = Path(os.environ.get("OUT") or "~/.cache/miyu-oneshot-q").expanduser()
+BIN = Path(os.environ.get("BIN") or REPO / "target" / "debug" / "gqy")
+OUT = Path(os.environ.get("OUT") or "~/.cache/gqy-oneshot-q").expanduser()
 HOME = OUT / "home"
-RUN = Path.home() / ".cache" / "miyu-oq-run"
+RUN = Path.home() / ".cache" / "gqy-oq-run"
 PORT = int(os.environ.get("PORT", "18399"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18499"))
 
@@ -37,7 +37,7 @@ spec = importlib.util.spec_from_file_location("clitk", REPO / "testkit" / "cli" 
 clitk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(clitk)
 clitk.HOME, clitk.RUN, clitk.OUT, clitk.PORT, clitk.STUB_PORT = HOME, RUN, OUT / "cli-out", PORT, STUB_PORT
-clitk.MIYU = BIN
+clitk.GQY = BIN
 
 
 def become_session_leader():
@@ -126,7 +126,7 @@ def main():
         verdict["panel_shown"] = run_oneshot_in_pty("TK ASK_QUESTION 选个颜色", "红")
         time.sleep(3.0)
         verdict["statuses_after_kill"] = [s[0] for s in turn_statuses()]
-        # 第二轮也用同一种一次性形态(`miyu "…"`),落在同一个会话里。
+        # 第二轮也用同一种一次性形态(`gqy "…"`),落在同一个会话里。
         run_oneshot_in_pty("TK 第二句", "user_count", tag="second")
         import re
         text = (OUT / "pty-second.txt").read_bytes().decode("utf-8", "replace")

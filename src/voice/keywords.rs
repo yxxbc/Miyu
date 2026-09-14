@@ -10,11 +10,11 @@
 //! | 写法 | 例子 | 处理 |
 //! |---|---|---|
 //! | 汉字 | `未有未有` | 每字注带调拼音,一行 |
-//! | 假名 / 拉丁 | `みゆみゆ`、`miyumiyu` | 假名先转罗马音,再按日语音节切分映射到近似拼音;声调未知,同一个词展开成轻声 + 一到四声几条候选行,任一命中即唤醒 |
+//! | 假名 / 拉丁 | `みゆみゆ`、`gqygqy` | 假名先转罗马音,再按日语音节切分映射到近似拼音;声调未知,同一个词展开成轻声 + 一到四声几条候选行,任一命中即唤醒 |
 //! | 显式拼音 | `mi1 yu2 mi1 yu2` | 空格分隔的"拼音+声调数字"(0 或不带数字 = 轻声),原样编码 |
 //!
-//! 一个词里可以混写(`小miyu`):汉字定调,其余部分展开声调候选。模型是普通话
-//! 模型,非中文只是近似发音;能不能稳定命中要靠 `miyu-voice test` 实测。
+//! 一个词里可以混写(`小gqy`):汉字定调,其余部分展开声调候选。模型是普通话
+//! 模型,非中文只是近似发音;能不能稳定命中要靠 `gqy-voice test` 实测。
 
 use anyhow::{bail, Context, Result};
 use pinyin::ToPinyin;
@@ -257,7 +257,7 @@ fn kana_to_romaji(ch: char, _previous: &str) -> Option<Kana> {
 }
 
 /// 日语音节(罗马音)→ 近似拼音音节候选(按顺序试,第一个能编码的用)。
-/// 拉丁输入也走这张表:`miyumiyu` → mi yu mi yu。
+/// 拉丁输入也走这张表:`gqygqy` → mi yu mi yu。
 fn romaji_syllables() -> &'static [(&'static str, &'static [&'static str])] {
     &[
         // 三字母优先(最长匹配)。
@@ -323,7 +323,7 @@ fn romaji_syllables() -> &'static [(&'static str, &'static [&'static str])] {
         ("me", &["mei", "me"]),
         ("mo", &["mou"]),
         // ゆ [jɯ] 更接近普通话 you 而不是 yu(09-05 TTS 实测:中文口音的
-        // miyumiyu 被识别成"米有米游",KWS 也只认 mi/you 的组合)。
+        // gqygqy 被识别成"米有米游",KWS 也只认 mi/you 的组合)。
         ("ya", &["ya"]),
         ("yu", &["you", "yu"]),
         ("yo", &["you"]),
@@ -405,7 +405,7 @@ fn romaji_to_syllables(latin: &str) -> Result<Vec<String>> {
             .filter(|(romaji, _)| rest.starts_with(romaji))
             .max_by_key(|(romaji, _)| romaji.len());
         let Some((romaji, candidates)) = hit else {
-            bail!("「{rest}」无法按音节切分(支持日语罗马音写法,如 miyu、shiro)");
+            bail!("「{rest}」无法按音节切分(支持日语罗马音写法,如 gqy、shiro)");
         };
         out.push(candidates.join("|"));
         rest = &rest[romaji.len()..];
@@ -581,10 +581,10 @@ mod tests {
     #[test]
     fn latin_expands_tone_variants() {
         let file = tokens_file(&["m", "y", "i", "u", "ī", "í", "ǐ", "ì", "ū", "ú", "ǔ", "ù"]);
-        let lines = encode_keyword("miyumiyu", file.path()).unwrap();
+        let lines = encode_keyword("gqygqy", file.path()).unwrap();
         assert_eq!(lines.len(), 5, "{lines:?}");
-        assert_eq!(lines[0], "m ī y ū m ī y ū @miyumiyu");
-        assert_eq!(lines[4], "m i y u m i y u @miyumiyu");
+        assert_eq!(lines[0], "m ī y ū m ī y ū @gqygqy");
+        assert_eq!(lines[4], "m i y u m i y u @gqygqy");
     }
 
     #[test]
@@ -631,8 +631,8 @@ mod tests {
     fn mixed_han_and_latin() {
         let file = tokens_file(&["x", "iǎo", "m", "ī", "y", "ū"]);
         assert_eq!(
-            encode_keyword("小miyu", file.path()).unwrap(),
-            vec!["x iǎo m ī y ū @小miyu"]
+            encode_keyword("小gqy", file.path()).unwrap(),
+            vec!["x iǎo m ī y ū @小gqy"]
         );
     }
 
@@ -642,7 +642,7 @@ mod tests {
         assert!(encode_keyword("米!", file.path()).is_err());
         assert!(encode_keyword("한글", file.path()).is_err());
         assert!(!looks_encodable("米!"));
-        assert!(looks_encodable("miyumiyu"));
+        assert!(looks_encodable("gqygqy"));
         assert!(looks_encodable("みゆみゆ"));
         assert!(looks_encodable("密友密友"));
     }

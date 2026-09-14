@@ -50,7 +50,7 @@ todolist 这条的原话早于 2026-09-12 那次修复,**不能确定 2026-09-14
 
 ### 改法(已施工)
 
-新模块 `web/artifactchips.js`(`MiyuArtifactChips.sync`),实时与刷新后走同一个函数:
+新模块 `web/artifactchips.js`(`GqyArtifactChips.sync`),实时与刷新后走同一个函数:
 
 1. 刷新后:`renderPersistedTurn` 把 `turn.artifacts` 传给 `createAssistantMessage`,画在 `.assistant-content` 底部。
    只有产物、没有正文的回合也会建气泡。
@@ -83,7 +83,7 @@ todolist 这条的原话早于 2026-09-12 那次修复,**不能确定 2026-09-14
 
 ### 改法(已施工)
 
-1. 新模块 `web/fencepreview.js`(`MiyuFencePreview.decorate`),`codeBlock` 在围栏闭合后调用;块头加「预览 / 源码」切换,选择按源码记住。
+1. 新模块 `web/fencepreview.js`(`GqyFencePreview.decorate`),`codeBlock` 在围栏闭合后调用;块头加「预览 / 源码」切换,选择按源码记住。
 2. ```svg:blob URL 进 `<img>`(按源码缓存 64 条);解析失败自动退回源码。
 3. ```html:`<iframe sandbox="allow-scripts allow-modals" src="/fence-frame.html">`,宿主就绪后父页面按窗口身份认它、送正文;
    正文末尾附一段高度上报脚本,父页面把高度夹在 80–720px。
@@ -126,7 +126,7 @@ todolist 这条的原话早于 2026-09-12 那次修复,**不能确定 2026-09-14
 
 ### 验收流程
 
-先 `cargo build`,重启 daemon(`MIYU_BUILD_ID` 变了会自动重启),浏览器强刷。
+先 `cargo build`,重启 daemon(`GQY_BUILD_ID` 变了会自动重启),浏览器强刷。
 
 1. **拖拽**:让她 `create_artifact` 一张大图 → 侧栏滚轮放大,指针下的内容应停在指针下;按住拖动,图应严格跟手、无拖尾;
    拖到一半切走窗口(Cmd+Tab)再回来,不应卡在「抓取」光标。Chromium 与 Safari 各试一次。

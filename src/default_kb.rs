@@ -1,6 +1,6 @@
 use crate::config::AppConfig;
 use crate::i18n::text as t;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::tools::knowledge_base::KnowledgeBase;
 use anyhow::{bail, Context, Result};
 use chrono::Utc;
@@ -15,7 +15,7 @@ const UPDATE_CHECK_INTERVAL_SECS: i64 = 24 * 60 * 60;
 ///
 /// 有上限这件事本身比数值重要：这条检查在 REPL 启动路径上同步跑，网络黑洞
 /// （公司防火墙 DROP、VPN 掉包、强制门户）时 git 自己要 **135 秒**才放弃，
-/// 用户看到的就是 `miyu` 启动卡死两分钟。超时了就跳过这轮检查——它只是
+/// 用户看到的就是 `gqy` 启动卡死两分钟。超时了就跳过这轮检查——它只是
 /// 「知识库有更新」的提示，不值得挡在提示符前面。
 const REMOTE_HEAD_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 const SPARSE_CHECKOUT_PATTERN: &str = "*.md";
@@ -82,7 +82,7 @@ impl UpdateStage {
     }
 }
 
-pub fn ensure_initialized(paths: &MiyuPaths, config: &AppConfig) -> Result<()> {
+pub fn ensure_initialized(paths: &GqyPaths, config: &AppConfig) -> Result<()> {
     let source = default_kb_source_dir();
     if !source.is_dir() {
         return Ok(());
@@ -100,11 +100,11 @@ pub fn bundled_available() -> bool {
 }
 
 /// dashboard 用:完整状态(远端提交 / 是否有更新 / 上次导入时间)。
-pub fn state(paths: &MiyuPaths) -> Result<DefaultKbState> {
+pub fn state(paths: &GqyPaths) -> Result<DefaultKbState> {
     load_state(paths)
 }
 
-pub fn status(paths: &MiyuPaths) -> Result<DefaultKbStatus> {
+pub fn status(paths: &GqyPaths) -> Result<DefaultKbStatus> {
     let state = load_state(paths)?;
     Ok(DefaultKbStatus {
         has_update_notice: state.update_available
@@ -113,7 +113,7 @@ pub fn status(paths: &MiyuPaths) -> Result<DefaultKbStatus> {
     })
 }
 
-pub fn notice_if_update_available(paths: &MiyuPaths) -> Result<Option<String>> {
+pub fn notice_if_update_available(paths: &GqyPaths) -> Result<Option<String>> {
     let mut state = load_state(paths)?;
     if !state.update_available || state.remote_commit.is_empty() {
         return Ok(None);
@@ -122,8 +122,8 @@ pub fn notice_if_update_available(paths: &MiyuPaths) -> Result<Option<String>> {
         return Ok(None);
     }
     let message = t(
-        "The default knowledge base needs an update; run miyu update-default-kb",
-        "默认知识库需要更新，运行 miyu update-default-kb",
+        "The default knowledge base needs an update; run gqy update-default-kb",
+        "默认知识库需要更新，运行 gqy update-default-kb",
     )
     .to_string();
     state.last_notice_commit = state.remote_commit.clone();
@@ -131,7 +131,7 @@ pub fn notice_if_update_available(paths: &MiyuPaths) -> Result<Option<String>> {
     Ok(Some(message))
 }
 
-pub async fn check_update_if_due(paths: &MiyuPaths) -> Result<()> {
+pub async fn check_update_if_due(paths: &GqyPaths) -> Result<()> {
     let mut state = load_state(paths)?;
     if !should_check(&state) {
         return Ok(());
@@ -146,7 +146,7 @@ pub async fn check_update_if_due(paths: &MiyuPaths) -> Result<()> {
 }
 
 pub fn update<F>(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     mut on_progress: F,
 ) -> Result<DefaultKbState>
@@ -213,7 +213,7 @@ where
 }
 
 fn import_snapshot(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     source: &Path,
     release_hash: &str,
@@ -231,25 +231,25 @@ fn default_kb_source_dir() -> PathBuf {
     crate::paths::resources::directory(crate::paths::resources::ResourceKind::DefaultKb)
 }
 
-fn state_file(paths: &MiyuPaths) -> PathBuf {
+fn state_file(paths: &GqyPaths) -> PathBuf {
     paths.data_dir.join("default-kb/state.json")
 }
 
-fn update_repo_dir(paths: &MiyuPaths) -> PathBuf {
+fn update_repo_dir(paths: &GqyPaths) -> PathBuf {
     paths
         .cache_dir
         .join("default-kb/shorin-archlinux-guide.git")
 }
 
-fn legacy_update_repo_dir(paths: &MiyuPaths) -> PathBuf {
+fn legacy_update_repo_dir(paths: &GqyPaths) -> PathBuf {
     paths.cache_dir.join("default-kb/shorinwiki.git")
 }
 
-fn update_source_dir(paths: &MiyuPaths) -> PathBuf {
+fn update_source_dir(paths: &GqyPaths) -> PathBuf {
     paths.cache_dir.join("default-kb/update-source")
 }
 
-fn cleanup_legacy_update_repo(paths: &MiyuPaths, repo: &Path) -> Result<()> {
+fn cleanup_legacy_update_repo(paths: &GqyPaths, repo: &Path) -> Result<()> {
     let legacy = legacy_update_repo_dir(paths);
     if legacy == repo || !legacy.exists() {
         return Ok(());
@@ -363,7 +363,7 @@ fn validate_update_repo(repo: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_state(paths: &MiyuPaths) -> Result<DefaultKbState> {
+fn load_state(paths: &GqyPaths) -> Result<DefaultKbState> {
     let path = state_file(paths);
     if !path.is_file() {
         return Ok(DefaultKbState::default());
@@ -371,7 +371,7 @@ fn load_state(paths: &MiyuPaths) -> Result<DefaultKbState> {
     Ok(serde_json::from_str(&std::fs::read_to_string(path)?)?)
 }
 
-fn save_state(paths: &MiyuPaths, state: &DefaultKbState) -> Result<()> {
+fn save_state(paths: &GqyPaths, state: &DefaultKbState) -> Result<()> {
     let path = state_file(paths);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
@@ -456,7 +456,7 @@ fn git_output(git: &str, cwd: &Path, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8(output.stdout)?.trim().to_string())
 }
 
-fn build_update_source(paths: &MiyuPaths, repo: &Path) -> Result<PathBuf> {
+fn build_update_source(paths: &GqyPaths, repo: &Path) -> Result<PathBuf> {
     let dest = update_source_dir(paths);
     if dest.exists() {
         std::fs::remove_dir_all(&dest)?;

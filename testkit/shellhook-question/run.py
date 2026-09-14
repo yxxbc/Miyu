@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """shellhook 形态的 ask_question 走查:面板会不会自己消失/回合会不会被取消。
 
-复现的是「fish hook 把命令行管道喂给 miyu」那一刻:stdin 是管道、stdout 是
+复现的是「fish hook 把命令行管道喂给 gqy」那一刻:stdin 是管道、stdout 是
 终端、进程有控制终端(/dev/tty)。桩模型立刻提一个问题,脚本什么都不按,
 几秒后再敲两下方向键,记录面板活了多久、回合有没有被取消。
 
@@ -9,7 +9,7 @@
     KEYS=arrows python3 testkit/shellhook-question/run.py    # 3 秒后敲 ↑ ↓
     KEYS=answer python3 testkit/shellhook-question/run.py    # ↑ 之后回车提交
 
-产物在 ~/.cache/miyu-shellhook-question/:raw.bin(终端原始输出)、report.json。
+产物在 ~/.cache/gqy-shellhook-question/:raw.bin(终端原始输出)、report.json。
 """
 
 import json
@@ -27,16 +27,16 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-shellhook-question/home"))
-RUNTIME = os.environ.get("MIYU_SHQ_RUNTIME", "/tmp/mx-shq")
-PORT = int(os.environ.get("MIYU_SHQ_PORT", "18422"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-shellhook-question/home"))
+RUNTIME = os.environ.get("GQY_SHQ_RUNTIME", "/tmp/mx-shq")
+PORT = int(os.environ.get("GQY_SHQ_PORT", "18422"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18497"))
-OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "miyu-shellhook-question"))
+OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "gqy-shellhook-question"))
 OBSERVE_SECONDS = float(os.environ.get("OBSERVE_SECONDS", "12"))
 KEYS = os.environ.get("KEYS", "")
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
 PANEL_MARKERS = ("这是一条走查用的问题", "确认")
 CANCEL_MARKERS = ("已取消", "cancelled")

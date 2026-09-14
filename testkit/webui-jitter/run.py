@@ -27,16 +27,16 @@ sys.path.insert(0, str(Path(__file__).parent))
 import metrics  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-webui-jitter/home"))
-RUNTIME = os.environ.get("MIYU_JT_RUNTIME", "/tmp/mx-jt")
-PORT = int(os.environ.get("MIYU_JT_PORT", "18421"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-webui-jitter/home"))
+RUNTIME = os.environ.get("GQY_JT_RUNTIME", "/tmp/mx-jt")
+PORT = int(os.environ.get("GQY_JT_PORT", "18421"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18496"))
-OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "miyu-webui-jitter"))
+OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "gqy-webui-jitter"))
 TAG = os.environ.get("TAG", "run")
 ENGINES = os.environ.get("ENGINES", "webkit,chromium").split(",")
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
 
 def api(path, body=None, method="GET"):

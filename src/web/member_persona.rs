@@ -6,10 +6,10 @@
 //! `home-<用户>-<slug>`(`AppConfig::private_persona_scope`)。
 //!
 //! 成员用哪个人格记在 `home/<用户>/settings.json`(`active_persona`);None = 用
-//! 管理员发布的共享 Miyu。管理员在 `accounts.member_plugins` 里划成员能勾的插件。
+//! 管理员发布的共享 顾清影。管理员在 `accounts.member_plugins` 里划成员能勾的插件。
 
 use crate::config::{feature_catalog, AppConfig, PersonaManifest};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -21,7 +21,7 @@ pub(crate) const MAX_IMAGE_BYTES: usize = 4 * 1024 * 1024;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct UserSettings {
-    /// 当前用的私有人格 slug;None = 共享 Miyu。
+    /// 当前用的私有人格 slug;None = 共享 顾清影。
     pub(crate) active_persona: Option<String>,
     /// 引导做完了(或跳过了)。
     pub(crate) oobe_done: bool,
@@ -93,15 +93,15 @@ pub(crate) fn validate_slug(slug: &str) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn personas_root(paths: &MiyuPaths, username: &str) -> PathBuf {
+pub(crate) fn personas_root(paths: &GqyPaths, username: &str) -> PathBuf {
     paths.user_home_dir(username).join("personas")
 }
 
-pub(crate) fn settings_path(paths: &MiyuPaths, username: &str) -> PathBuf {
+pub(crate) fn settings_path(paths: &GqyPaths, username: &str) -> PathBuf {
     paths.user_home_dir(username).join("settings.json")
 }
 
-pub(crate) fn load_settings(paths: &MiyuPaths, username: &str) -> UserSettings {
+pub(crate) fn load_settings(paths: &GqyPaths, username: &str) -> UserSettings {
     fs::read_to_string(settings_path(paths, username))
         .ok()
         .and_then(|raw| serde_json::from_str(&raw).ok())
@@ -109,7 +109,7 @@ pub(crate) fn load_settings(paths: &MiyuPaths, username: &str) -> UserSettings {
 }
 
 pub(crate) fn save_settings(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     username: &str,
     settings: &UserSettings,
 ) -> Result<()> {
@@ -122,7 +122,7 @@ pub(crate) fn save_settings(
 }
 
 pub(crate) fn load_persona(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     username: &str,
     slug: &str,
 ) -> Result<Option<PrivatePersona>> {
@@ -148,7 +148,7 @@ pub(crate) fn load_persona(
     }))
 }
 
-pub(crate) fn list_personas(paths: &MiyuPaths, username: &str) -> Result<Vec<PrivatePersona>> {
+pub(crate) fn list_personas(paths: &GqyPaths, username: &str) -> Result<Vec<PrivatePersona>> {
     let root = personas_root(paths, username);
     let mut out = Vec::new();
     let Ok(entries) = fs::read_dir(&root) else {
@@ -175,7 +175,7 @@ pub(crate) fn list_personas(paths: &MiyuPaths, username: &str) -> Result<Vec<Pri
 }
 
 /// 成员当前用的私有人格(settings 指着、目录还在)。
-pub(crate) fn active_persona(paths: &MiyuPaths, username: &str) -> Option<PrivatePersona> {
+pub(crate) fn active_persona(paths: &GqyPaths, username: &str) -> Option<PrivatePersona> {
     let settings = load_settings(paths, username);
     let slug = settings.active_persona?;
     load_persona(paths, username, &slug).ok().flatten()
@@ -183,7 +183,7 @@ pub(crate) fn active_persona(paths: &MiyuPaths, username: &str) -> Option<Privat
 
 /// 按会话表里的 scope 找回成员的人格目录。
 pub(crate) fn persona_for_scope(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     username: &str,
     scope: &str,
 ) -> Option<PrivatePersona> {
@@ -276,7 +276,7 @@ pub(crate) fn manifest_for_member(
 
 pub(crate) fn create_or_update_persona(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     username: &str,
     slug: &str,
     draft: &PersonaDraft<'_>,
@@ -328,7 +328,7 @@ pub(crate) fn create_or_update_persona(
     })
 }
 
-pub(crate) fn delete_persona(paths: &MiyuPaths, username: &str, slug: &str) -> Result<()> {
+pub(crate) fn delete_persona(paths: &GqyPaths, username: &str, slug: &str) -> Result<()> {
     validate_slug(slug)?;
     let dir = personas_root(paths, username).join(slug);
     if !dir.is_dir() {

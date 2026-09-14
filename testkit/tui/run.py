@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """全屏 TUI 走查：沙箱 daemon + 桩模型，真 PTY 里跑一轮对话再退出。
 
-和 `testkit/repl-smoke` 是同一套骨架（沙箱 MIYU_HOME、桩 LLM、PTY），区别是
+和 `testkit/repl-smoke` 是同一套骨架（沙箱 GQY_HOME、桩 LLM、PTY），区别是
 TUI 跑在 alt screen 上，画面要用 pyte 还原成屏幕矩阵才看得清——直接看字节流
 只能看到一堆重绘。
 
@@ -10,7 +10,7 @@ TUI 跑在 alt screen 上，画面要用 pyte 还原成屏幕矩阵才看得清�
     cargo build
     python3 testkit/tui/run.py
 
-产物在 ~/.cache/miyu-tui-smoke/：raw.bin（终端原始输出）、screen.txt（最后一屏）、
+产物在 ~/.cache/gqy-tui-smoke/：raw.bin（终端原始输出）、screen.txt（最后一屏）、
 report.json、daemon.log。
 """
 
@@ -35,22 +35,22 @@ except ImportError:
     raise SystemExit(2)
 
 ROOT = Path(__file__).resolve().parents[2]
-BIN = ROOT / "target" / "debug" / "miyu"
+BIN = ROOT / "target" / "debug" / "gqy"
 SMOKE = ROOT / "testkit" / "repl-smoke"
 
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-tui-smoke/home"))
-RUNTIME = os.environ.get("MIYU_TUI_RUNTIME", "/tmp/mx-tui")
-PORT = int(os.environ.get("MIYU_TUI_PORT", "18433"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-tui-smoke/home"))
+RUNTIME = os.environ.get("GQY_TUI_RUNTIME", "/tmp/mx-tui")
+PORT = int(os.environ.get("GQY_TUI_PORT", "18433"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18499"))
-OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "miyu-tui-smoke"))
+OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "gqy-tui-smoke"))
 BASE = f"http://127.0.0.1:{PORT}"
 # 32 行装不下带六行命令尾巴的展开时间线（`Worked for` 的抬头会滚出屏），加高。
 COLS, ROWS = 110, 50
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME, MIYU_TUI="1")
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME, GQY_TUI="1")
 
 PROMPT = "走查一句"
 # 桩模型要改的那个文件。Add File 语义，跑之前得先不存在。
-EDIT_FILE = Path("/tmp/miyu-tui-smoke/walk.txt")
+EDIT_FILE = Path("/tmp/gqy-tui-smoke/walk.txt")
 # 思考正文。要够长——item06 得趁"还在想"的时候点开，看它会不会跟着刷新；
 # 默认那句 35 个字，0.02s 一块地喂完不到三百毫秒，根本来不及点。
 LONG_REASONING = (
@@ -111,7 +111,7 @@ def spawn_tui():
         os.setsid()
         fcntl.ioctl(1, termios.TIOCSCTTY, 0)
 
-    # 裸 `miyu` 直接进普通模式(09-13 起 `miyu normal` 退役,只留 `miyu dev`);
+    # 裸 `gqy` 直接进普通模式(09-13 起 `gqy normal` 退役,只留 `gqy dev`);
     # 沙箱配置没有 config_version,迁移会把 oobe_done 标成 true,不会撞上引导。
     process = subprocess.Popen(
         [str(BIN)], stdin=slave, stdout=slave, stderr=slave,
@@ -293,7 +293,7 @@ def kill_stale_daemon():
     """端口上还蹲着上一轮的 daemon 就先请它走。
 
     残留的那个会让这一轮的 daemon 绑不上端口（`Address already in use`），
-    而客户端照样连得上——连的是**上一轮**那个，它的 MIYU_HOME 刚被这一轮
+    而客户端照样连得上——连的是**上一轮**那个，它的 GQY_HOME 刚被这一轮
     删掉了。结果是满屏莫名其妙的红，跟代码一点关系没有（实测踩过）。
     """
     try:
@@ -977,7 +977,7 @@ def main():
         report["spinner_in_glyph_column"] = bool(
             re.search(
                 r"\x1b\[2m\x1b\[36m[⠁-⣿]\x1b\[0m (?:\x1b\[[0-9;]*m)*"
-                r"(?:\x1b\]1337;miyu-block=\d+\x07)?[\ue000-\uf8ff\U000f0000-\U000fffff$] ",
+                r"(?:\x1b\]1337;gqy-block=\d+\x07)?[\ue000-\uf8ff\U000f0000-\U000fffff$] ",
                 stream,
             )
         )

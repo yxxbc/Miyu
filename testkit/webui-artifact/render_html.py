@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """把任意几份 HTML 当成真 artifact 塞进面板渲染并截图。
 
-    BIN=<miyu 二进制> FILES=a.html,b.html python3 testkit/webui-artifact/render_html.py
+    BIN=<gqy 二进制> FILES=a.html,b.html python3 testkit/webui-artifact/render_html.py
 
 用来验「她写出来的东西到底跑不跑得起来」——直接用浏览器开 file:// 不算数,
 那样既没有 artifact 的 CSP,也取不到 /vendor/ 的库。这里走的是完整真实路径:
 沙箱 daemon → artifact 工具落盘 → 面板 iframe → 后端下发的 CSP。
 
-产出:~/.cache/miyu-render-html/{<文件名>.png,report.json}
+产出:~/.cache/gqy-render-html/{<文件名>.png,report.json}
 """
 import json
 import os
@@ -26,13 +26,13 @@ HERE = Path(__file__).resolve().parent
 BIN = Path(os.environ["BIN"]).expanduser()
 WEB = Path(os.environ.get("WEB", HERE.parent.parent / "web")).resolve()
 FILES = [Path(p).expanduser() for p in os.environ["FILES"].split(",") if p.strip()]
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-render-html")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-render-html")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18491"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18492"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
 
 
 def patch_text():

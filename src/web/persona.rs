@@ -31,7 +31,7 @@ pub(in crate::web) struct PersonaIdentity {
     pub(in crate::web) board_title: String,
     pub(in crate::web) board_subtitle: String,
     /// 已经解析过默认值,前端直接用。默认跟着人格名走,所以是算出来的而不是
-    /// 一个常量——改人格名之后输入框仍写死 "给 Miyu 发消息" 是原来的毛病。
+    /// 一个常量——改人格名之后输入框仍写死 "给 顾清影 发消息" 是原来的毛病。
     pub(in crate::web) composer_placeholder: String,
     pub(in crate::web) starter_prompts: Vec<String>,
 }
@@ -123,9 +123,9 @@ pub(in crate::web) async fn persona_avatar(
     Ok(response)
 }
 
-/// 成员当前私有人格的身份卡;没有就 None(用共享 Miyu 的)。
+/// 成员当前私有人格的身份卡;没有就 None(用共享 顾清影 的)。
 pub(in crate::web) fn member_persona_identity(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     identity: &WebIdentity,
 ) -> Option<PersonaIdentity> {
     if identity.admin || identity.username.is_empty() {
@@ -164,8 +164,8 @@ pub(in crate::web) fn persona_identity(
     if active.is_empty() {
         return PersonaIdentity {
             name: "顾清影".to_string(),
-            avatar_url: Some("/assets/miyu-logo.png".to_string()),
-            board_image_url: Some("/assets/miyuwallpaper.png".to_string()),
+            avatar_url: Some("/assets/gqy-logo.png".to_string()),
+            board_image_url: Some("/assets/gqywallpaper.png".to_string()),
             board_title: DEFAULT_BOARD_TITLE.to_string(),
             board_subtitle: DEFAULT_BOARD_SUBTITLE.to_string(),
             composer_placeholder: default_composer_placeholder("顾清影"),
@@ -228,7 +228,7 @@ pub(in crate::web) fn persona_identity(
 pub(in crate::web) fn active_persona_avatar_path(
     config: &AppConfig,
     prompts: &PromptDocuments,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Option<PathBuf> {
     let active = config.prompt.active_persona.trim();
     if active.is_empty() {
@@ -245,7 +245,7 @@ pub(in crate::web) fn active_persona_avatar_path(
 pub(in crate::web) fn active_persona_board_path(
     config: &AppConfig,
     prompts: &PromptDocuments,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Option<PathBuf> {
     let active = config.prompt.active_persona.trim();
     let value = prompts
@@ -455,7 +455,7 @@ pub(in crate::web) fn validate_prompt_document_name(
 
 pub(in crate::web) fn read_prompt_documents(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<PromptDocuments> {
     Ok(PromptDocuments {
         personas: read_prompt_document_dir(&config.prompts_dir_path(paths), true)?,
@@ -633,7 +633,7 @@ pub(in crate::web) fn apply_prompt_documents(
     next_config: &AppConfig,
     current: &PromptDocuments,
     next: &PromptDocuments,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Vec<FileBackup>> {
     let mut mutations = HashMap::<PathBuf, Option<Vec<u8>>>::new();
     collect_prompt_file_mutations(
@@ -683,7 +683,7 @@ pub(in crate::web) fn apply_persona_scope_changes(
     next_config: &AppConfig,
     current: &PromptDocuments,
     next: &PromptDocuments,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Vec<PersonaScopeBackup>> {
     let changes = persona_document_changes(current, next);
     let mut backups = Vec::new();
@@ -709,7 +709,7 @@ pub(in crate::web) fn apply_persona_scope_changes(
                     .parent()
                     .context("persona scope path has no parent")?;
                 let staged = parent.join(format!(
-                    ".miyu-web-scope-{}-{change_index}-{scope_index}",
+                    ".gqy-web-scope-{}-{change_index}-{scope_index}",
                     random_token(10)
                 ));
                 std::fs::rename(&original, &staged)?;

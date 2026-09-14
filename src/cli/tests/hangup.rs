@@ -1,6 +1,6 @@
 //! 挂断看门狗盯的是哪个 fd。
 //!
-//! 09-10 报：shellhook（`printf '%s' "$buffer" | miyu --shell-intercept
+//! 09-10 报：shellhook（`printf '%s' "$buffer" | gqy --shell-intercept
 //! --stdin`）里 ask_question 的面板一打开，什么都不做、几秒后整个回合被取消。
 //! 根因是看门狗裸 poll stdin——管道写端退出后 stdin 常驻 POLLHUP，被当成
 //! 「终端没了」，5 秒后 `exit(1)`，daemon 又把一次性客户端的断线当取消。

@@ -76,7 +76,7 @@ MAX_PAGE_BYTES = 512 * 1024
 MAX_HTML_RESPONSE_BYTES = 5 * 1024 * 1024
 MAX_EXCERPT_CHARS = 12_000
 TIMEOUT = 12
-USER_AGENT = "miyu/0.1 fcitx5_input_method_wiki_qurey"
+USER_AGENT = "gqy/0.1 fcitx5_input_method_wiki_qurey"
 
 
 class Failed(RuntimeError):
@@ -547,7 +547,7 @@ CLAIMS = {
             "XIM 需要有效 locale；locale 必须出现在 `locale -a`，并且不能是 `C` 或 `POSIX`。",
             "XIM needs a valid locale; the locale must appear in `locale -a` and must not be `C` or `POSIX`.",
             "locale",
-            "Check the target process, not only the shell that launched Miyu.",
+            "Check the target process, not only the shell that launched GQY.",
         ),
         (
             "Wiki 提到某些 XIM 场景可以用 `LC_CTYPE=zh_CN.UTF-8` 作为 workaround，尤其是历史上 Emacs/Java 一类问题。",
@@ -740,7 +740,7 @@ def query(args):
 
 
 def read_args():
-    raw = os.environ.get("MIYU_ARGS_JSON")
+    raw = os.environ.get("GQY_ARGS_JSON")
     if not raw:
         if sys.stdin is None or sys.stdin.isatty():
             raw = "{}"

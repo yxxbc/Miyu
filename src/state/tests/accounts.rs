@@ -90,15 +90,15 @@ fn invite_registers_once_and_disabled_accounts_cannot_log_in() {
 fn sessions_are_listed_per_owner_and_turn_stores_carry_the_owner() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
-    let mine = store.create_session("miyu", "mine", "user", None).unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
+    let mine = store.create_session("gqy", "mine", "user", None).unwrap();
     let alice = store
-        .create_session_for_owner("miyu", "alice's", "user", None, "acct_alice")
+        .create_session_for_owner("gqy", "alice's", "user", None, "acct_alice")
         .unwrap();
     assert_eq!(mine.owner, "");
     assert_eq!(alice.owner, "acct_alice");
 
-    let admin_view = store.list_local_sessions_for_owner("miyu", "").unwrap();
+    let admin_view = store.list_local_sessions_for_owner("gqy", "").unwrap();
     assert!(admin_view
         .iter()
         .any(|overview| overview.record.session_id == mine.session_id));
@@ -106,12 +106,12 @@ fn sessions_are_listed_per_owner_and_turn_stores_carry_the_owner() {
         .iter()
         .any(|overview| overview.record.session_id == alice.session_id));
     let alice_view = store
-        .list_local_sessions_for_owner("miyu", "acct_alice")
+        .list_local_sessions_for_owner("gqy", "acct_alice")
         .unwrap();
     assert_eq!(alice_view.len(), 1);
     assert_eq!(alice_view[0].record.session_id, alice.session_id);
     // 不带归属的老接口仍然全列(终端管理面、迁移等用)。
-    assert!(store.list_local_sessions("miyu").unwrap().len() >= 2);
+    assert!(store.list_local_sessions("gqy").unwrap().len() >= 2);
 
     // 回合 store 按会话归属记账。
     assert_eq!(store.pinned_for_turn(&mine.session_id).usage_account(), "");

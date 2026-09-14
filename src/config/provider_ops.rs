@@ -190,7 +190,7 @@ impl AppConfig {
     /// "no active provider/model endpoint is configured" 且错误列表是空的
     /// ——用户连 REPL 都进不去,更没机会用 `/model` 换一个,只能去改配置或改
     /// 库(08-28 实录:opencodego/glm-5.3-flash 被移出 models 之后
-    /// `miyu normal` 直接起不来)。
+    /// `gqy normal` 直接起不来)。
     ///
     /// 调用方据此退回全局池:宁可用错模型,也别让整个入口打不开。
     pub fn usable_model_override(

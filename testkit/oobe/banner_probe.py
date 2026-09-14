@@ -3,8 +3,8 @@
 
 用法: python3 banner_probe.py [binary] [cols] [rows]
 
-临时 MIYU_HOME 里先写一份「引导已做过」的配置（免得进引导），然后:
-  1. `MIYU_TUI=1 miyu` 进全屏 REPL —— 空会话,正文区应画出 MIYU banner 与模式行;
+临时 GQY_HOME 里先写一份「引导已做过」的配置（免得进引导），然后:
+  1. `GQY_TUI=1 gqy` 进全屏 REPL —— 空会话,正文区应画出 GQY banner 与模式行;
   2. 等两秒再抓一帧,星星应该变了(动画在走);
   3. 按 Tab,模式行应从「◉ 普通模式」变成「◉ 开发模式」,输入框竖条换色;
   4. 再按 Tab 切回来;
@@ -16,18 +16,18 @@ import fcntl, json, os, pty, select, signal, struct, subprocess, sys, tempfile, 
 import pyte
 
 BIN = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..", "target", "debug", "miyu"
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "target", "debug", "gqy"
 )
 COLS = int(sys.argv[2]) if len(sys.argv) > 2 else 100
 ROWS = int(sys.argv[3]) if len(sys.argv) > 3 else 36
 FULLSCREEN = os.environ.get("PROBE_INLINE") is None
 
-home = tempfile.mkdtemp(prefix="miyu-banner-")
+home = tempfile.mkdtemp(prefix="gqy-banner-")
 env = dict(os.environ)
 env.update({
     "TERM": "xterm-256color",
     "COLORTERM": "truecolor",
-    "MIYU_HOME": home,
+    "GQY_HOME": home,
     "LANG": "zh_CN.UTF-8",
 })
 # 先 init 一份配置,再把引导标成做过。
@@ -38,7 +38,7 @@ cfg = json.loads(raw)
 cfg["oobe_done"] = True
 open(cfg_path, "w", encoding="utf-8").write(json.dumps(cfg, ensure_ascii=False, indent=2))
 
-# daemon 自己起在私有端口上：裸 `miyu` 会去默认的 8300，那上面常蹲着真机的 daemon，
+# daemon 自己起在私有端口上：裸 `gqy` 会去默认的 8300，那上面常蹲着真机的 daemon，
 # 临时家的 CLI 撞上它就串家了。`__daemon --port` 会把端口写进临时家的 daemon-launch.json，
 # 后面的 CLI 照着找。
 PORT = int(os.environ.get("PROBE_PORT", "18436"))
@@ -67,7 +67,7 @@ if pid == 0:
     for key, value in env.items():
         os.environ[key] = value
     if FULLSCREEN:
-        os.environ["MIYU_TUI"] = "1"
+        os.environ["GQY_TUI"] = "1"
     os.execvp(BIN, [BIN])
 fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
 

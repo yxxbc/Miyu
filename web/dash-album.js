@@ -11,7 +11,7 @@
  * 视觉上复用 .dash-gallery / .dash-meme 那套瀑布流,不另起一套样式。
  */
 (() => {
-  const D = window.MiyuDash;
+  const D = window.GqyDash;
   if (!D) return;
 
   const state = {

@@ -7,7 +7,7 @@
 //! 账号表、邀请码、用量账本仍在管理员那份/state 目录,不分家。
 
 use super::*;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::state::StateStore;
 use anyhow::{Context, Result};
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Clone)]
 pub(crate) struct StoreRegistry {
     admin: StateStore,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     /// 账号 id → 成员库
     members: Arc<Mutex<HashMap<String, StateStore>>>,
     /// 会话 id → 账号 id(空串 = 管理员)
@@ -24,7 +24,7 @@ pub(crate) struct StoreRegistry {
 }
 
 impl StoreRegistry {
-    pub(crate) fn new(admin: StateStore, paths: MiyuPaths) -> Self {
+    pub(crate) fn new(admin: StateStore, paths: GqyPaths) -> Self {
         Self {
             admin,
             paths,

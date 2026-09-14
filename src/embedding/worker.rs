@@ -23,11 +23,11 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::process::{Child, ChildStdin, ChildStdout};
 use tokio::sync::Mutex;
 
-pub(crate) const WORKER_ENV: &str = "MIYU_INTERNAL_EMBEDDING_WORKER";
+pub(crate) const WORKER_ENV: &str = "GQY_INTERNAL_EMBEDDING_WORKER";
 pub(crate) const WORKER_ARG: &str = "__embedding-worker";
-const MODEL_DIR_ENV: &str = "MIYU_EMBEDDING_WORKER_MODEL_DIR";
-const RUNTIME_LIB_WORKER_ENV: &str = "MIYU_EMBEDDING_WORKER_RUNTIME_LIB";
-const IDLE_SECS_ENV: &str = "MIYU_EMBEDDING_WORKER_IDLE_SECS";
+const MODEL_DIR_ENV: &str = "GQY_EMBEDDING_WORKER_MODEL_DIR";
+const RUNTIME_LIB_WORKER_ENV: &str = "GQY_EMBEDDING_WORKER_RUNTIME_LIB";
+const IDLE_SECS_ENV: &str = "GQY_EMBEDDING_WORKER_IDLE_SECS";
 
 const MAX_REQUEST_FRAME_BYTES: usize = 8 * 1024 * 1024;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
@@ -363,7 +363,7 @@ async fn spawn_worker(
     idle: Duration,
     key: String,
 ) -> Result<(WorkerProcess, usize)> {
-    let executable = crate::paths::miyu_executable()?;
+    let executable = crate::paths::gqy_executable()?;
     let mut command = tokio::process::Command::new(&executable);
     command
         .arg(WORKER_ARG)
@@ -377,7 +377,7 @@ async fn spawn_worker(
         .kill_on_drop(true);
     let mut child = command.spawn().with_context(|| {
         format!(
-            "starting the embedding worker ({}); if Miyu was upgraded or rebuilt while running, restart the daemon",
+            "starting the embedding worker ({}); if GQY was upgraded or rebuilt while running, restart the daemon",
             executable.display()
         )
     })?;

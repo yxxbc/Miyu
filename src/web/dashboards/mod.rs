@@ -19,7 +19,7 @@ use crate::web::*;
 
 /// 按登录者取面板配置(阶段 8):管理员照旧按人格作用域;成员拿到的是带自己
 /// 家目录的配置——知识库、账本落在 `home/<用户>`,记忆面板只能看自己的私有人格
-/// (`persona` 给 scope 或留空 = 当前用的;共享 Miyu 的记忆不给成员看)。
+/// (`persona` 给 scope 或留空 = 当前用的;共享 顾清影 的记忆不给成员看)。
 pub(in crate::web) fn dash_config_for(
     state: &DaemonState,
     identity: &WebIdentity,
@@ -50,7 +50,7 @@ pub(in crate::web) fn dash_config_for(
     Ok(config)
 }
 
-/// 记忆面板要求成员有私有人格:共享 Miyu 的记忆库不是成员的。
+/// 记忆面板要求成员有私有人格:共享 顾清影 的记忆库不是成员的。
 pub(in crate::web) fn dash_memory_config_for(
     state: &DaemonState,
     identity: &WebIdentity,

@@ -12,7 +12,7 @@ pub(crate) use refresh::*;
 use super::registry::{ScriptScope, UnregisteredScript};
 use super::{ToolPermission, ToolProgress, ToolRegistry, ToolSpec, ToolTrust};
 use crate::i18n::is_zh;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::tools::tool_descriptions::LoadPolicy;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -24,11 +24,11 @@ use tokio::process::Command;
 
 const SCRIPT_TIMEOUT_SECS: u64 = 120;
 const MAX_SCRIPT_OUTPUT_CHARS: usize = 20_000;
-/// `MIYU_ARGS_JSON` 的上限。Linux 单个环境变量 128KB 封顶,留一半余量;超了
+/// `GQY_ARGS_JSON` 的上限。Linux 单个环境变量 128KB 封顶,留一半余量;超了
 /// 只走 stdin——stdin 那份永远在,环境变量只是让脚本少写一段读管道的代码。
 const MAX_ARGS_ENV_BYTES: usize = 64 * 1024;
 
-pub fn register(registry: &mut ToolRegistry, config: &crate::config::AppConfig, paths: &MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, config: &crate::config::AppConfig, paths: &GqyPaths) {
     // 内置脚本装在 <system>/personas/default/ 下,自定义人格天然扫不到——
     // 别人换上自定义人格拿到纯净状态(09-01)。覆盖链与四层细节见
     // script_scan_roots。启动这一次也走指纹路径,后续回合只在目录变了才重扫。
@@ -36,7 +36,7 @@ pub fn register(registry: &mut ToolRegistry, config: &crate::config::AppConfig, 
         Ok(Some(snapshot)) => apply_script_refresh(registry, paths, snapshot),
         Ok(None) => {}
         Err(error) => {
-            tracing::warn!(error = %error, "failed to scan Miyu script directories during tool registration");
+            tracing::warn!(error = %error, "failed to scan GQY script directories during tool registration");
         }
     }
     register_script_tools(registry, config.clone(), paths.clone());
@@ -46,7 +46,7 @@ pub fn register(registry: &mut ToolRegistry, config: &crate::config::AppConfig, 
 /// 范围记在注册表上,热刷新走同一条 replace_script_tools 时照样过滤。
 /// 全局层(`extensions/scripts` 顶层)能被成员人格勾选的脚本:id、显示名、描述。
 /// 内置脚本只给默认人格,成员的私有人格本就扫不到,不列。
-pub(crate) fn list_global_scripts(paths: &MiyuPaths) -> Vec<(String, String, String)> {
+pub(crate) fn list_global_scripts(paths: &GqyPaths) -> Vec<(String, String, String)> {
     list_scripts_in(&[paths.scripts_dir.as_path()])
 }
 
@@ -61,7 +61,7 @@ pub(crate) fn list_scripts_in(dirs: &[&std::path::Path]) -> Vec<(String, String,
 /// 同上,外加「是不是内置层的」。引导要按它决定自定义人格下的默认勾选。
 pub(crate) fn list_scripts_with_origin(
     dirs: &[&std::path::Path],
-    paths: Option<&MiyuPaths>,
+    paths: Option<&GqyPaths>,
 ) -> Vec<(String, String, String, bool)> {
     match scan_scripts(dirs) {
         Ok(result) => result
@@ -87,22 +87,22 @@ pub(crate) fn list_scripts_with_origin(
 pub fn register_external(
     registry: &mut ToolRegistry,
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) {
     registry.set_script_scope(ScriptScope::ExternalOnly);
     match prepare_script_refresh(None, config, paths) {
         Ok(Some(snapshot)) => apply_script_refresh(registry, paths, snapshot),
         Ok(None) => {}
         Err(error) => {
-            tracing::warn!(error = %error, "failed to scan Miyu script directories for the external registry");
+            tracing::warn!(error = %error, "failed to scan GQY script directories for the external registry");
         }
     }
 }
 
-/// 脚本 stdout 里的附件行:`MIYU-IMAGE: <路径> | <说明>`。整行从输出里摘掉,
+/// 脚本 stdout 里的附件行:`GQY-IMAGE: <路径> | <说明>`。整行从输出里摘掉,
 /// 图片交给投递层(终端内联/WebUI/QQ 各自渲染),说明可省。相对路径按
 /// 脚本缓存目录解析。
-pub(crate) const IMAGE_MARKER: &str = "MIYU-IMAGE:";
+pub(crate) const IMAGE_MARKER: &str = "GQY-IMAGE:";
 
 pub(crate) fn split_attachment_lines(
     stdout: &str,
@@ -161,12 +161,12 @@ async fn run_script(
         command.args(argv_flags(args));
     }
     // 脚本的中间产物(登录 profile、会话快照、查询票据、二维码图)统一收进
-    // Miyu 自己的缓存目录,`miyu wipe` 清 ~/.miyu 时一并带走,不在用户的
+    // 顾清影 自己的缓存目录,`gqy wipe` 清 ~/.gqy 时一并带走,不在用户的
     // ~/.cache 下散落一堆。脚本单独拿到终端跑时这个变量不存在,退回 XDG
     // 默认——两种用法各自有各自的登录态,互不覆盖。
-    command.env("MIYU_SCRIPT_CACHE_DIR", cache_dir);
+    command.env("GQY_SCRIPT_CACHE_DIR", cache_dir);
     if args_json.len() <= MAX_ARGS_ENV_BYTES {
-        command.env("MIYU_ARGS_JSON", &args_json);
+        command.env("GQY_ARGS_JSON", &args_json);
     }
     command.stdin(Stdio::piped());
     command.stdout(Stdio::piped());

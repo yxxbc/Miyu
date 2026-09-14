@@ -369,7 +369,7 @@ pub(crate) async fn flush_intermediate_reply(
         Ok(_) => {
             context.record_delivered_reply_text(visible);
             tracing::info!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             chars = visible.chars().count(),
             "{}",
             crate::i18n::text(
@@ -379,7 +379,7 @@ pub(crate) async fn flush_intermediate_reply(
             );
         }
         Err(error) => tracing::warn!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             error = %error,
             "{}",
             crate::i18n::text(

@@ -103,7 +103,7 @@ pub(crate) struct MemeLibraryCache {
     pub(crate) memes: Vec<LoadedMeme>,
 }
 
-pub(crate) fn load_library(paths: &MiyuPaths, library: &str) -> Result<Vec<LoadedMeme>> {
+pub(crate) fn load_library(paths: &GqyPaths, library: &str) -> Result<Vec<LoadedMeme>> {
     let builtin_dir = builtin_library_dir(library);
     let user_dir = user_library_dir(paths, library);
     let builtin_index = builtin_dir.join("index.json");
@@ -162,7 +162,7 @@ pub(crate) fn index_mtime(path: &Path) -> Option<SystemTime> {
         .ok()
 }
 
-pub(crate) fn find_meme(paths: &MiyuPaths, library: &str, id: &str) -> Result<Option<LoadedMeme>> {
+pub(crate) fn find_meme(paths: &GqyPaths, library: &str, id: &str) -> Result<Option<LoadedMeme>> {
     find_meme_in(load_library(paths, library)?, id)
 }
 
@@ -170,7 +170,7 @@ pub(crate) fn find_meme(paths: &MiyuPaths, library: &str, id: &str) -> Result<Op
 /// (`enabled=true`)必须能找到已禁用条目,否则禁用成了单向门。
 /// 管理操作低频,不走库缓存。
 pub(crate) fn find_meme_any(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     id: &str,
 ) -> Result<Option<LoadedMeme>> {
@@ -304,14 +304,14 @@ pub(crate) fn current_persona_library(config: &AppConfig) -> String {
     )
 }
 
-pub(crate) fn meme_ref_exists(paths: &MiyuPaths, meme: &MemeRef) -> Result<bool> {
+pub(crate) fn meme_ref_exists(paths: &GqyPaths, meme: &MemeRef) -> Result<bool> {
     Ok(find_meme(paths, &meme.library, &meme.id)?.is_some())
 }
 
 pub(crate) async fn delete_meme_reference(
     meme: &MemeRef,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<()> {
     let result = delete_meme(
         json!({
@@ -370,7 +370,7 @@ pub(crate) fn builtin_library_dir(library: &str) -> PathBuf {
     )
 }
 
-pub(crate) fn user_library_dir(paths: &MiyuPaths, library: &str) -> PathBuf {
+pub(crate) fn user_library_dir(paths: &GqyPaths, library: &str) -> PathBuf {
     paths.data_dir.join("memes").join(sanitize_library(library))
 }
 

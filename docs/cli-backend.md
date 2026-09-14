@@ -1,23 +1,23 @@
-# 把 Miyu 当后端:程序驱动 CLI 与 stdio 协议
+# 把 顾清影 当后端:程序驱动 CLI 与 stdio 协议
 
-> 面向要把 Miyu 嵌进自己软件的人。两种形态:一次性调用(`miyu ask …`,
-> 每问一句起一个进程)和长驻协议(`miyu stdio`,一个进程常驻,stdin/stdout
+> 面向要把 顾清影 嵌进自己软件的人。两种形态:一次性调用(`gqy ask …`,
+> 每问一句起一个进程)和长驻协议(`gqy stdio`,一个进程常驻,stdin/stdout
 > 走 JSON Lines)。两者出站事件同一套 schema。
 
 ## 1. 一次性调用
 
 ```bash
-miyu ask --output-format json "把这段翻成日语:……"
-miyu ask --output-format stream-json --session 翻译 --create "第一句"
-cat long.md | miyu ask --output-format json --stdin "总结"
-miyu ask --output-format json --model deepseek/deepseek-chat --no-memory --no-tools "……"
+gqy ask --output-format json "把这段翻成日语:……"
+gqy ask --output-format stream-json --session 翻译 --create "第一句"
+cat long.md | gqy ask --output-format json --stdin "总结"
+gqy ask --output-format json --model deepseek/deepseek-chat --no-memory --no-tools "……"
 ```
 
 ### 回合选项(根命令与 `ask` 子命令都认)
 
 | 选项 | 说明 |
 |---|---|
-| `--session <名/编号/id>` | 目标会话。编号是 `miyu session list` 里的序号 |
+| `--session <名/编号/id>` | 目标会话。编号是 `gqy session list` 里的序号 |
 | `--create` | `--session` 指名不存在时新建(名字即会话名) |
 | `-c, --continue` | 用 daemon 当前会话 |
 | `--mode normal\|dev` | **只在新建会话时生效**(`--create`、阅后即焚);对已有会话传了退出码 2 |
@@ -34,7 +34,7 @@ miyu ask --output-format json --model deepseek/deepseek-chat --no-memory --no-to
 | `--timeout SECS` | 到点取消,退出码 124(json/stream-json/stdio) |
 | `--stdin` | 从 stdin 读正文到 EOF 并入消息尾部;上限 200,000 字符(与 daemon 单回合正文上限同源),超了退出码 2 |
 
-不带任何上述选项时,`miyu ask` 与旧版行为完全一致(阅后即焚会话、终端渲染)。
+不带任何上述选项时,`gqy ask` 与旧版行为完全一致(阅后即焚会话、终端渲染)。
 
 ### 退出码
 
@@ -78,28 +78,28 @@ stderr 不再复述。
 `done.text` 是 daemon 随终态发的最终正文,不用自己拼 delta。一次性调用里
 她若提问(`question`),没有回答通道,自动关闭问题让回合继续。
 
-## 3. 会话管理 `miyu session`
+## 3. 会话管理 `gqy session`
 
 ```
-miyu session list [--json]
-miyu session new <名> [--mode dev] [--json]
-miyu session show <名|编号|id> [--json]
-miyu session delete <目标> [--yes]
-miyu session rename <目标> <新名>
-miyu session clear <目标>            清空上下文,会话保留
-miyu session pop <目标> <N>
-miyu session compact <目标>
-miyu session models <目标> [模型|default]
-miyu session workspace <目标> [DIR] [--clear]
+gqy session list [--json]
+gqy session new <名> [--mode dev] [--json]
+gqy session show <名|编号|id> [--json]
+gqy session delete <目标> [--yes]
+gqy session rename <目标> <新名>
+gqy session clear <目标>            清空上下文,会话保留
+gqy session pop <目标> <N>
+gqy session compact <目标>
+gqy session models <目标> [模型|default]
+gqy session workspace <目标> [DIR] [--clear]
 ```
 
-`miyu reset --session X` 与 `miyu pop --session X N` 也认会话。`--json`
+`gqy reset --session X` 与 `gqy pop --session X N` 也认会话。`--json`
 直出 daemon 的数据形状。
 
-## 4. 长驻协议 `miyu stdio`
+## 4. 长驻协议 `gqy stdio`
 
 ```bash
-miyu stdio
+gqy stdio
 ```
 
 启动后先打一行 `ready`。之后 stdin 每行一个请求,stdout 每行一个事件;
@@ -148,5 +148,5 @@ miyu stdio
 - 按回合切 normal/dev、按回合切人格:会话归属人格,记忆库和技能目录跟着走,
   中途切会错位。模式只在建会话时定。
 - `--timeout` 在 text 模式无效。
-- `MIYU_SESSION` 环境变量不作为 `--session` 缺省(她自己的脚本里调
-  `miyu ask` 会递归落进正在跑的会话)。
+- `GQY_SESSION` 环境变量不作为 `--session` 缺省(她自己的脚本里调
+  `gqy ask` 会递归落进正在跑的会话)。

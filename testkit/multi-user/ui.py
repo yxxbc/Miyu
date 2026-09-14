@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """多用户浏览器走查:登录页(用户名+密码/注册表单)、成员看不到管理面板、账号页。
 
-BIN=<miyu> python3 testkit/multi-user/ui.py     # 截图落 ~/.cache/miyu-multi-user/ui-*.png
+BIN=<gqy> python3 testkit/multi-user/ui.py     # 截图落 ~/.cache/gqy-multi-user/ui-*.png
 """
 import json
 import os
@@ -19,7 +19,7 @@ sys.path.insert(0, str(HERE))
 import e2e  # noqa: E402  复用隔离 daemon 的准备
 
 BIN = Path(os.environ["BIN"]).expanduser()
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-multi-user")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-multi-user")).expanduser()
 PORT = int(os.environ.get("PORT", "18492"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18496"))
 BASE = f"http://127.0.0.1:{PORT}"
@@ -27,8 +27,8 @@ e2e.PORT, e2e.STUB_PORT, e2e.BASE = PORT, STUB_PORT, BASE
 e2e.OUT = OUT / "ui"
 e2e.HOME = e2e.OUT / "home"
 e2e.RUNTIME = e2e.OUT / "runtime"
-e2e.ENV = dict(os.environ, MIYU_HOME=str(e2e.HOME), XDG_RUNTIME_DIR=str(e2e.RUNTIME),
-               MIYU_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), MIYU_ADMIN_USER="admin")
+e2e.ENV = dict(os.environ, GQY_HOME=str(e2e.HOME), XDG_RUNTIME_DIR=str(e2e.RUNTIME),
+               GQY_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), GQY_ADMIN_USER="admin")
 
 results = []
 
@@ -91,7 +91,7 @@ def main():
             page.fill("#oobeName", "小满")
             check("没有预置模板,设定自己写", page.evaluate("() => !document.getElementById('oobeTemplates')"))
             page.fill("#oobePrompt", "你是小满,一只会说话的橘猫。")
-            page.set_input_files("#oobeAvatarInput", str(REPO / "web/assets/miyu-logo.png"))
+            page.set_input_files("#oobeAvatarInput", str(REPO / "web/assets/gqy-logo.png"))
             page.wait_for_timeout(300)
             page.click("#oobeNext")
             page.wait_for_timeout(500)
@@ -122,7 +122,7 @@ def main():
             page.click(".con-rail-item[data-console-panel='account']")
             page.wait_for_timeout(900)
             rows = page.evaluate("() => [...document.querySelectorAll('#personaList .persona-row b')].map(e => e.textContent)")
-            check("账号页人格卡列出 Miyu 与小满(当前)", any("小满" in r and "当前" in r for r in rows) and any("Miyu" in r for r in rows), json.dumps(rows, ensure_ascii=False))
+            check("账号页人格卡列出 顾清影 与小满(当前)", any("小满" in r and "当前" in r for r in rows) and any("GQY" in r for r in rows), json.dumps(rows, ensure_ascii=False))
             page.screenshot(path=str(OUT / "ui-member-persona.png"))
             settings_hidden = page.evaluate("() => document.getElementById('sidebarSettingsButton').hidden")
             check("成员侧栏没有设置按钮", settings_hidden is True, str(settings_hidden))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """验 /vendor/ 的响应头:gzip 直发、不收压缩时现解、PNA 预检。
 
-    BIN=<miyu 二进制> python3 testkit/webui-artifact/vendor_headers.py
+    BIN=<gqy 二进制> python3 testkit/webui-artifact/vendor_headers.py
 
 「存 gzip、原样发出去让浏览器自己解」是这次唯一的新花样,单独立一道量尺:
 一旦哪天有人给 vendor 加了鉴权、或者压缩存法被改回明文,这里会直接报红。
@@ -17,12 +17,12 @@ import urllib.request
 from pathlib import Path
 
 BIN = Path(os.environ["BIN"]).expanduser()
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-vendor-headers")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-vendor-headers")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18488"))
 PATH = "/vendor/echarts/echarts.min.js"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
 
 
 def wait_http(url, timeout=40):

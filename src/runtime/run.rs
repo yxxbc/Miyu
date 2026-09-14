@@ -179,7 +179,7 @@ pub(crate) struct IpcRunGuard {
     pub(crate) manager: Arc<Mutex<ManagerState>>,
     pub(crate) run_id: String,
     pub(crate) finished: bool,
-    /// 阅后即焚的一次性客户端(单次 `miyu "…"`/shellhook):它断线就再也
+    /// 阅后即焚的一次性客户端(单次 `gqy "…"`/shellhook):它断线就再也
     /// 回不来了,挂着的问题永远没人答,回合会卡死在 running。
     pub(crate) one_shot: bool,
     pub(crate) questions: Option<crate::runtime::questions::QuestionBroker>,

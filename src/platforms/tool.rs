@@ -56,7 +56,7 @@ pub(crate) fn register(registry: &mut ToolRegistry, context: Arc<PlatformTurnCon
             "additionalProperties": false
         })
     } else {
-        // 非管理员触发也能发 Miyu 自产的生成图(执行侧按生图目录校验豁免);
+        // 非管理员触发也能发 顾清影 自产的生成图(执行侧按生图目录校验豁免);
         // 任意本地文件仍只对管理员开放,所以这版没有 files。
         json!({
             "type": "object",
@@ -283,11 +283,11 @@ async fn send(arguments: Value, context: Arc<PlatformTurnContext>) -> Result<Str
         .map(|image| required_path(image, "path"))
         .collect::<Result<Vec<_>>>()?;
     if (!images.is_empty() || !files.is_empty()) && !context.host_tools_allowed() {
-        // 附件门槛防的是把宿主上任意文件发给陌生人;Miyu 自己刚生成的图不在
+        // 附件门槛防的是把宿主上任意文件发给陌生人;顾清影 自己刚生成的图不在
         // 此列——平台生图已改为模型显式发送(08-20 裁定),没有这条豁免,
         // 非管理员触发的画图请求就永远发不出结果。
         // 08-22:get_avatar 改为"只下载不投递",发送权交还模型——头像缓存
-        // 目录与生图目录同为 Miyu 自产内容,一并豁免。
+        // 目录与生图目录同为 顾清影 自产内容,一并豁免。
         let avatar_dir = context.paths.cache_dir.join("qq-avatars");
         let exempt = files.is_empty()
             && !image_paths.is_empty()

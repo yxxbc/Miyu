@@ -1,14 +1,14 @@
 //! daemon 侧的语音桥:进程看护 + 信令中继 + 语音回合驱动。
 //!
 //! **不含任何语音栈代码,不吃 voice feature**——识别模型/麦克风/提示音都在
-//! 独立的 `miyu-voice` 进程里(见 `voice::worker` 的信令表)。这里负责:
+//! 独立的 `gqy-voice` 进程里(见 `voice::worker` 的信令表)。这里负责:
 //!
-//! - 定位并拉起/看护 `miyu-voice`(崩溃退避重启,daemon 关闭时收走,
+//! - 定位并拉起/看护 `gqy-voice`(崩溃退避重启,daemon 关闭时收走,
 //!   配置重载时按需重启);
 //! - 持有它的 `VoiceAttach` 信令连接;
 //! - 唤醒路:`voice.command` → 在「语音会话」lane 起回合 → 完成后桌面通知
 //!   回复摘要 + 提示音;进行中再开口即取消(打断);
-//! - 听写中继:REPL `/stt`、`miyu stt` 认领听写流(本机麦),识别文本流回;
+//! - 听写中继:REPL `/stt`、`gqy stt` 认领听写流(本机麦),识别文本流回;
 //!   WebUI 麦克风按钮同样认领一条听写流,但音频由浏览器经 WebSocket 推来
 //!   (`push_audio` → worker 的 `voice.audio`),VAD/分句/识别仍在 worker;
 //! - 整段录音转写(`/api/voice/transcribe`,外部脚本用)的请求/应答配对;
@@ -35,7 +35,7 @@ pub(crate) enum DictationRelay {
 /// daemon→worker 的待发信令帧(kind, data)。
 type Signal = (&'static str, Value);
 
-pub(crate) const BINARY_NAME: &str = "miyu-voice";
+pub(crate) const BINARY_NAME: &str = "gqy-voice";
 const SESSION_ID_FILE: &str = "voice-session-id";
 const WORKER_LOG: &str = "voice-worker.log";
 
@@ -67,9 +67,9 @@ static TRANSCRIBES: Mutex<Option<HashMap<String, oneshot::Sender<Result<String, 
 /// 不和「收到」连弹被压了 1.2s,提示音却是即刻响的,用户听到音效看不到通知)。
 static NOTIFY_QUEUE: Mutex<Option<std::sync::mpsc::Sender<(String, String)>>> = Mutex::new(None);
 
-/// 找 `miyu-voice`:先看主程序同目录,再扫 PATH。
+/// 找 `gqy-voice`:先看主程序同目录,再扫 PATH。
 pub(crate) fn locate_binary() -> Option<PathBuf> {
-    if let Ok(exe) = crate::paths::miyu_executable() {
+    if let Ok(exe) = crate::paths::gqy_executable() {
         if let Some(dir) = exe.parent() {
             let candidate = dir.join(BINARY_NAME);
             if candidate.is_file() {
@@ -306,7 +306,7 @@ fn handle_worker_event(state: &DaemonState, kind: &str, data: Value) {
                 // 「收到」会替换掉这条(notify-send -r),不会连弹两条。
                 notify(
                     state,
-                    t("Miyu is listening", "Miyu 在听"),
+                    t("GQY is listening", "顾清影 在听"),
                     t("speak now", "请讲"),
                 );
             } else {
@@ -318,7 +318,7 @@ fn handle_worker_event(state: &DaemonState, kind: &str, data: Value) {
                     if WAKE_NOTICE_GEN.load(Ordering::Relaxed) == generation {
                         notify(
                             &state,
-                            t("Miyu is listening", "Miyu 在听"),
+                            t("GQY is listening", "顾清影 在听"),
                             t("speak now", "请讲"),
                         );
                     }
@@ -335,14 +335,14 @@ fn handle_worker_event(state: &DaemonState, kind: &str, data: Value) {
             }
             WAKE_NOTICE_GEN.fetch_add(1, Ordering::Relaxed);
             cancel_active_run(state);
-            notify(state, t("Miyu heard", "Miyu 收到"), &clip(&text, 80));
+            notify(state, t("GQY heard", "顾清影 收到"), &clip(&text, 80));
             let state = state.clone();
             tokio::spawn(async move {
                 if let Err(error) = run_voice_turn(&state, text).await {
                     tracing::error!("语音回合失败: {error:#}");
                     notify(
                         &state,
-                        t("Miyu voice error", "语音会话出错"),
+                        t("GQY voice error", "语音会话出错"),
                         &clip(&format!("{error:#}"), 120),
                     );
                     send_signal("voice.cue", json!({ "name": "error" }));
@@ -394,7 +394,7 @@ fn handle_worker_event(state: &DaemonState, kind: &str, data: Value) {
             tracing::error!("语音前端报错: {message}");
             notify(
                 state,
-                t("Miyu voice stopped", "语音服务已停止"),
+                t("GQY voice stopped", "语音服务已停止"),
                 &clip(&message, 120),
             );
         }
@@ -417,7 +417,7 @@ fn notify(state: &DaemonState, title: &str, body: &str) {
         .get_or_insert_with(|| {
             let (tx, rx) = std::sync::mpsc::channel::<(String, String)>();
             std::thread::Builder::new()
-                .name("miyu-voice-notify".into())
+                .name("gqy-voice-notify".into())
                 .spawn(move || {
                     let mut last: Option<u32> = None;
                     for (title, body) in rx {
@@ -650,7 +650,7 @@ async fn run_voice_turn(state: &DaemonState, content: String) -> Result<()> {
             send_signal("voice.hold", json!({ "on": false }));
             notify(
                 state,
-                t("Miyu voice", "Miyu 语音"),
+                t("GQY voice", "顾清影 语音"),
                 t(
                     "connection to the daemon dropped mid-turn",
                     "回合中途与 daemon 断开",
@@ -762,7 +762,7 @@ pub(crate) async fn speak_from_tool(text: &str) -> Result<()> {
     speak(state, text).await
 }
 
-/// VoiceSpeak 处理:`miyu voice say` / 设置页试听。
+/// VoiceSpeak 处理:`gqy voice say` / 设置页试听。
 pub(crate) async fn handle_voice_speak(
     state: &DaemonState,
     stream: &mut tokio::net::UnixStream,
@@ -809,7 +809,7 @@ async fn wait_attached(state: &DaemonState, timeout_ms: u64) -> Result<(), &'sta
         return Err("语音唤醒和文本转语音都没开(设置 → 语音功能)");
     }
     if locate_binary().is_none() {
-        return Err("找不到 miyu-voice 可执行文件,请安装语音组件");
+        return Err("找不到 gqy-voice 可执行文件,请安装语音组件");
     }
     ensure_worker(state);
     let mut waited = 0u64;

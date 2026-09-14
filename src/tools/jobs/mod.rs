@@ -12,7 +12,7 @@ pub(crate) use ledger::*;
 pub(crate) use output::*;
 
 use super::{CommandOutputStream, ToolProgress, ToolRegistry, ToolSpec};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -183,7 +183,7 @@ pub struct JobOverview {
 }
 
 struct JobHost {
-    paths: MiyuPaths,
+    paths: GqyPaths,
 }
 
 fn jobs() -> &'static Mutex<HashMap<String, JobEntry>> {
@@ -366,7 +366,7 @@ pub fn set_completion_hook(hook: CompletionHook) {
 
 /// One-time host init: remembers paths and sweeps ledger entries
 /// left behind by dead predecessor processes.
-pub fn init(paths: &MiyuPaths) {
+pub fn init(paths: &GqyPaths) {
     let _ = host().set(JobHost {
         paths: paths.clone(),
     });
@@ -445,10 +445,10 @@ pub async fn spawn_background(
         .arg("-lc")
         .arg(command)
         .current_dir(&workspace)
-        // 工具桥环境:后台脚本里的 `miyu tool-call` 也能以本会话身份执行。
+        // 工具桥环境:后台脚本里的 `gqy tool-call` 也能以本会话身份执行。
         .envs(
             super::workspace::try_session()
-                .map(|session| ("MIYU_SESSION".to_string(), session.to_string())),
+                .map(|session| ("GQY_SESSION".to_string(), session.to_string())),
         )
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::from(log.try_clone()?))

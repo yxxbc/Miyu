@@ -1,11 +1,11 @@
-//! `miyu --banner`：只看 banner。全屏画空会话那一帧的星空与渐变字（不带输入框），
+//! `gqy --banner`：只看 banner。全屏画空会话那一帧的星空与渐变字（不带输入框），
 //! Tab 切换模式行看两种颜色，其余任意键退出。调 `config/banner.txt` 时用它对样。
 
 use super::BannerScene;
 use crate::agent::AgentMode;
 use crate::config::AppConfig;
 use crate::i18n::text as t;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Result};
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -18,7 +18,7 @@ use crossterm::{execute, queue};
 use std::io::{self, IsTerminal, Write};
 use std::time::Duration;
 
-pub(crate) fn run(config: &AppConfig, paths: &MiyuPaths) -> Result<()> {
+pub(crate) fn run(config: &AppConfig, paths: &GqyPaths) -> Result<()> {
     if !io::stdout().is_terminal() {
         bail!(
             "{}",

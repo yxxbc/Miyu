@@ -1,7 +1,7 @@
-//! CLI 侧会话与 Miyu 消息前缀的对应关系(三条中转线共用,键含 provider)。
+//! CLI 侧会话与 顾清影 消息前缀的对应关系(三条中转线共用,键含 provider)。
 //!
 //! 键是「逐消息哈希链」:chain[i] = 前 i 条会话消息的链哈希,种子掺入
-//! provider/model/system prompt。Miyu 的历史回放是字节级 append-only 的,
+//! provider/model/system prompt。顾清影 的历史回放是字节级 append-only 的,
 //! 所以"本次请求延续上次"⇔"上次记录的 (长度, 链哈希) 是本次链的前缀"。
 //! 匹配不上(redo/compact/系统提示词变更)就重开会话全量重放。
 //!
@@ -9,14 +9,14 @@
 //! 内存,理由是「全量重放只损失效率,不损失正确性」——这个前提被 agy 对单条
 //! 输入 192,000 字节的尾部静默截断废掉了:daemon 一重启,每个会话第一轮都全量
 //! 重放,历史一超线本轮消息就被砍掉(09-04/09-05 群 130515298 案卷)。CLI 那头
-//! 的会话本来就在磁盘上,Miyu 这边不该忘。哈希用 blake3 而不是
+//! 的会话本来就在磁盘上,顾清影 这边不该忘。哈希用 blake3 而不是
 //! `DefaultHasher`:落盘的哈希要跨进程、跨工具链版本稳定。
 //!
 //! 键里还有一维**工具面档位**(`host_tools`)。claude 的工具全靠 MCP 桥,而桥
 //! 每轮按触发者身份重算工具面(管理员给全量底座、其他人给受限底座),同一条
-//! claude 会话被两档人轮流复用时,claude 会逐轮播报一份"46 个 mcp__miyu__
+//! claude 会话被两档人轮流复用时,claude 会逐轮播报一份"46 个 mcp__gqy__
 //! 工具被移除"的清单增删——模型把它读成工具服务器掉线,之后整段会话不再
-//! 碰任何 Miyu 工具(09-01 群内取证:管理员说过话之后,紧接着的非管理员回合
+//! 碰任何 顾清影 工具(09-01 群内取证:管理员说过话之后,紧接着的非管理员回合
 //! 连占卜都被答成"工具那边掉线了",而占卜工具自始至终都在清单里)。两档各
 //! 续各的会话,清单对每条 claude 会话恒定,增删归零。
 //!
@@ -31,9 +31,9 @@ use std::sync::{MutexGuard, OnceLock};
 struct SessionEntry {
     provider_id: String,
     model: String,
-    /// 归属的 Miyu 会话(workspace task-local):续传匹配显式按它隔离,
-    /// 清空 Miyu 会话时按它联动丢弃。回合作用域外(直连兜底)为 None。
-    miyu_session: Option<String>,
+    /// 归属的 顾清影 会话(workspace task-local):续传匹配显式按它隔离,
+    /// 清空 顾清影 会话时按它联动丢弃。回合作用域外(直连兜底)为 None。
+    gqy_session: Option<String>,
     /// 本会话经 MCP 桥暴露的工具面档位(true=宿主工具全量底座)。跨档
     /// 复用同一条 claude 会话正是"工具掉线"误判的成因,见模块头。
     host_tools: bool,
@@ -68,12 +68,12 @@ struct StoreFile {
     entries: Vec<SessionEntry>,
 }
 
-/// 落盘路径。`MIYU_RELAY_SESSIONS_FILE` 显式指定(空串=关掉落盘);测试构建
+/// 落盘路径。`GQY_RELAY_SESSIONS_FILE` 显式指定(空串=关掉落盘);测试构建
 /// 默认不落盘——单测共用一个进程的全局表,不能把彼此的条目写进真实 state。
 fn persist_path() -> Option<&'static PathBuf> {
     static PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
     PATH.get_or_init(|| {
-        if let Some(explicit) = std::env::var_os("MIYU_RELAY_SESSIONS_FILE") {
+        if let Some(explicit) = std::env::var_os("GQY_RELAY_SESSIONS_FILE") {
             if explicit.is_empty() {
                 return None;
             }
@@ -82,7 +82,7 @@ fn persist_path() -> Option<&'static PathBuf> {
         if cfg!(test) {
             return None;
         }
-        MiyuPaths::new()
+        GqyPaths::new()
             .ok()
             .map(|paths| paths.state_dir.join("relay").join("sessions.json"))
     })
@@ -116,11 +116,11 @@ fn load_entries_from(path: &std::path::Path) -> Vec<SessionEntry> {
 }
 
 fn save_entries_to(path: &std::path::Path, entries: &[SessionEntry]) -> std::io::Result<()> {
-    // 回合作用域外(miyu_session=None)的映射活不过本进程:那些会话没有落库的
+    // 回合作用域外(gqy_session=None)的映射活不过本进程:那些会话没有落库的
     // 历史可以重建前缀,存了也永远匹配不上。
     let persisted: Vec<&SessionEntry> = entries
         .iter()
-        .filter(|entry| entry.miyu_session.is_some())
+        .filter(|entry| entry.gqy_session.is_some())
         .collect();
     let file = serde_json::json!({ "version": STORE_VERSION, "entries": persisted });
     if let Some(parent) = path.parent() {
@@ -245,7 +245,7 @@ pub(in crate::llm::openai_compatible) fn extend_chain(
 /// 每次全量重放都得靠猜)。
 #[derive(Debug, PartialEq, Eq)]
 pub(in crate::llm::openai_compatible) enum ResumeMiss {
-    /// 这条 Miyu 会话在本档名下没有任何登记(首轮 / 重启后未落盘 / 已被清空)。
+    /// 这条 顾清影 会话在本档名下没有任何登记(首轮 / 重启后未落盘 / 已被清空)。
     NoEntry,
     /// 有登记,但只在另一档工具面名下。
     OtherTierOnly,
@@ -259,7 +259,7 @@ fn find_in(
     entries: &[SessionEntry],
     provider_id: &str,
     model: &str,
-    miyu_session: Option<&str>,
+    gqy_session: Option<&str>,
     host_tools: bool,
     chain: &[u64],
     conversation_len: usize,
@@ -267,7 +267,7 @@ fn find_in(
     let mine: Vec<&SessionEntry> = entries
         .iter()
         .filter(|entry| entry.provider_id == provider_id && entry.model == model)
-        .filter(|entry| entry.miyu_session.as_deref() == miyu_session)
+        .filter(|entry| entry.gqy_session.as_deref() == gqy_session)
         .collect();
     if mine.is_empty() {
         return Err(ResumeMiss::NoEntry);
@@ -307,7 +307,7 @@ fn find_in(
 pub(in crate::llm::openai_compatible) fn find_resumable(
     provider_id: &str,
     model: &str,
-    miyu_session: Option<&str>,
+    gqy_session: Option<&str>,
     host_tools: bool,
     chain: &[u64],
     conversation_len: usize,
@@ -317,7 +317,7 @@ pub(in crate::llm::openai_compatible) fn find_resumable(
         &store.entries,
         provider_id,
         model,
-        miyu_session,
+        gqy_session,
         host_tools,
         chain,
         conversation_len,
@@ -327,7 +327,7 @@ pub(in crate::llm::openai_compatible) fn find_resumable(
 pub(in crate::llm::openai_compatible) fn record_session(
     provider_id: &str,
     model: &str,
-    miyu_session: Option<&str>,
+    gqy_session: Option<&str>,
     host_tools: bool,
     prefix_len: usize,
     prefix_hash: u64,
@@ -346,7 +346,7 @@ pub(in crate::llm::openai_compatible) fn record_session(
     store.entries.push(SessionEntry {
         provider_id: provider_id.to_string(),
         model: model.to_string(),
-        miyu_session: miyu_session.map(str::to_string),
+        gqy_session: gqy_session.map(str::to_string),
         host_tools,
         prefix_len,
         prefix_hash,
@@ -355,15 +355,15 @@ pub(in crate::llm::openai_compatible) fn record_session(
     persist(&store);
 }
 
-/// 清空 Miyu 会话时联动:丢弃它名下的全部映射,返回对应的 claude 会话 id
+/// 清空 顾清影 会话时联动:丢弃它名下的全部映射,返回对应的 claude 会话 id
 /// (调用方拿去做 claude 侧转录的尽力删除)。
-pub(in crate::llm::openai_compatible) fn forget_miyu_session(miyu_session: &str) -> Vec<String> {
+pub(in crate::llm::openai_compatible) fn forget_gqy_session(gqy_session: &str) -> Vec<String> {
     let Some(mut store) = store() else {
         return Vec::new();
     };
     let mut removed = Vec::new();
     store.entries.retain(|entry| {
-        if entry.miyu_session.as_deref() == Some(miyu_session) {
+        if entry.gqy_session.as_deref() == Some(gqy_session) {
             removed.push(entry.claude_session.clone());
             false
         } else {
@@ -404,7 +404,7 @@ mod tests {
         record_session(
             "p",
             "m",
-            Some("miyu-a"),
+            Some("gqy-a"),
             true,
             2,
             chain[2],
@@ -416,13 +416,13 @@ mod tests {
         extended.push(message("user", "next"));
         let chain = prefix_chain("p", "m", "sys", &extended);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-a"), true, &chain, extended.len()),
+            find_resumable("p", "m", Some("gqy-a"), true, &chain, extended.len()),
             Ok(("sess-1".to_string(), 2))
         );
 
-        // 别的 Miyu 会话即使字节级同前缀,也绝不共用 claude 会话。
+        // 别的 顾清影 会话即使字节级同前缀,也绝不共用 claude 会话。
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-b"), true, &chain, extended.len()),
+            find_resumable("p", "m", Some("gqy-b"), true, &chain, extended.len()),
             Err(ResumeMiss::NoEntry)
         );
 
@@ -431,29 +431,29 @@ mod tests {
         rewritten.push(message("user", "next"));
         let chain = prefix_chain("p", "m", "sys", &rewritten);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-a"), true, &chain, rewritten.len()),
+            find_resumable("p", "m", Some("gqy-a"), true, &chain, rewritten.len()),
             Err(ResumeMiss::PrefixMismatch { recorded_len: 2 })
         );
 
         // 系统提示词变更:种子不同,匹配不上。
         let chain = prefix_chain("p", "m", "other-sys", &extended);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-a"), true, &chain, extended.len()),
+            find_resumable("p", "m", Some("gqy-a"), true, &chain, extended.len()),
             Err(ResumeMiss::PrefixMismatch { recorded_len: 2 })
         );
 
         // 增量为空(长度相同)不算续传。
         let chain = prefix_chain("p", "m", "sys", &base);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-a"), true, &chain, base.len()),
+            find_resumable("p", "m", Some("gqy-a"), true, &chain, base.len()),
             Err(ResumeMiss::NoDelta)
         );
 
-        // 清空 Miyu 会话 ⇒ 名下映射整体丢弃,并交回 claude 会话 id。
-        assert_eq!(forget_miyu_session("miyu-a"), vec!["sess-1".to_string()]);
+        // 清空 顾清影 会话 ⇒ 名下映射整体丢弃,并交回 claude 会话 id。
+        assert_eq!(forget_gqy_session("gqy-a"), vec!["sess-1".to_string()]);
         let chain = prefix_chain("p", "m", "sys", &extended);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-a"), true, &chain, extended.len()),
+            find_resumable("p", "m", Some("gqy-a"), true, &chain, extended.len()),
             Err(ResumeMiss::NoEntry)
         );
         forget_session("sess-1");
@@ -481,7 +481,7 @@ mod tests {
         record_session(
             "p",
             "m",
-            Some("miyu-img"),
+            Some("gqy-img"),
             true,
             2,
             extend_chain(live_chain[1], &reply),
@@ -491,15 +491,15 @@ mod tests {
         let next = vec![fossil, reply, message("user", "再看看")];
         let chain = prefix_chain("p", "m", "sys", &next);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-img"), true, &chain, next.len()),
+            find_resumable("p", "m", Some("gqy-img"), true, &chain, next.len()),
             Ok(("sess-img".to_string(), 2))
         );
         forget_session("sess-img");
     }
 
     /// 两档工具面各续各的 claude 会话:跨档绝不复用(复用就会让 claude 逐轮
-    /// 播报几十件 mcp__miyu__ 工具被移除,模型读成"工具掉线",此后整段会话
-    /// 不再碰任何 Miyu 工具——09-01 群内取证的真身)。
+    /// 播报几十件 mcp__gqy__ 工具被移除,模型读成"工具掉线",此后整段会话
+    /// 不再碰任何 顾清影 工具——09-01 群内取证的真身)。
     ///
     /// 同时钉住这套分叉的代价上界:切档回来仍是**续传**而不是全量重放。
     /// 链哈希 append-only,中间插了别档的回合之后,本档旧前缀照样匹配得上。
@@ -510,31 +510,31 @@ mod tests {
         record_session(
             "p",
             "m",
-            Some("miyu-t"),
+            Some("gqy-t"),
             false,
             2,
             chain[2],
             "guest-1".to_string(),
         );
 
-        // 管理员那一轮:同一条 Miyu 会话、同一段前缀,但工具面是全量底座。
+        // 管理员那一轮:同一条 顾清影 会话、同一段前缀,但工具面是全量底座。
         // 拿不到受限档的会话,只能新开——正是这里挡住了清单增删。
         let mut admin_turn = guest.clone();
         admin_turn.push(message("user", "管理员问"));
         let chain = prefix_chain("p", "m", "sys", &admin_turn);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-t"), true, &chain, admin_turn.len()),
+            find_resumable("p", "m", Some("gqy-t"), true, &chain, admin_turn.len()),
             Err(ResumeMiss::OtherTierOnly)
         );
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-t"), false, &chain, admin_turn.len()),
+            find_resumable("p", "m", Some("gqy-t"), false, &chain, admin_turn.len()),
             Ok(("guest-1".to_string(), 2))
         );
         let admin_reply = message("assistant", "管理员答");
         record_session(
             "p",
             "m",
-            Some("miyu-t"),
+            Some("gqy-t"),
             true,
             4,
             extend_chain(chain[3], &admin_reply),
@@ -548,17 +548,17 @@ mod tests {
         back.push(message("user", "群友再问"));
         let chain = prefix_chain("p", "m", "sys", &back);
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-t"), false, &chain, back.len()),
+            find_resumable("p", "m", Some("gqy-t"), false, &chain, back.len()),
             Ok(("guest-1".to_string(), 2))
         );
         // 两档并存,各认各的:管理员档从自己上次覆盖点(4)续。
         assert_eq!(
-            find_resumable("p", "m", Some("miyu-t"), true, &chain, back.len()),
+            find_resumable("p", "m", Some("gqy-t"), true, &chain, back.len()),
             Ok(("admin-1".to_string(), 4))
         );
 
-        // 清空 Miyu 会话要把两档一起丢掉,不能只丢一档。
-        let mut removed = forget_miyu_session("miyu-t");
+        // 清空 顾清影 会话要把两档一起丢掉,不能只丢一档。
+        let mut removed = forget_gqy_session("gqy-t");
         removed.sort();
         assert_eq!(removed, vec!["admin-1".to_string(), "guest-1".to_string()]);
     }
@@ -576,7 +576,7 @@ mod tests {
             SessionEntry {
                 provider_id: "p".into(),
                 model: "m".into(),
-                miyu_session: Some("miyu-persist".into()),
+                gqy_session: Some("gqy-persist".into()),
                 host_tools: true,
                 prefix_len: 2,
                 prefix_hash: chain[2],
@@ -586,7 +586,7 @@ mod tests {
             SessionEntry {
                 provider_id: "p".into(),
                 model: "m".into(),
-                miyu_session: None,
+                gqy_session: None,
                 host_tools: true,
                 prefix_len: 2,
                 prefix_hash: chain[2],
@@ -609,7 +609,7 @@ mod tests {
                 &restored,
                 "p",
                 "m",
-                Some("miyu-persist"),
+                Some("gqy-persist"),
                 true,
                 &chain,
                 extended.len()

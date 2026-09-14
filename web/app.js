@@ -390,7 +390,7 @@
 
   const state = {
     backgroundJobs: new Map(),
-    jobsStripOpen: localStorage.getItem("miyu.web.jobsStripOpen") === "1",
+    jobsStripOpen: localStorage.getItem("gqy.web.jobsStripOpen") === "1",
     expandedJobs: new Set(),
     jobStreamSinks: new Map(),
     commandLogs: new Map(),
@@ -408,11 +408,11 @@
     models: [],
     persona: {
       name: "顾清影",
-      avatar_url: "/assets/miyu-logo.png",
-      board_image_url: "/assets/miyuwallpaper.png",
+      avatar_url: "/assets/gqy-logo.png",
+      board_image_url: "/assets/gqywallpaper.png",
       board_title: DEFAULT_BOARD_TITLE,
       board_subtitle: DEFAULT_BOARD_SUBTITLE,
-      composer_placeholder: defaultComposerPlaceholder("Miyu"),
+      composer_placeholder: defaultComposerPlaceholder("GQY"),
       starter_prompts: DEFAULT_STARTER_PROMPTS
     },
     sessions: [],
@@ -614,8 +614,8 @@
 
   /*
    * 外观偏好存在 daemon 那边。localStorage 按 **origin** 隔离:
-   * http://127.0.0.1:8300 和 http://192.168.1.7:8300 是两个源,同一台 Miyu 换个
-   * 地址进来就是另一份主题——「Miyu 长什么样」不该跟着浏览器地址栏走。
+   * http://127.0.0.1:8300 和 http://192.168.1.7:8300 是两个源,同一台 顾清影 换个
+   * 地址进来就是另一份主题——「顾清影 长什么样」不该跟着浏览器地址栏走。
    * 本地那份仍然写:它是首帧的即时值,服务端那份要等一个来回,先按本地上色能
    * 免掉一次闪烁。窗口尺寸相关的偏好(侧栏折叠、分栏比例)故意不同步,手机和
    * 台式机本来就该不一样。
@@ -665,7 +665,7 @@
     const themeColor = document.querySelector('meta[name="theme-color"]');
     if (themeColor) themeColor.content = selected === "graphite" ? "#171821" : "#f6f0e2";
     if (persist) {
-      safeStorageSet("miyu.web.theme", selected);
+      safeStorageSet("gqy.web.theme", selected);
       saveUiPref("theme", selected);
     }
   }
@@ -690,7 +690,7 @@
       if (button.dataset.schemeChoice === "matugen") button.hidden = state.matugenAvailable !== true;
     });
     if (persist) {
-      safeStorageSet("miyu.web.colorScheme", requested);
+      safeStorageSet("gqy.web.colorScheme", requested);
       saveUiPref("colorScheme", requested);
     }
   }
@@ -703,7 +703,7 @@
       state.matugenAvailable = false;
     }
     // 无持久化记录时:matugen 可用则维持现状(matugen),否则窗边。默认值不写入存储。
-    setColorScheme(safeStorageGet("miyu.web.colorScheme") || (state.matugenAvailable ? "matugen" : "madobe"), false);
+    setColorScheme(safeStorageGet("gqy.web.colorScheme") || (state.matugenAvailable ? "matugen" : "madobe"), false);
   }
 
   /* 仅 WebUI 的本地显示偏好(localStorage,不写入 config) */
@@ -719,7 +719,7 @@
       button.setAttribute("aria-pressed", String(active));
     });
     if (persist) {
-      safeStorageSet("miyu.web.chatFontSize", selected);
+      safeStorageSet("gqy.web.chatFontSize", selected);
       saveUiPref("chatFontSize", selected);
     }
   }
@@ -732,7 +732,7 @@
       block.open = state.reasoningExpanded;
     });
     if (persist) {
-      safeStorageSet("miyu.web.reasoningExpanded", String(state.reasoningExpanded));
+      safeStorageSet("gqy.web.reasoningExpanded", String(state.reasoningExpanded));
       saveUiPref("reasoningExpanded", String(state.reasoningExpanded));
     }
   }
@@ -746,7 +746,7 @@
       card.querySelector(".tool-head")?.setAttribute("aria-expanded", String(state.toolExpanded));
     });
     if (persist) {
-      safeStorageSet("miyu.web.toolExpanded", String(state.toolExpanded));
+      safeStorageSet("gqy.web.toolExpanded", String(state.toolExpanded));
       saveUiPref("toolExpanded", String(state.toolExpanded));
     }
   }
@@ -756,12 +756,12 @@
     elements.procCollapseToggle?.setAttribute("aria-checked", String(state.procCollapse));
     // 对已经切断的时间线即时生效:开 → 露出总结行并收起;关 → 藏掉总结行并展开
     document.querySelectorAll(".proc-line").forEach((line) => {
-      if (!line.miyuProc?.closed) return;
-      line.miyuProc.head.hidden = !state.procCollapse;
+      if (!line.gqyProc?.closed) return;
+      line.gqyProc.head.hidden = !state.procCollapse;
       procLineSetOpen(line, !state.procCollapse);
     });
     if (persist) {
-      safeStorageSet("miyu.web.procCollapse", String(state.procCollapse));
+      safeStorageSet("gqy.web.procCollapse", String(state.procCollapse));
       saveUiPref("procCollapse", String(state.procCollapse));
     }
   }
@@ -801,7 +801,7 @@
     inner.appendChild(steps);
     wrap.appendChild(inner);
     line.append(rail, head, wrap);
-    line.miyuProc = { rail, head, summary, steps, closed: false, batchStart: -Infinity };
+    line.gqyProc = { rail, head, summary, steps, closed: false, batchStart: -Infinity };
     const fit = () => procLineFit(line);
     if (typeof ResizeObserver === "function") new ResizeObserver(fit).observe(line);
     window.requestAnimationFrame(fit);
@@ -811,7 +811,7 @@
   const PROC_NODE_SELECTOR = ":scope > .tool-head > .tool-icon, :scope > summary > .reasoning-icon, :scope > summary > .subagent-brief-marker, :scope.tool-preparing-tag > .icon-slot";
 
   function procLineFit(line) {
-    const proc = line.miyuProc;
+    const proc = line.gqyProc;
     if (!proc || !line.isConnected) return;
     const nodes = [];
     if (!proc.head.hidden) nodes.push(proc.head.querySelector(".proc-node"));
@@ -851,12 +851,12 @@
   // 高度、ResizeObserver 不触发),不再跑 360ms rAF 循环(那是长页面卡死/崩溃的隐患)。
   function railSnapFit(el) {
     const line = el?.closest?.(".proc-line");
-    if (line?.miyuProc) procLineFit(line);
+    if (line?.gqyProc) procLineFit(line);
   }
 
   function procLineSetOpen(line, open) {
     line.classList.toggle("is-open", open);
-    const proc = line.miyuProc;
+    const proc = line.gqyProc;
     if (!proc) return;
     proc.head.setAttribute("aria-expanded", String(open));
     // 收起「Worked for」整条时间线时,把里面已展开的思考块/工具卡(含子代理里的)
@@ -894,7 +894,7 @@
   function procLineAttach(blocks, element, isStatic = false) {
     if (!blocks || !element) return null;
     let line = blocks.lastElementChild;
-    if (!line?.classList?.contains("proc-line") || line.miyuProc?.closed) {
+    if (!line?.classList?.contains("proc-line") || line.gqyProc?.closed) {
       line = procLineCreate(isStatic);
       blocks.appendChild(line);
     }
@@ -902,13 +902,13 @@
       // 快模型一口气吐几个调用:不压着后来的行等,而是让 250ms 窗口内到的行共用
       // 同一条淡入时间轴(负延迟对齐到窗口起点),几行像一批一起浮起来;窗口过了
       // 再开新一批。动画还是那条曲线,只是不会一行一行各自蹦。
-      const proc = line.miyuProc;
+      const proc = line.gqyProc;
       const now = performance.now();
       if (now - proc.batchStart > 250) proc.batchStart = now;
       const offset = now - proc.batchStart;
       if (offset > 0) element.style.animationDelay = `-${Math.round(offset)}ms`;
     }
-    line.miyuProc.steps.appendChild(element);
+    line.gqyProc.steps.appendChild(element);
     return line;
   }
 
@@ -918,19 +918,19 @@
   function attachSubBrief(blocks, brief) {
     if (!blocks || !brief) return;
     let line = blocks.lastElementChild;
-    if (!line?.classList?.contains("proc-line") || line.miyuProc?.closed) {
+    if (!line?.classList?.contains("proc-line") || line.gqyProc?.closed) {
       line = procLineCreate(false);
       blocks.appendChild(line);
     }
-    line.miyuProc.steps.insertBefore(brief, line.miyuProc.steps.firstChild);
+    line.gqyProc.steps.insertBefore(brief, line.gqyProc.steps.firstChild);
     procLineFit(line);
   }
 
   // 正文/媒体来了:把当前时间线切断
   function procLineBreak(blocks) {
     const line = blocks?.lastElementChild;
-    if (!line?.classList?.contains("proc-line") || line.miyuProc?.closed) return;
-    const proc = line.miyuProc;
+    if (!line?.classList?.contains("proc-line") || line.gqyProc?.closed) return;
+    const proc = line.gqyProc;
     proc.closed = true;
     line.classList.remove("is-live");
     procLineRefresh(line);
@@ -945,7 +945,7 @@
 
   // 总结行文字:Worked for 5.4 s · 3 tools · 1 thought · 1 err(回看的没有耗时)
   function procLineRefresh(line) {
-    const proc = line?.miyuProc;
+    const proc = line?.gqyProc;
     if (!proc?.closed) return;
     const tools = proc.steps.querySelectorAll(":scope > .tool-card").length;
     const thoughts = proc.steps.querySelectorAll(":scope > .reasoning-block").length;
@@ -955,7 +955,7 @@
     let first = Infinity;
     let last = -Infinity;
     for (const card of proc.steps.querySelectorAll(":scope > .tool-card")) {
-      const timing = card.miyuTiming;
+      const timing = card.gqyTiming;
       if (!timing || timing.startedAt == null || timing.finishedAt == null) continue;
       first = Math.min(first, timing.startedAt);
       last = Math.max(last, timing.finishedAt);
@@ -1062,7 +1062,7 @@
     if (elements.sidebarExpandButton) elements.sidebarExpandButton.hidden = !state.sidebarCollapsed;
     if (elements.sidebarCollapseButton) elements.sidebarCollapseButton.hidden = state.sidebarCollapsed;
     if (state.sidebarCollapsed) closeSidebar();
-    if (!automatic) safeStorageSet("miyu.web.sidebarCollapsed", String(state.sidebarCollapsed));
+    if (!automatic) safeStorageSet("gqy.web.sidebarCollapsed", String(state.sidebarCollapsed));
     syncArtifactLayout?.();
   }
 
@@ -1189,7 +1189,7 @@
   }
 
   function normalizePersona(value) {
-    const name = String(value?.name || "").trim() || "Miyu";
+    const name = String(value?.name || "").trim() || "GQY";
     const avatarUrl = typeof value?.avatar_url === "string" && value.avatar_url ? value.avatar_url : null;
     const boardImageUrl = typeof value?.board_image_url === "string" && value.board_image_url
       ? value.board_image_url
@@ -1285,7 +1285,7 @@
     elements.settingsPanels.forEach((panel) => {
       panel.hidden = panel.dataset.settingsPanel !== selected;
     });
-    window.MiyuSettings?.onShow(selected);
+    window.GqySettings?.onShow(selected);
     if (consoleIsOpen() && state.consolePanel === "settings") writeConsoleHash(consoleHashFor("settings", selected));
   }
 
@@ -1353,7 +1353,7 @@
   function renderConfigEditors() {
     if (!state.configLoaded || !state.configDraft) return;
     state.invalidConfigFields.clear();
-    window.MiyuSettings?.render();
+    window.GqySettings?.render();
     updateAdvancedConfigEditor();
     updateSettingsControls();
   }
@@ -1518,7 +1518,7 @@
       const parsed = JSON.parse(elements.advancedConfigEditor.value);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("配置必须是 JSON 对象");
       const oldSecretStates = new Map((state.configDraft?.providers || []).map((provider, index) => [String(provider?.id || ""), Boolean(state.providerSecretStates[index])]));
-      window.MiyuSettings?.remapApiQuotaSecrets(state.configDraft, parsed);
+      window.GqySettings?.remapApiQuotaSecrets(state.configDraft, parsed);
       state.configDraft = parsed;
       ensurePlatformDefaults(state.configDraft);
       state.providerSecretStates = (Array.isArray(parsed.providers) ? parsed.providers : []).map((provider) => oldSecretStates.get(String(provider?.id || "")) || false);
@@ -1551,7 +1551,7 @@
     try {
       response = await fetch(path, { ...options, headers, credentials: "same-origin" });
     } catch (_) {
-      throw new ApiError("无法连接 Miyu WebUI", 0);
+      throw new ApiError("无法连接 顾清影 WebUI", 0);
     }
     if (response.status === 401 && !state.blocked && !path.startsWith("/api/auth/")) {
       // 登录态没了(daemon 重启、令牌过期):直接回登录页,别等用户发消息时弹一句英文。
@@ -1768,7 +1768,7 @@
       elements.contextTrack.classList.toggle("is-critical", percent >= 90);
     }
     // 分项弹窗开着时跟着重算,换了会话就关掉(contextpanel.js)。
-    window.MiyuContextPanel?.contextChanged();
+    window.GqyContextPanel?.contextChanged();
   }
 
   // 输入框下方信息行的「每秒 toks」「累计」:取最新一轮的样本,回合结束/round_usage 时更新。
@@ -3322,7 +3322,7 @@
     request.open("POST", `/api/attachments?session_id=${encodeURIComponent(item.sessionId)}`);
     request.setRequestHeader("Accept", "application/json");
     request.setRequestHeader("Content-Type", item.file.type || "application/octet-stream");
-    request.setRequestHeader("X-Miyu-Filename", encodeURIComponent(item.file.name));
+    request.setRequestHeader("X-GQY-Filename", encodeURIComponent(item.file.name));
     request.upload.addEventListener("progress", (event) => {
       if (!event.lengthComputable || item.request !== request) return;
       item.progress = Math.min(99, Math.round((event.loaded / event.total) * 100));
@@ -3450,7 +3450,7 @@
   }
 
   // 语音输入(流式听写):浏览器麦克风 → 16kHz PCM16 → WebSocket
-  // /api/voice/stream → daemon → miyu-voice(VAD/分句/识别)→ 识别一句回一句,
+  // /api/voice/stream → daemon → gqy-voice(VAD/分句/识别)→ 识别一句回一句,
   // 逐句填进输入框。按一下开始,再按一下或 Esc 结束;静默 10 秒 daemon 自动收。
   // 按钮只在 daemon 说语音功能已启用时显示;LAN 上的 http 页面拿不到麦克风
   // (浏览器安全策略),这时提示改用本机 REPL 的 /stt。
@@ -3461,7 +3461,7 @@
     apiRequest("/api/voice/status")
       .then((response) => response.json())
       .then((status) => {
-        // 语音按钮只在 miyu voice 可用时才存在(用户);具体显 mic 还是 send 由
+        // 语音按钮只在 gqy voice 可用时才存在(用户);具体显 mic 还是 send 由
         // updateComposerControls 按有没有输入切换(空+语音可用=麦,有输入=发送)。
         state.voiceEnabled = Boolean(status?.enabled);
         updateControlState();
@@ -3661,7 +3661,7 @@
     elements.sendButton.setAttribute("aria-label", elements.sendButton.title);
     elements.sendButton.disabled = state.blocked || state.adminBusy || state.submitting || hasPendingQuestion()
       || (inputCount === 0 && !attachmentReady) || inputCount > MAX_CONTENT_CHARS || attachmentUploading || attachmentError;
-    // 语音与发送合并成同一个位置(用户):miyu voice 可用、且没有输入、且不在排队/运行时
+    // 语音与发送合并成同一个位置(用户):gqy voice 可用、且没有输入、且不在排队/运行时
     // 显麦克风(点了走语音),否则显发送。voice 不可用就永远是发送。
     const hasDraft = inputCount > 0 || attachmentReady;
     const showMic = state.voiceEnabled === true && !hasDraft && !running && !state.submitting;
@@ -4294,12 +4294,12 @@
     code.textContent = codeText;
     // 语法高亮。纯 DOM 上色,不认识的语言/分词出岔子一律保持这份纯文本
     // (见 highlight.js);settled=false 表示围栏还没闭合,这一轮先不上色。
-    window.MiyuHighlight?.paint(code, language, codeText, settled);
+    window.GqyHighlight?.paint(code, language, codeText, settled);
     pre.appendChild(code);
     wrapper.append(toolbar, pre);
     // ```svg / ```html 围栏闭合后画成图,块头加「预览 / 源码」(fencepreview.js)。
     if (settled) {
-      window.MiyuFencePreview?.decorate({ wrapper, toolbar, pre, language, source: codeText, streaming: markdownStreaming });
+      window.GqyFencePreview?.decorate({ wrapper, toolbar, pre, language, source: codeText, streaming: markdownStreaming });
     }
     return wrapper;
   }
@@ -4689,9 +4689,9 @@
     container.replaceChildren(fragment);
     // 独占一行的链接升级成卡片。这里只是排队:流式期间每来一段都会重渲染,
     // 真正的抓取要等最后一次渲染安顿下来(见 linkcards.js 的防抖)。
-    window.MiyuLinkCards?.scan(container);
+    window.GqyLinkCards?.scan(container);
     // 没闭合的围栏这一轮空着,等这块正文不再变了再补上色(同样是防抖)。
-    window.MiyuHighlight?.settle(container);
+    window.GqyHighlight?.settle(container);
   }
 
   /// daemon 自己合成的轮，不是任何人敲的：后台任务唤醒、目标续轮。
@@ -4964,9 +4964,9 @@
         // 页」。按住 Ctrl/⌘ 或中键仍然走链接原本的行为。
         link.addEventListener("click", (event) => {
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-          if (!window.MiyuLightbox) return;
+          if (!window.GqyLightbox) return;
           event.preventDefault();
-          window.MiyuLightbox.open({ url, name });
+          window.GqyLightbox.open({ url, name });
         });
         const image = document.createElement("img");
         image.src = url;
@@ -4983,7 +4983,7 @@
       }
       // 能预览的芯片：整块是「看看是什么」，右边箭头单独负责下载。不能预览的
       // 二进制维持原样，整块就是下载链接。
-      const previewable = Boolean(window.MiyuPreview?.canPreview(attachment));
+      const previewable = Boolean(window.GqyPreview?.canPreview(attachment));
       const chip = document.createElement(previewable ? "div" : "a");
       chip.className = "user-attachment-file";
       if (previewable) {
@@ -4991,7 +4991,7 @@
         chip.tabIndex = 0;
         chip.setAttribute("role", "button");
         chip.title = `预览 ${name}`;
-        const openPreview = () => window.MiyuPreview.open({ ...attachment, url, name });
+        const openPreview = () => window.GqyPreview.open({ ...attachment, url, name });
         chip.addEventListener("click", openPreview);
         chip.addEventListener("keydown", (event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -5198,7 +5198,7 @@
     state.stageTodos = todos?.length ? todos : null;
     const panel = elements.stageTodos;
     panel.replaceChildren();
-    const card = state.stageTodos ? window.MiyuTodos?.renderList(state.stageTodos) : null;
+    const card = state.stageTodos ? window.GqyTodos?.renderList(state.stageTodos) : null;
     if (!card) {
       panel.hidden = true;
       return;
@@ -5487,7 +5487,7 @@
       const response = await apiRequest(`/api/sessions/${encodeURIComponent(scope)}/todos`);
       const payload = await response.json();
       if (generation !== state.stageTodosGeneration) return;
-      renderStageTodos(window.MiyuTodos?.normalize(payload?.todos) || null);
+      renderStageTodos(window.GqyTodos?.normalize(payload?.todos) || null);
     } catch (_) {
       // 面板是附带信息,拿不到就空着,不打扰对话。
       if (generation === state.stageTodosGeneration) renderStageTodos(null);
@@ -5502,9 +5502,9 @@
     try {
       const response = await apiRequest(`/api/sessions/${encodeURIComponent(scope)}/todos`);
       const payload = await response.json();
-      const todos = window.MiyuTodos?.normalize(payload?.todos) || null;
+      const todos = window.GqyTodos?.normalize(payload?.todos) || null;
       if (sameSession) renderStageTodos(todos);
-      const panel = todos ? window.MiyuTodos.renderList(todos) : null;
+      const panel = todos ? window.GqyTodos.renderList(todos) : null;
       tool.card.querySelector(".todo-panel")?.remove();
       if (panel) tool.card.appendChild(panel);
     } catch (_) {}
@@ -5855,7 +5855,7 @@
     code.textContent = text;
     // 聊天正文里的代码块一直有高亮,这边却是一片纯白——同一个组件接上就是了。
     // 这份内容已经完整(不是流式),所以 settled=true,当场上色。
-    window.MiyuHighlight?.paint(code, artifactSourceLanguage(artifact), text, true);
+    window.GqyHighlight?.paint(code, artifactSourceLanguage(artifact), text, true);
     pre.appendChild(code);
     source.append(gutter, pre);
     elements.artifactView.replaceChildren(source);
@@ -6114,7 +6114,7 @@
     const imageMime = !mime || mime.startsWith("image/");
     const width = validAssetDimension(source.width);
     const height = validAssetDimension(source.height);
-    const alt = String(source.alt || "").trim() || "Miyu 生成的图片";
+    const alt = String(source.alt || "").trim() || "顾清影 生成的图片";
 
     const figure = document.createElement("figure");
     figure.className = "conversation-media";
@@ -6168,7 +6168,7 @@
       visual.setAttribute("role", "button");
       visual.setAttribute("aria-label", `放大预览 ${alt}`);
       const openLightbox = () => {
-        window.MiyuLightbox?.open({
+        window.GqyLightbox?.open({
           url,
           name: alt,
           onOpenInWorkspace: () => {
@@ -6192,7 +6192,7 @@
   /*
    * display.reasoning 只决定后端产生什么(摘要/完整/不产生);
    * WebUI 是否渲染仅以「有没有思考内容」为准,hidden 时若仍收到文本则不渲染(保底)。
-   * 默认展开/收起由本地偏好 miyu.web.reasoningExpanded 决定,与 summary/full 无关。
+   * 默认展开/收起由本地偏好 gqy.web.reasoningExpanded 决定,与 summary/full 无关。
    */
   function reasoningHidden() {
     return state.display?.reasoning === "hidden";
@@ -6760,8 +6760,8 @@
         procLineAttach(blocks, createPersistedToolCard(call), true);
         // share_file 的富预览(播放器/图片/下载条)重建:实时靠 tool.finished
         // 的输出渲染,刷新/切换后从落库的 tool_flow 输出里复原同一份。
-        if (window.MiyuShared?.isShareTool(String(call?.name || ""))) {
-          const shared = window.MiyuShared.renderCard(String(call?.output || ""));
+        if (window.GqyShared?.isShareTool(String(call?.name || ""))) {
+          const shared = window.GqyShared.renderCard(String(call?.output || ""));
           if (shared) {
             procLineBreak(blocks);
             blocks.appendChild(shared);
@@ -6794,7 +6794,7 @@
     procLineBreak(blocks);
     assistantContent.appendChild(blocks);
     assistantContent.classList.toggle("is-slim", !blocks.querySelector(WIDE_BLOCK_SELECTOR));
-    window.MiyuArtifactChips?.sync(assistantContent, artifacts, artifactChipOptions());
+    window.GqyArtifactChips?.sync(assistantContent, artifacts, artifactChipOptions());
     article.append(header, assistantContent);
 
     const meta = document.createElement("div");
@@ -7121,7 +7121,7 @@
       for (const turn of turns) renderPersistedTurn(turn);
     }
     // 命令回执不是回合，不在 state.turns 里；timeline 每次重建都要补回来。
-    window.MiyuCommands?.renderNotices(elements.timeline, state.viewSessionId);
+    window.GqyCommands?.renderNotices(elements.timeline, state.viewSessionId);
     reattachLiveArticles();
     // 落盘回合数为 0 不等于屏幕上没内容：回执和正在流式输出的气泡都不在
     // state.turns 里。只按 turns 判空的话，运行中一次重绘就把画面整个换成
@@ -7436,7 +7436,7 @@
     // AI 输出的「加载中」用编排点动效(用户拍板):三点走三角·顺时针→聚合→三角→
     // 逆时针→聚合→水平跳动,6s 循环。输入框那份仍是旧的匀速三点。
     const indicator = document.createElement("div");
-    indicator.className = "miyu-run typing-run";
+    indicator.className = "gqy-run typing-run";
     indicator.setAttribute("aria-hidden", "true");
     const spin = document.createElement("span");
     spin.className = "mr-spin";
@@ -8053,8 +8053,8 @@
    * 「实时有、刷新没了」那类不一致,工具签自己踩过这个坑。
    */
   const TOOL_RICH_CARDS = [
-    { selector: ".map-card", mount: "fold", module: () => window.MiyuMap, matches: (m, name) => m.isMapTool(name), render: (m, output) => m.renderCard(output) },
-    { selector: ".express-card", mount: "outside", module: () => window.MiyuExpress, matches: (m, name) => m.isExpressTool(name), render: (m, output) => m.renderCard(output) },
+    { selector: ".map-card", mount: "fold", module: () => window.GqyMap, matches: (m, name) => m.isMapTool(name), render: (m, output) => m.renderCard(output) },
+    { selector: ".express-card", mount: "outside", module: () => window.GqyExpress, matches: (m, name) => m.isExpressTool(name), render: (m, output) => m.renderCard(output) },
   ];
 
   function toolRichCards(name, output) {
@@ -8137,7 +8137,7 @@
     const startedMs = Number(call?.started_ms);
     const finishedMs = Number(call?.finished_ms);
     const hasSpan = Number.isFinite(startedMs) && Number.isFinite(finishedMs) && finishedMs >= startedMs;
-    if (hasSpan) card.miyuTiming = { startedAt: startedMs, finishedAt: finishedMs };
+    if (hasSpan) card.gqyTiming = { startedAt: startedMs, finishedAt: finishedMs };
     statusText.textContent = ok ? (hasSpan ? formatToolDuration(finishedMs - startedMs) || "完成" : "完成") : "失败";
     status.append(makeIconSlot(ok ? "check" : "circle-alert"), statusText);
     head.append(icon, title, status, makeIconSlot("chevron-down", "tool-chevron"));
@@ -8151,7 +8151,7 @@
     body.className = "tool-body";
     // 文件编辑:把 patchText 参数画成 diff(增删配色),而不是摊一坨补丁 JSON。
     // patchText 随 tool_flow 落库,回看/刷新走同一份。渲不出(解析失败)再退回原始参数。
-    const diffView = window.MiyuDiff?.renderFromCall?.(call) || null;
+    const diffView = window.GqyDiff?.renderFromCall?.(call) || null;
     if (diffView) {
       body.appendChild(diffView);
     } else {
@@ -8193,10 +8193,10 @@
     fold.appendChild(body);
     card.append(head, fold);
     // 待办列表挂在签外面,收起态也看得见——那是给人看的产出,不是调试信息。
-    const todos = window.MiyuTodos?.isTodoTool(name) ? window.MiyuTodos.render(output) : null;
+    const todos = window.GqyTodos?.isTodoTool(name) ? window.GqyTodos.render(output) : null;
     if (todos) card.appendChild(todos);
     // 分享附件同理:文件卡片是交付物,直接出现在气泡里,点击即下载。
-    const shared = window.MiyuShared?.isShareTool(name) ? window.MiyuShared.renderCard(output) : null;
+    const shared = window.GqyShared?.isShareTool(name) ? window.GqyShared.renderCard(output) : null;
     if (shared) card.appendChild(shared);
     // 地图/快递卡片同理:坐标与物流轨迹是产出,不是工具日志。
     attachToolRichCards(card, name, output);
@@ -8321,13 +8321,13 @@
     };
     spawn();
     window.setTimeout(spawn, 500);
-    bubble.miyuDotsTimer = window.setInterval(spawn, 700);
+    bubble.gqyDotsTimer = window.setInterval(spawn, 700);
   }
 
   function stopImageGenDots(bubble) {
-    if (bubble?.miyuDotsTimer) {
-      window.clearInterval(bubble.miyuDotsTimer);
-      bubble.miyuDotsTimer = null;
+    if (bubble?.gqyDotsTimer) {
+      window.clearInterval(bubble.gqyDotsTimer);
+      bubble.gqyDotsTimer = null;
     }
   }
 
@@ -8434,7 +8434,7 @@
     stderrDetail.wrapper.classList.add("is-stderr");
     const resultDetail = createToolDetail("结果", true);
     // 文件编辑:patchText 参数画成 diff,而不是摊一坨补丁 JSON(实时与刷新回看同一份)。
-    const diffView = window.MiyuDiff?.renderFromCall?.({ name: data?.name, arguments: data?.arguments }) || null;
+    const diffView = window.GqyDiff?.renderFromCall?.({ name: data?.name, arguments: data?.arguments }) || null;
     const argumentText = diffView ? "" : prettyArguments(data?.arguments);
     if (argumentText) {
       argumentsDetail.raw = argumentText;
@@ -8545,7 +8545,7 @@
       }
     });
     updateToolSummary(tool);
-    card.miyuTiming = tool;
+    card.gqyTiming = tool;
     live.tools.set(toolId, tool);
     // 顶替「准备 xx」占位签时不重放淡入:占位签已经平滑滑入,这里只是原地
     // 把文字换成正式工具名,再滑一次会显得整行错位(#17,只在会发 preparing
@@ -8710,7 +8710,7 @@
         // 实时回合同样画到气泡底部,与刷新后 createAssistantMessage 那份同构。
         const liveContent = live.article?.querySelector(".assistant-content");
         if (liveContent) {
-          window.MiyuArtifactChips?.sync(liveContent, live.artifacts, artifactChipOptions());
+          window.GqyArtifactChips?.sync(liveContent, live.artifacts, artifactChipOptions());
           syncBubbleWidth(live.article);
         }
         if (!tool.artifactPreview) {
@@ -8750,7 +8750,7 @@
       let message = String(data?.message || "");
       // 文件编辑(edit/kb/artifact):diff 卡已由 patchText 参数在建卡时画好,「准备修改」
       // 这类阶段签、`__patch_preview__` 预览等中间进度都是噪点,一律丢弃,只留 diff + 结果。
-      if (message.startsWith("__patch_preview__") || window.MiyuDiff?.isEditTool?.(tool.name)) return;
+      if (message.startsWith("__patch_preview__") || window.GqyDiff?.isEditTool?.(tool.name)) return;
       // 阶段签(「准备修改」这类)只描述过程,不是结果:工具失败后不该留在卡片上
       // 当错误说明(09-11 手机端实测 edit 被沙盒拒后还挂着「准备修改」)。
       tool.lastProgressWasPhase = message.startsWith("__tool_phase__");
@@ -8816,7 +8816,7 @@
       tool.resultDetail.content.textContent = tool.resultDetail.raw;
       // 子代理的最终输出要显示出来(#6:用户要看 AI 的最终输出,上批误删了)。
       // 编辑工具成功时结果是 `{ok:true,files:[…]}` 样板,和 diff 卡重复——藏掉;失败留报错。
-      const hideEditOutput = Boolean(data?.ok) && window.MiyuDiff?.isEditTool?.(tool.name)
+      const hideEditOutput = Boolean(data?.ok) && window.GqyDiff?.isEditTool?.(tool.name)
         && tool.body.querySelector(".diff-view");
       tool.resultDetail.wrapper.hidden = !tool.resultDetail.raw || Boolean(hideEditOutput);
       if (tool.commandPreview && tool.resultDetail.raw) {
@@ -8828,14 +8828,14 @@
       // 只刷正在看的那个会话——后台会话的 todowrite 不该改屏幕上这块面板。
       // 08-21 token-diet:新版 todowrite 输出是一行文本(不再回显整表 JSON),
       // parse 不出来时改从会话 todos API 取当前清单;旧 JSON 输出走原路。
-      if (ok && window.MiyuTodos?.isTodoTool(tool.name)) {
-        const parsed = window.MiyuTodos.parse(output);
+      if (ok && window.GqyTodos?.isTodoTool(tool.name)) {
+        const parsed = window.GqyTodos.parse(output);
         const sameSession = runSessionId(live.runId) === String(state.viewSessionId || "");
         if (parsed) {
           if (sameSession) renderStageTodos(parsed);
           // 与回看那份同构（`createPersistedToolCard`）：待办列表挂在签外面。
           // 只在这里画会让实时和刷新后长得不一样,那正是工具签之前踩过的坑。
-          const todos = window.MiyuTodos.renderList(parsed);
+          const todos = window.GqyTodos.renderList(parsed);
           tool.card.querySelector(".todo-panel")?.remove();
           if (todos) tool.card.appendChild(todos);
         } else {
@@ -8843,8 +8843,8 @@
         }
       }
       // 分享附件同坑同修:实时完成时也要挂,否则只有刷新后才能看到卡片。
-      if (ok && window.MiyuShared?.isShareTool(tool.name)) {
-        const shared = window.MiyuShared.renderCard(output);
+      if (ok && window.GqyShared?.isShareTool(tool.name)) {
+        const shared = window.GqyShared.renderCard(output);
         tool.card.querySelector(".shared-attachment")?.remove();
         if (shared) tool.card.appendChild(shared);
       }
@@ -9591,7 +9591,7 @@
             sink.panel?.querySelectorAll("details[open]").forEach((d) => { d.open = false; });
           }
         }
-        localStorage.setItem("miyu.web.jobsStripOpen", state.jobsStripOpen ? "1" : "0");
+        localStorage.setItem("gqy.web.jobsStripOpen", state.jobsStripOpen ? "1" : "0");
         renderJobsStrip();
       });
       fragment.appendChild(toggle);
@@ -10559,8 +10559,8 @@
       if (!document.body.classList.contains("is-login") || !elements.loginForm || elements.loginForm.hidden) return;
       if (elements.blockedMessage.textContent.startsWith("登录已过期")) return;
       if (status?.setup_pending) {
-        elements.blockedMessage.textContent = "首次使用:用户名 miyu、密码 miyu 登录,然后创建管理员账号。";
-        elements.loginUsername.placeholder = "miyu";
+        elements.blockedMessage.textContent = "首次使用:用户名 gqy、密码 gqy 登录,然后创建管理员账号。";
+        elements.loginUsername.placeholder = "gqy";
       } else {
         elements.blockedMessage.textContent = "输入用户名和密码以继续。";
         elements.loginUsername.placeholder = "用户名";
@@ -10577,7 +10577,7 @@
     elements.emptyState.hidden = true;
     elements.blockedState.hidden = false;
     elements.blockedTitle.textContent = "创建管理员账号";
-    elements.blockedMessage.textContent = "内置账号 miyu 只用这一次;建好账号后用它登录,别人凭邀请码注册。";
+    elements.blockedMessage.textContent = "内置账号 gqy 只用这一次;建好账号后用它登录,别人凭邀请码注册。";
     elements.loginForm.hidden = true;
     elements.registerForm.hidden = true;
     elements.setupForm.hidden = false;
@@ -10617,7 +10617,7 @@
     }
   }
 
-  const VIEW_SESSION_KEY = "miyu.web.viewSession";
+  const VIEW_SESSION_KEY = "gqy.web.viewSession";
 
   /// 页面加载后该打开哪个会话。
   ///
@@ -10755,7 +10755,7 @@
         // 命令清单与麦克风状态同理:WebUI 永远要登录(09-11),页面初始化那次
         // 拿到的是 401,登录之后必须重拿,否则 /reset /compact 全都当普通消息发出去。
         if (!state.blocked) {
-          window.MiyuCommands?.load(apiRequest);
+          window.GqyCommands?.load(apiRequest);
           refreshVoiceButton();
         }
       } catch (error) {
@@ -10993,8 +10993,8 @@
     const content = elements.composerInput.value.trim();
     // 命中命令表就当命令执行，不当消息发。不命中的 `/xxx` 照常发给模型
     // ——与 REPL 同一语义（slash_commands::parse_repl_input）。
-    if (window.MiyuCommands?.match(content)) {
-      window.MiyuCommands.hide();
+    if (window.GqyCommands?.match(content)) {
+      window.GqyCommands.hide();
       // 同一条命令不能重入。命令往往要等服务端干完活（/reset 要清库、/compact
       // 要重算上下文），这期间用户看不出回车生效没有，很自然会再敲一次。
       if (state.commandRunning) return;
@@ -11006,7 +11006,7 @@
       updateControlState();
       let handled = false;
       try {
-        handled = await window.MiyuCommands.tryRun(content, {
+        handled = await window.GqyCommands.tryRun(content, {
           apiRequest,
           sessionId: state.viewSessionId,
           mode: viewSessionEntry()?.mode === "dev" ? "dev" : "normal",
@@ -11338,7 +11338,7 @@
       && !typingSomewhere()
       && !state.blocked
       && !consoleIsOpen()
-      && !window.MiyuLightbox?.isOpen()
+      && !window.GqyLightbox?.isOpen()
       && !elements.resetDialog.open
       && !elements.composerInput.disabled) {
       event.preventDefault();
@@ -11627,7 +11627,7 @@
     }
     if (panel === "settings" && !state.configLoaded && !state.configLoading) loadConfigDraft();
     // 插件 dashboard 面板各自独立文件,首次进入挂载、之后只刷新。
-    if (window.MiyuDash?.has(panel)) window.MiyuDash.open(panel);
+    if (window.GqyDash?.has(panel)) window.GqyDash.open(panel);
     writeConsoleHash(consoleHashFor(panel, panel === "settings" ? state.settingsView : ""));
   }
 
@@ -12297,7 +12297,7 @@
     elements.oobeNext.classList.add("is-loading");
     try {
       let slug = null;
-      let displayName = "Miyu";
+      let displayName = "GQY";
       if (oobeState.mode === "private") {
         const name = elements.oobeName.value.trim();
         const prompt = elements.oobePrompt.value.trim();
@@ -12337,8 +12337,8 @@
         elements.oobeDoneTitle.textContent = `${displayName} 准备好了`;
         elements.oobeDoneText.textContent = oobeState.mode === "private"
           ? "接下来的会话用这个人格。改设定、换头像在控制台的账号页。"
-          : "你用的是共享的 Miyu;想要自己的人格,随时在账号页里创建。";
-        const avatar = oobeState.avatarFile ? URL.createObjectURL(oobeState.avatarFile) : (slug ? `/api/persona/avatar?scope=${encodeURIComponent(slug)}` : "/assets/miyu-logo.png");
+          : "你用的是共享的 顾清影;想要自己的人格,随时在账号页里创建。";
+        const avatar = oobeState.avatarFile ? URL.createObjectURL(oobeState.avatarFile) : (slug ? `/api/persona/avatar?scope=${encodeURIComponent(slug)}` : "/assets/gqy-logo.png");
         elements.oobeDoneAvatar.onerror = () => { elements.oobeDoneAvatar.hidden = true; };
         elements.oobeDoneAvatar.src = avatar;
         elements.oobeDoneAvatar.hidden = false;
@@ -12419,7 +12419,7 @@
     const list = elements.personaList;
     list.replaceChildren();
     elements.personaCreate.hidden = data.member_personas === false;
-    const rows = [{ slug: null, name: "Miyu", description: "管理员发布的共享人格", shared: true }, ...(data.personas || [])];
+    const rows = [{ slug: null, name: "GQY", description: "管理员发布的共享人格", shared: true }, ...(data.personas || [])];
     for (const persona of rows) {
       const row = document.createElement("div");
       row.className = "persona-row";
@@ -12427,7 +12427,7 @@
       row.classList.toggle("is-active", active);
       if (persona.avatar_url || persona.shared) {
         const image = document.createElement("img");
-        image.src = persona.shared ? "/assets/miyu-logo.png" : `${persona.avatar_url}&v=${Date.now()}`;
+        image.src = persona.shared ? "/assets/gqy-logo.png" : `${persona.avatar_url}&v=${Date.now()}`;
         image.alt = "";
         row.appendChild(image);
       } else {
@@ -12910,7 +12910,7 @@
     elements.artifactToggleButton.addEventListener("click", () => setArtifactWorkspaceOpen(!state.artifactOpen));
     elements.artifactCloseButton.addEventListener("click", () => setArtifactWorkspaceOpen(false));
     // 上下文圆环 → 分项弹窗(contextpanel.js)。压缩成功后的重拉与 /compact 命令同一条路。
-    window.MiyuContextPanel?.mount({
+    window.GqyContextPanel?.mount({
       trigger: elements.contextTrack,
       pop: document.getElementById("contextPop"),
       dock: elements.composerDock,
@@ -12931,7 +12931,7 @@
       },
     });
     // 聊天正文选中文字的右键菜单(selectionmenu.js)。
-    window.MiyuSelectionMenu?.mount({
+    window.GqySelectionMenu?.mount({
       root: elements.chatScroll,
       composer: elements.composerInput,
       resizeComposer,
@@ -12979,7 +12979,7 @@
           window.cancelAnimationFrame(resizeFrame);
           applyResize();
         }
-        safeStorageSet("miyu.web.artifactWidthRatio.v2", String(state.artifactWidthRatio));
+        safeStorageSet("gqy.web.artifactWidthRatio.v2", String(state.artifactWidthRatio));
         elements.artifactResizeHandle.removeEventListener("pointermove", move);
         elements.artifactResizeHandle.removeEventListener("pointerup", finish);
         elements.artifactResizeHandle.removeEventListener("pointercancel", finish);
@@ -12992,7 +12992,7 @@
       button.addEventListener("click", () => setSettingsView(button.dataset.settingsView));
     });
     document.getElementById("openGroupsPanel")?.addEventListener("click", () => setConsolePanel("groups"));
-    window.MiyuSettings?.init({
+    window.GqySettings?.init({
       state,
       configValue,
       setConfigValue,
@@ -13066,13 +13066,13 @@
     elements.composerInput.addEventListener("input", resizeComposer);
     // 斜杠命令的补全菜单（逻辑在 commands.js，这里只喂输入、收回填）
     elements.composerInput.addEventListener("input", () => {
-      window.MiyuCommands?.onInput(elements.composerInput.value, elements.composerDock, (name) => {
+      window.GqyCommands?.onInput(elements.composerInput.value, elements.composerDock, (name) => {
         elements.composerInput.value = name;
         elements.composerInput.focus();
         resizeComposer();
       });
     });
-    elements.composerInput.addEventListener("blur", () => window.MiyuCommands?.hide());
+    elements.composerInput.addEventListener("blur", () => window.GqyCommands?.hide());
     elements.attachButton.addEventListener("click", () => elements.attachmentInput.click());
     wireMicButton();
     elements.attachmentInput.addEventListener("change", () => {
@@ -13119,7 +13119,7 @@
     elements.composerInput.addEventListener("keydown", (event) => {
       // 菜单开着时它先吃掉上下键与 Tab/Enter：补全后再按一次回车才执行，
       // 与 REPL 一致，用户有机会反悔。
-      if (window.MiyuCommands?.handleKey(event)) {
+      if (window.GqyCommands?.handleKey(event)) {
         event.preventDefault();
         return;
       }
@@ -13225,38 +13225,38 @@
       if (deepLink.panel === "settings" && deepLink.view) setSettingsView(deepLink.view);
       consoleOpen(deepLink.panel);
     }
-    setTheme(safeStorageGet("miyu.web.theme") || "graphite", false);
-    const storedScheme = safeStorageGet("miyu.web.colorScheme");
+    setTheme(safeStorageGet("gqy.web.theme") || "graphite", false);
+    const storedScheme = safeStorageGet("gqy.web.colorScheme");
     if (storedScheme) setColorScheme(storedScheme, false);
     probeMatugenTheme();
-    setChatFontSize(safeStorageGet("miyu.web.chatFontSize") || "15px", false);
-    setReasoningExpanded(safeStorageGet("miyu.web.reasoningExpanded") === "true", false);
-    setToolExpanded(safeStorageGet("miyu.web.toolExpanded") === "true", false);
+    setChatFontSize(safeStorageGet("gqy.web.chatFontSize") || "15px", false);
+    setReasoningExpanded(safeStorageGet("gqy.web.reasoningExpanded") === "true", false);
+    setToolExpanded(safeStorageGet("gqy.web.toolExpanded") === "true", false);
     // 没存过就是开(默认开),所以只认显式的 "false"
-    setProcCollapse(safeStorageGet("miyu.web.procCollapse") !== "false", false);
-    const artifactRatio = Number(safeStorageGet("miyu.web.artifactWidthRatio.v2"));
+    setProcCollapse(safeStorageGet("gqy.web.procCollapse") !== "false", false);
+    const artifactRatio = Number(safeStorageGet("gqy.web.artifactWidthRatio.v2"));
     if (Number.isFinite(artifactRatio) && artifactRatio >= 0.25 && artifactRatio <= 0.9) {
       state.artifactWidthRatio = artifactRatio;
     }
-    setSidebarCollapsed(safeStorageGet("miyu.web.sidebarCollapsed") === "true");
+    setSidebarCollapsed(safeStorageGet("gqy.web.sidebarCollapsed") === "true");
     syncArtifactLayout();
     bindEvents();
     resizeComposer();
     updateSettingsControls();
     // 命令目录从服务端拉，前端不维护第二份清单。拉失败就当没有命令，
     // 所有 / 开头的输入照常发给模型。
-    window.MiyuCommands?.load(apiRequest);
+    window.GqyCommands?.load(apiRequest);
     // 灯箱自己不会画图标（图标集在这边），把工厂函数递过去。
-    window.MiyuLightbox?.init({ makeIconSlot });
-    window.MiyuPreview?.init({ makeIconSlot, formatFileSize });
-    window.MiyuLinkCards?.init({ makeIconSlot, contentAdded });
+    window.GqyLightbox?.init({ makeIconSlot });
+    window.GqyPreview?.init({ makeIconSlot, formatFileSize });
+    window.GqyLinkCards?.init({ makeIconSlot, contentAdded });
     // 高亮和链接卡片的 settle 通道会在流停下来之后才改正文高度,那时已经没有
     // 下一条 delta 来触发滚动了,得让它们自己叫一声。
-    window.MiyuHighlight?.init({ contentAdded });
+    window.GqyHighlight?.init({ contentAdded });
     startBrailleTicker();
-    // G2:页面不可见时给 body 挂 miyu-paused,CSS 据此暂停全部装饰动画。
+    // G2:页面不可见时给 body 挂 gqy-paused,CSS 据此暂停全部装饰动画。
     // 实测(Xvfb+Chrome)不挂这个时隐藏窗口的合成负载与可见时完全一样。
-    const syncPaused = () => document.body.classList.toggle("miyu-paused", document.hidden);
+    const syncPaused = () => document.body.classList.toggle("gqy-paused", document.hidden);
     document.addEventListener("visibilitychange", syncPaused);
     syncPaused();
     loadBootstrap();

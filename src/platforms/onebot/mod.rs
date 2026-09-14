@@ -1,6 +1,6 @@
 //! OneBot v11 bridge (NapCat / QQ).
 //!
-//! NapCat connects to Miyu as a reverse-WebSocket client
+//! NapCat connects to GQY as a reverse-WebSocket client
 //! (`GET /ws` on the existing web server; `/onebot/v11/ws` remains an
 //! alias). Inbound `message`
 //! events run agent turns via the platform-neutral core in the parent
@@ -67,7 +67,7 @@ use crate::config::{
 use crate::i18n::text as t;
 use crate::ipc::ImageAttachment;
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::runtime::{
     clear_platform_session_content, enqueue_turn_update, random_id, reset_platform_persona_state,
     safe_error_message, DaemonState, PlatformPersonaResetError, PlatformSessionResetError,

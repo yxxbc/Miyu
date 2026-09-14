@@ -11,7 +11,7 @@ fn db_with_session() -> (tempfile::TempDir, ConversationDb, String) {
     let db = ConversationDb::open(&test_paths(temp.path()).state_dir).unwrap();
     let record = db
         .create_session(
-            "miyu",
+            "gqy",
             "goal test",
             crate::state::USER_SESSION_KIND,
             None,

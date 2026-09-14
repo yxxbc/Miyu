@@ -31,20 +31,20 @@ fn models_argument_parses_the_global_switch() {
 
 #[test]
 fn variant_is_a_cli_subcommand_with_an_optional_name() {
-    let cli = parse_args(["miyu", "variant"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "variant"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Variant(VariantArgs { name: None }))
     ));
 
-    let cli = parse_args(["miyu", "variant", "high"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "variant", "high"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Variant(VariantArgs { name })) if name.as_deref() == Some("high")
     ));
 
     assert!(parse_args(
-        ["miyu", "variant", "high", "extra"]
+        ["gqy", "variant", "high", "extra"]
             .map(OsString::from)
             .to_vec()
     )
@@ -53,12 +53,12 @@ fn variant_is_a_cli_subcommand_with_an_optional_name() {
 
 #[test]
 fn continue_and_session_flags_are_mutually_exclusive() {
-    let cli = parse_args(["miyu", "-c", "hello"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "-c", "hello"].map(OsString::from).to_vec()).unwrap();
     assert!(cli.turn.continue_session);
     assert_eq!(cli.message, vec!["hello".to_string()]);
 
     let cli = parse_args(
-        ["miyu", "--session", "2", "hello"]
+        ["gqy", "--session", "2", "hello"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -67,7 +67,7 @@ fn continue_and_session_flags_are_mutually_exclusive() {
     assert_eq!(cli.turn.session.as_deref(), Some("2"));
 
     assert!(parse_args(
-        ["miyu", "-c", "--session", "2", "hello"]
+        ["gqy", "-c", "--session", "2", "hello"]
             .map(OsString::from)
             .to_vec()
     )
@@ -130,7 +130,7 @@ fn picker_keys_reach_delete_only_through_a_modifier() {
 #[test]
 fn web_is_a_cli_subcommand_with_local_server_options() {
     let cli = parse_args(
-        ["miyu", "web", "--port", "4100"]
+        ["gqy", "web", "--port", "4100"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -145,10 +145,10 @@ fn web_is_a_cli_subcommand_with_local_server_options() {
     ));
 
     for arg in ["stop", "status", "restart", "--status", "--stop"] {
-        assert!(parse_args(["miyu", "web", arg].map(OsString::from).to_vec()).is_err());
+        assert!(parse_args(["gqy", "web", arg].map(OsString::from).to_vec()).is_err());
     }
 
-    let cli = parse_args(["miyu", "web"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "web"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Web(WebArgs {
@@ -159,13 +159,13 @@ fn web_is_a_cli_subcommand_with_local_server_options() {
     ));
 
     for args in [
-        vec!["miyu", "web", "-p"],
-        vec!["miyu", "web", "--password-file", "/tmp/x"],
+        vec!["gqy", "web", "-p"],
+        vec!["gqy", "web", "--password-file", "/tmp/x"],
     ] {
         assert!(parse_args(args.into_iter().map(OsString::from).collect()).is_err());
     }
 
-    assert!(parse_args(["miyu", "web", "--public"].map(OsString::from).to_vec(),).is_err());
+    assert!(parse_args(["gqy", "web", "--public"].map(OsString::from).to_vec(),).is_err());
 }
 
 #[test]
@@ -189,7 +189,7 @@ fn daemon_owns_lifecycle_and_log_commands() {
         ("restart", "restart"),
         ("status", "status"),
     ] {
-        let cli = parse_args(["miyu", "daemon", arg].map(OsString::from).to_vec()).unwrap();
+        let cli = parse_args(["gqy", "daemon", arg].map(OsString::from).to_vec()).unwrap();
         let actual = match cli.command {
             Some(Command::Daemon(DaemonArgs {
                 command: Some(DaemonCommand::Start),
@@ -212,7 +212,7 @@ fn daemon_owns_lifecycle_and_log_commands() {
         assert_eq!(actual, expected);
     }
 
-    let cli = parse_args(["miyu", "daemon", "logs"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "daemon", "logs"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Daemon(DaemonArgs {
@@ -222,7 +222,7 @@ fn daemon_owns_lifecycle_and_log_commands() {
     ));
 
     let cli = parse_args(
-        ["miyu", "daemon", "logs", "-n", "25"]
+        ["gqy", "daemon", "logs", "-n", "25"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -241,15 +241,15 @@ fn daemon_owns_lifecycle_and_log_commands() {
 
 #[test]
 fn reload_is_a_top_level_command() {
-    let cli = parse_args(["miyu", "reload"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "reload"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(cli.command, Some(Command::Reload)));
-    assert!(parse_args(["miyu", "reload", "extra"].map(OsString::from).to_vec()).is_err());
+    assert!(parse_args(["gqy", "reload", "extra"].map(OsString::from).to_vec()).is_err());
 }
 
 #[test]
 fn daemon_accepts_a_port_and_defaults_to_start() {
     let cli = parse_args(
-        ["miyu", "daemon", "--port", "9412"]
+        ["gqy", "daemon", "--port", "9412"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -263,7 +263,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
     ));
 
     let cli = parse_args(
-        ["miyu", "daemon", "--port", "9412", "restart"]
+        ["gqy", "daemon", "--port", "9412", "restart"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -277,7 +277,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
     ));
 
     let cli = parse_args(
-        ["miyu", "daemon", "start", "--port", "9412"]
+        ["gqy", "daemon", "start", "--port", "9412"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -291,7 +291,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
     ));
 
     assert!(parse_args(
-        ["miyu", "daemon", "--password"]
+        ["gqy", "daemon", "--password"]
             .map(OsString::from)
             .to_vec(),
     )
@@ -322,37 +322,37 @@ fn daemon_web_urls_are_rendered_on_separate_aligned_lines() {
 
 #[test]
 fn pop_is_a_cli_subcommand_with_an_optional_count() {
-    let cli = parse_args(["miyu", "pop"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "pop"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Pop(PopArgs { count: None, .. }))
     ));
 
-    let cli = parse_args(["miyu", "pop", "3"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "pop", "3"].map(OsString::from).to_vec()).unwrap();
     assert!(matches!(
         cli.command,
         Some(Command::Pop(PopArgs { count: Some(3), .. }))
     ));
-    assert!(parse_args(["miyu", "pop", "0"].map(OsString::from).to_vec()).is_err());
-    assert!(parse_args(["miyu", "pop", "nope"].map(OsString::from).to_vec()).is_err());
+    assert!(parse_args(["gqy", "pop", "0"].map(OsString::from).to_vec()).is_err());
+    assert!(parse_args(["gqy", "pop", "nope"].map(OsString::from).to_vec()).is_err());
 }
 
 #[test]
 fn debug_is_a_global_cli_option() {
     for args in [
-        &["miyu", "--debug", "models", "1"][..],
-        &["miyu", "models", "--debug", "1"][..],
-        &["miyu", "hello", "--debug"][..],
-        &["miyu", "ask", "hello", "--debug"][..],
+        &["gqy", "--debug", "models", "1"][..],
+        &["gqy", "models", "--debug", "1"][..],
+        &["gqy", "hello", "--debug"][..],
+        &["gqy", "ask", "hello", "--debug"][..],
     ] {
         let cli = parse_args(args.iter().map(OsString::from).collect()).unwrap();
         assert!(cli.debug);
     }
 
-    let cli = parse_args(["miyu", "hello", "--debug"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "hello", "--debug"].map(OsString::from).to_vec()).unwrap();
     assert_eq!(cli.message, ["hello"]);
 
-    let cli = parse_args(["miyu", "--", "--debug"].map(OsString::from).to_vec()).unwrap();
+    let cli = parse_args(["gqy", "--", "--debug"].map(OsString::from).to_vec()).unwrap();
     assert!(!cli.debug);
     assert_eq!(cli.message, ["--debug"]);
 }

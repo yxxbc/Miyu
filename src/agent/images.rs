@@ -273,7 +273,7 @@ fn inline_media_url(item: &crate::state::TurnInlineMedia) -> Option<String> {
 
 pub(in crate::agent) fn resolve_pasted_image_paths(
     images: &[Option<PastedImage>],
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     image_platform: Option<&str>,
 ) -> Vec<Option<String>> {
     images

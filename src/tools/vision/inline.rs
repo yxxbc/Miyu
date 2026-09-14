@@ -100,9 +100,9 @@ mod live_probe {
     #[tokio::test]
     #[ignore]
     async fn live_probe_tool_message_media() {
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::GqyPaths::new().unwrap();
         let config = AppConfig::load(&paths).unwrap();
-        let wanted = std::env::var("MIYU_PROBE_PROVIDER").ok();
+        let wanted = std::env::var("GQY_PROBE_PROVIDER").ok();
         let provider = config.provider(wanted.as_deref()).unwrap();
         eprintln!("provider={} model={}", provider.id, provider.default_model);
         let client = crate::llm::OpenAiCompatibleClient::new(provider, &config, &paths).unwrap();

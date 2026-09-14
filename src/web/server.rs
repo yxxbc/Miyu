@@ -7,7 +7,7 @@
 
 use crate::web::*;
 
-pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
+pub async fn run(paths: GqyPaths, args: WebArgs) -> Result<()> {
     AppConfig::init_files(&paths)?;
     let config = AppConfig::load_or_default(&paths)?;
     tools::jobs::init(&paths);
@@ -68,17 +68,17 @@ pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
                 requested_port = args.port,
                 "{}",
                 t(
-                    "Miyu WebUI default port is occupied; selecting an ephemeral port",
-                    "Miyu WebUI 默认端口已被占用；将选择临时端口"
+                    "GQY WebUI default port is occupied; selecting an ephemeral port",
+                    "顾清影 WebUI 默认端口已被占用；将选择临时端口"
                 )
             );
             tokio::net::TcpListener::bind(SocketAddr::new(bind_ip, 0))
                 .await
-                .context("binding Miyu WebUI to an ephemeral fallback port")?
+                .context("binding GQY WebUI to an ephemeral fallback port")?
         }
         Err(error) => {
             return Err(error)
-                .with_context(|| format!("binding Miyu WebUI to {bind_ip}:{}", args.port));
+                .with_context(|| format!("binding GQY WebUI to {bind_ip}:{}", args.port));
         }
     };
     let port = listener.local_addr()?.port();
@@ -137,7 +137,7 @@ pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
         Some(memory_organizer_handle),
     )?;
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
-    // 多用户(09-11 起 WebUI 永远要登录):没建管理员账号之前,内置账号 miyu/miyu
+    // 多用户(09-11 起 WebUI 永远要登录):没建管理员账号之前,内置账号 gqy/gqy
     // 登录即管理员,登录后先建号;建完号内置账号失效,只剩账号登录与邀请码注册。
     let state = DaemonState {
         auth: WebAuth::new(Some(BUILTIN_SETUP_PASSWORD))
@@ -166,7 +166,7 @@ pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
         .commit();
     let (ipc_lease, ipc_task) = start_ipc_server(&state)?;
     install_background_job_hook(&state);
-    // 语音前端(独立 miyu-voice 进程):只在 voice.enabled 时拉起。
+    // 语音前端(独立 gqy-voice 进程):只在 voice.enabled 时拉起。
     voice_bridge::install_state(&state);
     voice_bridge::spawn_if_enabled(&state);
     // 目标续轮驱动器。启动时故意**不**恢复任何自动续跑：目标还在库里，但
@@ -180,14 +180,14 @@ pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
     // share_file 工具用这些地址把相对下载路径拼成局域网完整链接。
     tools::set_share_url_bases(urls.clone());
     for url in &urls {
-        println!("Miyu WebUI: {url}");
+        println!("GQY WebUI: {url}");
     }
     if !state.state_store.has_admin_account().unwrap_or(true) {
         eprintln!(
             "{}",
             t(
-                "First visit: sign in as the built-in account (username `miyu`, password `miyu`) and create the admin account; the built-in account stops working afterwards.",
-                "首次访问：用内置账号登录（用户名 miyu，密码 miyu）并创建管理员账号，建完号内置账号即失效。"
+                "First visit: sign in as the built-in account (username `gqy`, password `gqy`) and create the admin account; the built-in account stops working afterwards.",
+                "首次访问：用内置账号登录（用户名 gqy，密码 gqy）并创建管理员账号，建完号内置账号即失效。"
             )
         );
     }
@@ -224,7 +224,7 @@ pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
         .map_err(|_| anyhow::anyhow!("WebUI actor thread panicked"))?;
     memory_organizer.shutdown();
     drop(ipc_lease);
-    serve_result.context("serving Miyu WebUI")?;
+    serve_result.context("serving GQY WebUI")?;
     actor_result
 }
 
@@ -272,7 +272,7 @@ pub(in crate::web) async fn follow_run(
         if record.kind == "resync_required" {
             ipc::send(
                 stream,
-                &IpcFrame::error("Miyu core event history was exhausted"),
+                &IpcFrame::error("GQY core event history was exhausted"),
             )
             .await?;
             break;
@@ -366,8 +366,8 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
             "/api/link-preview/image/{asset_id}",
             get(link_preview::link_preview_image),
         )
-        .route("/assets/miyu-logo.png", get(logo_asset))
-        .route("/assets/miyuwallpaper.png", get(wallpaper_asset))
+        .route("/assets/gqy-logo.png", get(logo_asset))
+        .route("/assets/gqywallpaper.png", get(wallpaper_asset))
         .route("/api/health", get(health))
         .route("/api/auth/login", post(auth_login))
         .route("/api/auth/logout", post(auth_logout))
@@ -686,7 +686,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         // OneBot v11 reverse-WS endpoint: NapCat connects here as a WS
         // client. Gated by platforms.qq config, not web auth.
         .route("/ws", get(platforms::onebot::onebot_ws_on_web_port))
-        // Backward-compatible endpoint used by earlier Miyu releases.
+        // Backward-compatible endpoint used by earlier GQY releases.
         .route(
             "/onebot/v11/ws",
             get(platforms::onebot::onebot_ws_on_web_port),
@@ -700,7 +700,7 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
 /// never pin a stale file.
 pub(in crate::web) fn build_etag() -> &'static HeaderValue {
     static ETAG_VALUE: std::sync::LazyLock<HeaderValue> = std::sync::LazyLock::new(|| {
-        HeaderValue::from_str(concat!("\"", env!("MIYU_BUILD_ID"), "\""))
+        HeaderValue::from_str(concat!("\"", env!("GQY_BUILD_ID"), "\""))
             .expect("build id forms a valid header value")
     });
     &ETAG_VALUE

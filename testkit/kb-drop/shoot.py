@@ -19,7 +19,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:18477"
-OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "/tmp/miyu-kb-drop")
+OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "/tmp/gqy-kb-drop")
 OUT.mkdir(parents=True, exist_ok=True)
 
 PANEL = '.con-panel[data-console-panel="kb"]'
@@ -257,12 +257,12 @@ with sync_playwright() as p:
     check("非 UTF-8 文件跳过", by_name.get("latin.txt") == "跳过:不是 UTF-8 文本", json.dumps(by_name, ensure_ascii=False))
     shot(page, "07-guardrails")
 
-    # ── 8. 服务端守卫:落点像 Miyu 自己的资产 ──────────────
+    # ── 8. 服务端守卫:落点像 顾清影 自己的资产 ──────────────
     drop(page, [{"name": "skill.md", "text": TEXT}])
     rows = settle(page, 1, "被拒")
     rejected = rows[0]["text"] if rows else ""
     check("守卫拒绝时带上服务端原话",
-          rejected.startswith("被拒:") and "Miyu keeps its own skills" in rejected, rejected)
+          rejected.startswith("被拒:") and "GQY keeps its own skills" in rejected, rejected)
     check("被拒的行用 danger 样式", "is-danger" in (rows[0]["cls"] if rows else ""), json.dumps(rows, ensure_ascii=False))
     shot(page, "08-rejected")
 

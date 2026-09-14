@@ -11,10 +11,10 @@ use crate::cli::repl::input::*;
 use crate::cli::repl::tail::*;
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMode) -> Result<()> {
+pub(in crate::cli) async fn run_remote_repl(paths: &GqyPaths, mut mode: AgentMode) -> Result<()> {
     let _cursor_restore = ReplCursorRestore;
     ipc::ensure_daemon(paths, None).await?;
-    let refreshed = MiyuPaths::new()?;
+    let refreshed = GqyPaths::new()?;
     let paths = &refreshed;
     initialize_models_cache(paths);
     let mut config = AppConfig::load_or_default(paths)?;
@@ -1250,8 +1250,8 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
             Ok(None) => bail!(
                 "{}",
                 t(
-                    "the Miyu Web core stopped; start the REPL again to use direct mode",
-                    "Miyu Web 核心已停止；请重新启动 REPL 以使用直连模式"
+                    "the GQY Web core stopped; start the REPL again to use direct mode",
+                    "顾清影 Web 核心已停止；请重新启动 REPL 以使用直连模式"
                 )
             ),
             Err(err) if is_remote_turn_detached(&err) => {

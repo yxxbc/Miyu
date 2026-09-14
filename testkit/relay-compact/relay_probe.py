@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""中转线压缩真机验收(09-10):隔离 MIYU_HOME + 真 claude-code,dev 会话用原生
-Read/Edit/Write 碰文件,再 `miyu compact`,查三处:
+"""中转线压缩真机验收(09-10):隔离 GQY_HOME + 真 claude-code,dev 会话用原生
+Read/Edit/Write 碰文件,再 `gqy compact`,查三处:
 
   1. turns.tool_footprint —— 文件轮应有 read/modified
   2. 摘要行尾部 —— 应带 <read-files> / <modified-files>
@@ -10,10 +10,10 @@ Read/Edit/Write 碰文件,再 `miyu compact`,查三处:
 footprint 与回灌候选都看不见它。
 
 用法:
-  BIN=target/release/miyu MODEL=haiku python3 testkit/relay-compact/relay_probe.py
+  BIN=target/release/gqy MODEL=haiku python3 testkit/relay-compact/relay_probe.py
 
 会消耗真实 claude-code 额度(haiku 四轮 + 一次压缩,每轮 prompt 1.5–5 万 tok,
-其中九成以上是缓存读)。需要 ~/.miyu/config/config.jsonc 里有 claude-code 供应商。
+其中九成以上是缓存读)。需要 ~/.gqy/config/config.jsonc 里有 claude-code 供应商。
 """
 import json
 import os
@@ -27,12 +27,12 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 # 子进程 cwd 是工作目录,BIN 给相对路径也要先解析成绝对路径。
-MIYU = Path(os.environ.get("BIN") or REPO / "target" / "release" / "miyu").resolve()
-BASE = Path(os.environ.get("PROBE_DIR") or tempfile.mkdtemp(prefix="miyu-relay-probe-"))
+GQY = Path(os.environ.get("BIN") or REPO / "target" / "release" / "gqy").resolve()
+BASE = Path(os.environ.get("PROBE_DIR") or tempfile.mkdtemp(prefix="gqy-relay-probe-"))
 HOME = BASE / "home"
 RUN = BASE / "run"
 WORK = BASE / "work"
-REAL_CONFIG = Path.home() / ".miyu" / "config" / "config.jsonc"
+REAL_CONFIG = Path.home() / ".gqy" / "config" / "config.jsonc"
 MODEL = os.environ.get("MODEL", "haiku")
 
 
@@ -97,7 +97,7 @@ def build_home():
     real_dev = REAL_CONFIG.parent / "dev-prompt.md"
     if real_dev.exists():
         shutil.copy(real_dev, HOME / "config" / "dev-prompt.md")
-    real_cache = Path.home() / ".miyu" / "cache" / "models_cache.json"
+    real_cache = Path.home() / ".gqy" / "cache" / "models_cache.json"
     if real_cache.exists():
         (HOME / "cache").mkdir(parents=True, exist_ok=True)
         shutil.copy(real_cache, HOME / "cache" / "models_cache.json")
@@ -105,9 +105,9 @@ def build_home():
 
 def env():
     e = dict(os.environ)
-    e["MIYU_HOME"] = str(HOME)
+    e["GQY_HOME"] = str(HOME)
     e["XDG_RUNTIME_DIR"] = str(RUN)
-    for key in ("MIYU_DIRECT", "MIYU_SESSION", "MIYU_TURN_MODE",
+    for key in ("GQY_DIRECT", "GQY_SESSION", "GQY_TURN_MODE",
                 "XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"):
         e.pop(key, None)
     e["LANG"] = "zh_CN.UTF-8"
@@ -115,9 +115,9 @@ def env():
 
 
 def cli(args, timeout=600):
-    proc = subprocess.run([str(MIYU), *args], env=env(), cwd=WORK, capture_output=True,
+    proc = subprocess.run([str(GQY), *args], env=env(), cwd=WORK, capture_output=True,
                           text=True, timeout=timeout)
-    print(f"$ miyu {' '.join(args)[:100]}\n  code={proc.returncode} out={proc.stdout.strip()[:200]!r}")
+    print(f"$ gqy {' '.join(args)[:100]}\n  code={proc.returncode} out={proc.stdout.strip()[:200]!r}")
     if proc.stderr.strip():
         print(f"  err={proc.stderr.strip()[-300:]!r}")
     return proc

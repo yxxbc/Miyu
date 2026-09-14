@@ -1,20 +1,20 @@
-//! 包管理器 `miyu pm`(09-10 分层架构阶段 7)。
+//! 包管理器 `gqy pm`(09-10 分层架构阶段 7)。
 //!
 //! 「插件」不是第五种运行时,是一个清单捆绑包:一个 git 仓库(或本地目录),根上
-//! 一份 `miyu-package.toml`,里面说自己带了哪些脚本、技能,或者整个是一个人格。
+//! 一份 `gqy-package.toml`,里面说自己带了哪些脚本、技能,或者整个是一个人格。
 //! 装包只往两个地方写:`extensions/`(脚本/技能)与 `personas/`(人格清单),
 //! 外加人格的提示词与头像(它们今天还住 `data/prompts`、`data/persona-avatars`)。
 //! 每个装进来的文件都记在锁文件里,卸载按锁文件删,升级 = 卸了再装。
 //!
 //! 索引:tap 是一个 GitHub 仓库,根上 `index.json` 把包名映射到 `owner/repo`;
-//! 官方 tap 缺省在列,`miyu pm tap add owner/repo` 加第三方。`install` 也接受
+//! 官方 tap 缺省在列,`gqy pm tap add owner/repo` 加第三方。`install` 也接受
 //! `owner/repo[@ref]`、GitHub URL 或本地路径,不经索引。
 //!
-//! 只做「防君子」的校验:清单合法、`requires-miyu` 满足、目标文件不撞别的包。
+//! 只做「防君子」的校验:清单合法、`requires-gqy` 满足、目标文件不撞别的包。
 //! 不做签名、不做沙盒。
 
 use crate::config::persona_scope_name;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -22,8 +22,8 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Component, Path, PathBuf};
 
-pub const MANIFEST_FILE: &str = "miyu-package.toml";
-pub const OFFICIAL_TAP: &str = "SHORiN-KiWATA/miyu-packages";
+pub const MANIFEST_FILE: &str = "gqy-package.toml";
+pub const OFFICIAL_TAP: &str = "SHORiN-KiWATA/gqy-packages";
 const LOCK_FILE: &str = "lock.json";
 const TAPS_FILE: &str = "taps.json";
 const INDEX_FILE: &str = "index.json";
@@ -70,7 +70,7 @@ pub struct PackageSection {
     pub kind: PackageKind,
     /// 如 `>=0.5.0`;只支持 `>=`(缺省也是 `>=`)。
     #[serde(default)]
-    pub requires_miyu: String,
+    pub requires_gqy: String,
 }
 
 fn default_kind() -> PackageKind {
@@ -112,10 +112,10 @@ pub fn validate_package_name(name: &str) -> Result<()> {
 
 impl PackageManifest {
     pub fn parse(raw: &str) -> Result<Self> {
-        let manifest: Self = toml::from_str(raw).context("parsing miyu-package.toml")?;
+        let manifest: Self = toml::from_str(raw).context("parsing gqy-package.toml")?;
         validate_package_name(&manifest.package.name)?;
-        if !manifest.package.requires_miyu.trim().is_empty() {
-            parse_requirement(&manifest.package.requires_miyu)?;
+        if !manifest.package.requires_gqy.trim().is_empty() {
+            parse_requirement(&manifest.package.requires_gqy)?;
         }
         Ok(manifest)
     }
@@ -127,9 +127,9 @@ impl PackageManifest {
         Self::parse(&raw)
     }
 
-    /// `requires-miyu` 对当前二进制是否满足。
+    /// `requires-gqy` 对当前二进制是否满足。
     pub fn check_requirement(&self) -> Result<()> {
-        let spec = self.package.requires_miyu.trim();
+        let spec = self.package.requires_gqy.trim();
         if spec.is_empty() {
             return Ok(());
         }
@@ -137,7 +137,7 @@ impl PackageManifest {
         let current = parse_version(env!("CARGO_PKG_VERSION"))?;
         if current < required {
             bail!(
-                "package {} requires miyu >= {}.{}.{}, this is {}",
+                "package {} requires gqy >= {}.{}.{}, this is {}",
                 self.package.name,
                 required.0,
                 required.1,
@@ -156,7 +156,7 @@ fn parse_requirement(spec: &str) -> Result<(u64, u64, u64)> {
         .or_else(|| trimmed.strip_prefix('^'))
         .unwrap_or(trimmed)
         .trim();
-    parse_version(version).with_context(|| format!("invalid requires-miyu: {spec:?}"))
+    parse_version(version).with_context(|| format!("invalid requires-gqy: {spec:?}"))
 }
 
 fn parse_version(value: &str) -> Result<(u64, u64, u64)> {
@@ -202,20 +202,20 @@ pub struct InstalledPackage {
     #[serde(default)]
     pub description: String,
     pub installed_at: String,
-    /// 装进来的文件,相对 `MIYU_HOME` 根。卸载按这个删。
+    /// 装进来的文件,相对 `GQY_HOME` 根。卸载按这个删。
     pub files: Vec<String>,
     /// 全部文件内容的 blake3;升级时与新内容比,相同就不动。
     pub fingerprint: String,
 }
 
-pub fn pm_dir(paths: &MiyuPaths) -> PathBuf {
+pub fn pm_dir(paths: &GqyPaths) -> PathBuf {
     match paths.extensions_dir() {
         Some(extensions) => extensions.join("pm"),
         None => paths.data_dir.join("pm"),
     }
 }
 
-pub fn load_lock(paths: &MiyuPaths) -> Result<LockFile> {
+pub fn load_lock(paths: &GqyPaths) -> Result<LockFile> {
     let path = pm_dir(paths).join(LOCK_FILE);
     match fs::read_to_string(&path) {
         Ok(raw) => serde_json::from_str(&raw)
@@ -225,7 +225,7 @@ pub fn load_lock(paths: &MiyuPaths) -> Result<LockFile> {
     }
 }
 
-pub fn save_lock(paths: &MiyuPaths, lock: &LockFile) -> Result<()> {
+pub fn save_lock(paths: &GqyPaths, lock: &LockFile) -> Result<()> {
     let dir = pm_dir(paths);
     fs::create_dir_all(&dir)?;
     let path = dir.join(LOCK_FILE);
@@ -235,7 +235,7 @@ pub fn save_lock(paths: &MiyuPaths, lock: &LockFile) -> Result<()> {
     Ok(())
 }
 
-pub fn load_taps(paths: &MiyuPaths) -> Result<Vec<String>> {
+pub fn load_taps(paths: &GqyPaths) -> Result<Vec<String>> {
     let path = pm_dir(paths).join(TAPS_FILE);
     let mut taps: Vec<String> = match fs::read_to_string(&path) {
         Ok(raw) => serde_json::from_str(&raw)
@@ -249,7 +249,7 @@ pub fn load_taps(paths: &MiyuPaths) -> Result<Vec<String>> {
     Ok(taps)
 }
 
-pub fn save_taps(paths: &MiyuPaths, taps: &[String]) -> Result<()> {
+pub fn save_taps(paths: &GqyPaths, taps: &[String]) -> Result<()> {
     let dir = pm_dir(paths);
     fs::create_dir_all(&dir)?;
     fs::write(dir.join(TAPS_FILE), serde_json::to_vec_pretty(taps)?)?;
@@ -383,7 +383,7 @@ fn http_client() -> Result<reqwest::Client> {
     reqwest::Client::builder()
         .connect_timeout(std::time::Duration::from_secs(10))
         .timeout(std::time::Duration::from_secs(120))
-        .user_agent(concat!("miyu-pm/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("gqy-pm/", env!("CARGO_PKG_VERSION")))
         .build()
         .context("building HTTP client")
 }
@@ -407,7 +407,7 @@ pub async fn fetch_tap_index(tap: &str) -> Result<TapIndex> {
 }
 
 /// 在所有 tap 里找一个包名;先命中的 tap 赢(官方 tap 排最前)。
-pub async fn resolve_from_taps(paths: &MiyuPaths, name: &str) -> Result<PackageSource> {
+pub async fn resolve_from_taps(paths: &GqyPaths, name: &str) -> Result<PackageSource> {
     validate_package_name(name)?;
     let taps = load_taps(paths)?;
     let mut errors = Vec::new();
@@ -679,7 +679,7 @@ fn collect_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
 /// 把清单摊成文件清单。不写盘。
 pub fn plan_install(
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     package_root: &Path,
 ) -> Result<InstallPlan> {
     let manifest = PackageManifest::load(package_root)?;
@@ -807,7 +807,7 @@ pub fn plan_install(
     if files.is_empty() {
         bail!("package {name} installs nothing (no scripts, skills or persona matched)");
     }
-    // 目标不能出 MIYU_HOME
+    // 目标不能出 GQY_HOME
     for file in &files {
         relative_within(&paths.root_dir, &file.destination)?;
     }
@@ -834,7 +834,7 @@ fn fingerprint_files(files: &[PlannedFile]) -> Result<String> {
 /// 装:先查冲突(目标已存在且不是本包的),再逐个复制,最后记锁。
 /// 复制中途失败会把已写的删掉。
 pub fn install(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     plan: &InstallPlan,
     source: &PackageSource,
     commit: Option<String>,
@@ -868,7 +868,7 @@ pub fn install(
                     file.destination.display()
                 ),
                 None => bail!(
-                    "{} already exists and was not installed by miyu pm (use --force to overwrite)",
+                    "{} already exists and was not installed by gqy pm (use --force to overwrite)",
                     file.destination.display()
                 ),
             }
@@ -928,7 +928,7 @@ pub fn install(
     Ok(installed)
 }
 
-fn remove_files(paths: &MiyuPaths, files: &[String]) -> Result<()> {
+fn remove_files(paths: &GqyPaths, files: &[String]) -> Result<()> {
     let mut dirs = std::collections::BTreeSet::new();
     for relative in files {
         let path = paths.root_dir.join(relative);
@@ -959,7 +959,7 @@ fn remove_files(paths: &MiyuPaths, files: &[String]) -> Result<()> {
     Ok(())
 }
 
-pub fn remove(paths: &MiyuPaths, name: &str) -> Result<InstalledPackage> {
+pub fn remove(paths: &GqyPaths, name: &str) -> Result<InstalledPackage> {
     let mut lock = load_lock(paths)?;
     let installed = lock
         .packages

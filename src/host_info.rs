@@ -1,5 +1,5 @@
 //! Host facts that never change while the process runs: which OS this is,
-//! which kernel it runs, and where Miyu keeps its own files.
+//! which kernel it runs, and where GQY keeps its own files.
 //!
 //! These ride the system prompt (the stable prefix) rather than the per-turn
 //! `<runtime …/>` tail. The tail is fossilized into `turns.context_messages`
@@ -136,14 +136,14 @@ fn host_os_facts() -> &'static (String, Option<String>) {
 
 /// The static host block appended to the system prompt.
 ///
-/// `root_dir` is reported verbatim rather than as `~/.miyu` because
-/// `MIYU_HOME` can move it, and because a concrete path is what stops the
+/// `root_dir` is reported verbatim rather than as `~/.gqy` because
+/// `GQY_HOME` can move it, and because a concrete path is what stops the
 /// model from guessing at the layout.
 pub(crate) fn host_environment_block(root_dir: &Path) -> String {
     host_environment_block_with(root_dir, None, None)
 }
 
-/// 同上,再带上 harness(Miyu 版本)、当前模型与思考档位(09-11 todolist):
+/// 同上,再带上 harness(顾清影 版本)、当前模型与思考档位(09-11 todolist):
 /// 模型知道自己是谁、在哪个档位跑,回答「你是什么模型」「现在思考开多大」不用猜。
 /// 模型/档位变了系统提示词就变——换模型本来就是另一份前缀缓存,换档位掉一次
 /// 缓存可以接受。
@@ -172,11 +172,11 @@ pub(crate) fn host_environment_block_full(
         block.push_str(&format!(" kernel=\"{}\"", xml_attr_escape(kernel)));
     }
     block.push_str(&format!(
-        " miyu_home=\"{}\"",
+        " gqy_home=\"{}\"",
         xml_attr_escape(&root_dir.display().to_string())
     ));
     block.push_str(&format!(
-        " harness=\"Miyu {}\"",
+        " harness=\"GQY {}\"",
         xml_attr_escape(env!("CARGO_PKG_VERSION"))
     ));
     if let Some(model) = model.map(str::trim).filter(|value| !value.is_empty()) {
@@ -247,16 +247,16 @@ mod tests {
     #[test]
     fn host_block_is_a_single_self_closing_tag_with_the_real_root() {
         let block = host_environment_block_with(
-            &PathBuf::from("/home/tester/.miyu"),
+            &PathBuf::from("/home/tester/.gqy"),
             Some("stub/stub-a"),
             Some("high"),
         );
-        assert!(block.contains(" harness=\"Miyu "));
+        assert!(block.contains(" harness=\"GQY "));
         assert!(block.contains(" model=\"stub/stub-a\""));
         assert!(block.contains(" effort=\"high\""));
         assert!(block.starts_with("<host-environment os=\""));
         assert!(block.ends_with("/>"));
-        assert!(block.contains(" miyu_home=\"/home/tester/.miyu\""));
+        assert!(block.contains(" gqy_home=\"/home/tester/.gqy\""));
         assert!(!block.contains('\n'));
         // No placeholder values leak in when a probe comes back empty.
         assert!(!block.contains("\"\""));
@@ -272,7 +272,7 @@ mod tests {
             readable_summary: vec!["root".into(), "/tmp".into(), "system dirs".into()],
             ..Default::default()
         };
-        let root = PathBuf::from("/home/tester/.miyu");
+        let root = PathBuf::from("/home/tester/.gqy");
         let block = host_environment_block_full(&root, Some("stub/a"), None, Some(&policy));
         assert!(block.contains(
             " sandbox=\"landlock\" root=\"/home/tester/proj\" writable=\"root, /tmp, ~/.cargo\" readable=\"root, /tmp, system dirs\"/>"
@@ -288,8 +288,8 @@ mod tests {
     #[test]
     fn host_block_escapes_paths_that_would_break_the_attribute() {
         let block = host_environment_block(&PathBuf::from("/tmp/a\"b&c"));
-        // miyu_home 后面还有 harness 属性,不再是最后一个
-        assert!(block.contains(" miyu_home=\"/tmp/a&quot;b&amp;c\" harness=\"Miyu "));
+        // gqy_home 后面还有 harness 属性,不再是最后一个
+        assert!(block.contains(" gqy_home=\"/tmp/a&quot;b&amp;c\" harness=\"GQY "));
     }
 
     #[cfg(unix)]

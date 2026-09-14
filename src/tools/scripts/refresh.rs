@@ -38,7 +38,7 @@ pub(crate) fn catalog_fingerprint(roots: &[PathBuf]) -> Result<[u8; 32]> {
 pub(crate) fn prepare_script_refresh(
     current: Option<[u8; 32]>,
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Option<ScriptRefreshSnapshot>> {
     let roots = script_scan_roots(config, paths);
     for _ in 0..3 {
@@ -65,7 +65,7 @@ pub(crate) fn prepare_script_refresh(
 /// 共用这一道门——模型看到的目录和真挂上的工具面必须是同一份。
 pub(crate) fn retain_persona_visible(
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     entries: &mut Vec<super::ScriptEntry>,
 ) {
     let default_persona = crate::skills::is_default_persona(config);
@@ -106,9 +106,9 @@ mod persona_gate_tests {
     fn setup(
         persona: &str,
         allow: Option<&[&str]>,
-    ) -> (crate::config::AppConfig, MiyuPaths, tempfile::TempDir) {
+    ) -> (crate::config::AppConfig, GqyPaths, tempfile::TempDir) {
         let temp = tempfile::tempdir().unwrap();
-        let mut paths = MiyuPaths::new().unwrap();
+        let mut paths = GqyPaths::new().unwrap();
         // 根目录也指到临时目录:人格清单按 root 下的布局标记找位置,不能碰真家。
         paths.root_dir = temp.path().to_path_buf();
         paths.system_scripts_dir = temp.path().join("system");
@@ -162,12 +162,12 @@ mod persona_gate_tests {
 
 pub(crate) fn apply_script_refresh(
     registry: &mut ToolRegistry,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     snapshot: ScriptRefreshSnapshot,
 ) {
     let specs = script_specs(&snapshot.scan.entries, &paths.scripts_dir, &paths.cache_dir);
     if let Err(error) = registry.replace_script_tools(specs, snapshot.scan.unregistered) {
-        tracing::warn!(error = %error, "failed to replace Miyu script tools");
+        tracing::warn!(error = %error, "failed to replace GQY script tools");
     }
     // 失败也记指纹:同一份坏目录不值得每回合重扫一次,改了文件指纹自然变。
     registry.set_script_catalog_fingerprint(snapshot.fingerprint);

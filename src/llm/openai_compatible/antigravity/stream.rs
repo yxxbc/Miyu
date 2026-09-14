@@ -383,10 +383,10 @@ where
     Ok(())
 }
 
-/// agy 的工具名/入参 → Miyu 卡片认识的名字与键。
-/// - eager 注册的桥工具叫 `mcp_miyu_<name>`,剥前缀就是 Miyu 本名;
+/// agy 的工具名/入参 → 顾清影 卡片认识的名字与键。
+/// - eager 注册的桥工具叫 `mcp_gqy_<name>`,剥前缀就是 顾清影 本名;
 /// - 懒加载时是 `call_mcp_tool{ServerName,ToolName,Arguments}`,拆出来;
-/// - 原生工具的入参键是 CamelCase(CommandLine/AbsolutePath…),归一成 Miyu 的
+/// - 原生工具的入参键是 CamelCase(CommandLine/AbsolutePath…),归一成 顾清影 的
 ///   `command`/`path`/…,终端 `↳` 主题、WebUI 命令卡、平台日志三端都不用改。
 fn translate_tool(raw_name: &str, parameters: Option<Value>) -> (String, Value) {
     let bridge_prefix = format!("mcp_{MCP_SERVER_NAME}_");
@@ -433,7 +433,7 @@ fn normalize_native_arguments(parameters: Option<Value>) -> Value {
     Value::Object(out)
 }
 
-/// agy 的 usage 对象 → Miyu 口径。`input_tokens` 已含缓存命中部分(cache_read
+/// agy 的 usage 对象 → 顾清影 口径。`input_tokens` 已含缓存命中部分(cache_read
 /// 是它的子集)。**agy 的 `cache_read_tokens` 不可全信**:09-03 真机六轮里五轮
 /// 它等于整个 input(9355/9355、45486/45486…),而本轮新输入的用户消息不可能
 /// 已在缓存里——整段命中在物理上不成立。按 usage.rs 的规矩(没有真实依据的
@@ -474,7 +474,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn native_arguments_are_normalized_to_miyu_keys() {
+    fn native_arguments_are_normalized_to_gqy_keys() {
         let (name, input) = translate_tool(
             "run_command",
             Some(json!({ "CommandLine": "pwd", "Cwd": "/w", "toolAction": "x" })),
@@ -489,13 +489,13 @@ mod tests {
 
     #[test]
     fn bridge_tools_are_unwrapped_in_both_shapes() {
-        let (name, input) = translate_tool("mcp_miyu_use_meme", Some(json!({ "action": "show" })));
+        let (name, input) = translate_tool("mcp_gqy_use_meme", Some(json!({ "action": "show" })));
         assert_eq!(name, "use_meme");
         assert_eq!(input["action"], "show");
         let (name, input) = translate_tool(
             "call_mcp_tool",
             Some(
-                json!({ "ServerName": "miyu", "ToolName": "alarm", "Arguments": { "at": "9:00" } }),
+                json!({ "ServerName": "gqy", "ToolName": "alarm", "Arguments": { "at": "9:00" } }),
             ),
         );
         assert_eq!(name, "alarm");

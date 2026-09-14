@@ -31,11 +31,11 @@ pub fn register(registry: &mut ToolRegistry) {
 pub fn register_kb(
     registry: &mut ToolRegistry,
     config: crate::config::AppConfig,
-    paths: crate::paths::MiyuPaths,
+    paths: crate::paths::GqyPaths,
 ) {
     registry.register(ToolSpec::new_with_progress(
         "kb",
-        "Write knowledge-base files: create, update, or delete via patch. Paths are knowledge-base relative. The knowledge base holds persistent reference documents, not Miyu's memories (those go through remember_fact). Read entries with read using kb: paths; search with search_knowledge_base.",
+        "Write knowledge-base files: create, update, or delete via patch. Paths are knowledge-base relative. The knowledge base holds persistent reference documents, not GQY's memories (those go through remember_fact). Read entries with read using kb: paths; search with search_knowledge_base.",
         patch_parameters(),
         move |args, progress| {
             let config = config.clone();
@@ -169,7 +169,7 @@ fn apply_kb_patch(
     args: Value,
     progress: ToolProgress,
     config: &crate::config::AppConfig,
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::GqyPaths,
 ) -> Result<String> {
     if !config.plugins.knowledge_base.enabled {
         bail!("knowledge base plugin is disabled");

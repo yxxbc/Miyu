@@ -24,9 +24,9 @@ pub(super) fn build(app: &App, cx: &Cx) -> View {
     match app.screen {
         // ── 00 欢迎 ────────────────────────────────────────────
         // 自检照跑（后面几屏要用探到的东西），但**不显示**——开场只留
-        // 一片星空、一个 MIYU、一句话。`MIYU_OOBE_VERBOSE=1` 能调出来看。
+        // 一片星空、一个 GQY、一句话。`GQY_OOBE_VERBOSE=1` 能调出来看。
         Screen::Welcome => {
-            if std::env::var_os("MIYU_OOBE_VERBOSE").is_some() {
+            if std::env::var_os("GQY_OOBE_VERBOSE").is_some() {
                 for row in &app.loader.rows {
                     let elapsed = if row.micros >= 1000 {
                         format!("{:.1} ms", row.micros as f64 / 1000.0)
@@ -71,7 +71,7 @@ pub(super) fn build(app: &App, cx: &Cx) -> View {
             body.push(cx.radio(
                 app.focus == pfocus::BUILTIN,
                 !app.persona_custom,
-                "用内置的 Miyu",
+                "用内置的 顾清影",
                 "开箱即用",
                 30,
             ));
@@ -265,7 +265,7 @@ pub(super) fn build(app: &App, cx: &Cx) -> View {
             sticky.push(cx.bold("终端集成"));
             sticky.push(nil());
             body.push(cx.txt(
-                "装上之后在终端直接打字就能问，不用敲 miyu。",
+                "装上之后在终端直接打字就能问，不用敲 gqy。",
                 theme.dim(DIM),
             ));
             body.push(nil());

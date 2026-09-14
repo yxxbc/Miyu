@@ -1,14 +1,14 @@
 #!/bin/bash
 # 自定义模型的落盘往返：加两个 → 取消激活其中一个 → 保存退出 → 重进看还在不在。
-# 用法: MIYU_BIN=<二进制> custom-model-persist.sh <outdir>
+# 用法: GQY_BIN=<二进制> custom-model-persist.sh <outdir>
 OUT="${1:-/tmp/custom-model-persist}"
 HOME_DIR="$OUT/home"
 mkdir -p "$OUT" "$HOME_DIR"
-BIN="${MIYU_BIN:-$(dirname "$0")/../../target/debug/miyu}"
-S=miyucp$$
+BIN="${GQY_BIN:-$(dirname "$0")/../../target/debug/gqy}"
+S=gqycp$$
 run_session() {
   tmux kill-session -t "$S" 2>/dev/null
-  tmux new-session -d -s "$S" -x 110 -y 40 "env MIYU_HOME=$HOME_DIR XDG_RUNTIME_DIR=$HOME_DIR/xdg-run MIYU_LANG=zh_CN.UTF-8 TERM=xterm-256color $BIN config"
+  tmux new-session -d -s "$S" -x 110 -y 40 "env GQY_HOME=$HOME_DIR XDG_RUNTIME_DIR=$HOME_DIR/xdg-run GQY_LANG=zh_CN.UTF-8 TERM=xterm-256color $BIN config"
   sleep 2
 }
 cap() { sleep 0.6; tmux capture-pane -p -t "$S" > "$OUT/$1.txt"; echo "captured $1"; }

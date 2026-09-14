@@ -40,7 +40,7 @@ pub(in crate::agent) fn with_runtime_system_context(
 /// 回合不进(阶段 6:成员的 WebUI 回合带的是成员自己的档案)。
 pub(in crate::agent) fn mode_system_prompt(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     mode: AgentMode,
     audience: PromptAudience,
     with_user_profile: bool,
@@ -81,7 +81,7 @@ pub(in crate::agent) const STYLE_LOCK: &str = "\n\n<style-lock>Stay in character
 pub(in crate::agent) fn with_host_environment(
     mut system_prompt: String,
     audience: PromptAudience,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     mode: AgentMode,
     platform_turn: bool,
@@ -130,7 +130,7 @@ pub(in crate::agent) fn with_host_environment(
 
 /// 主机环境块:模型池与思考档位(state 里存的偏好)——池里不止一个就全列(逗号
 /// 分隔),档位各模型不一致就写 mixed;沙盒回合再带上根与放行摘要。
-pub(crate) fn host_environment_for(config: &AppConfig, paths: &MiyuPaths) -> String {
+pub(crate) fn host_environment_for(config: &AppConfig, paths: &GqyPaths) -> String {
     let choices = config.active_provider_model_choices();
     let model_label = (!choices.is_empty()).then(|| {
         choices

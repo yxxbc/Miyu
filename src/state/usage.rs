@@ -240,7 +240,7 @@ pub fn record_usage_for_account(
 }
 
 /// 持 `usage_lock` 只挡住同进程的并发写:`rename_provider` 要整文件重写,
-/// 重写期间的追加会被新文件盖掉。跨进程(`MIYU_DIRECT=1` 直连模式的另一个
+/// 重写期间的追加会被新文件盖掉。跨进程(`GQY_DIRECT=1` 直连模式的另一个
 /// 进程、TUI 改名)仍有理论上的竞态,接受——账本是统计口径,不是账务。
 fn record_usage_at(
     path: &Path,

@@ -7,7 +7,7 @@
  * 数据来自 /api/dash/memes/*。
  */
 (() => {
-  const D = window.MiyuDash;
+  const D = window.GqyDash;
   if (!D) return;
 
   const state = {

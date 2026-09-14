@@ -226,12 +226,12 @@ impl LiveReplTail {
                 )
             });
             screen.set_banner(lobby.as_ref().map(|lobby| lobby.rows.clone()));
-            if std::env::var_os("MIYU_LOBBY_TRACE").is_some() {
+            if std::env::var_os("GQY_LOBBY_TRACE").is_some() {
                 if let Some(lobby) = &lobby {
                     if let Ok(mut file) = std::fs::OpenOptions::new()
                         .create(true)
                         .append(true)
-                        .open("/tmp/miyu-lobby-trace.log")
+                        .open("/tmp/gqy-lobby-trace.log")
                     {
                         let _ = writeln!(
                             file,
@@ -499,7 +499,7 @@ impl LiveReplTail {
         let input_row = (i32::from(self.input_cursor.1) + shift)
             .clamp(0, i32::from(terminal_rows.saturating_sub(1))) as u16;
         queue!(transaction, MoveTo(self.input_cursor.0, input_row))?;
-        if std::env::var_os("MIYU_TAIL_TRACE").is_some() {
+        if std::env::var_os("GQY_TAIL_TRACE").is_some() {
             trace_tail_redraw(
                 self.tail_start,
                 next_tail,

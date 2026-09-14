@@ -13,7 +13,7 @@ use crate::ipc::*;
 pub const DEFAULT_WEB_PORT: u16 = 8300;
 
 /// Access URLs for the WebUI: loopback plus every local IPv4 address.
-/// Shared between the daemon (startup banner) and the CLI (`miyu web` /
+/// Shared between the daemon (startup banner) and the CLI (`gqy web` /
 /// `--status` output).
 pub fn web_access_urls(port: u16) -> Vec<String> {
     web_access_urls_for(std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED), port)
@@ -66,7 +66,7 @@ impl Default for DaemonLaunchConfig {
     }
 }
 
-pub fn stage_managed_web_password(paths: &MiyuPaths, password: &str) -> Result<PathBuf> {
+pub fn stage_managed_web_password(paths: &GqyPaths, password: &str) -> Result<PathBuf> {
     validate_web_password(password)?;
     let path = paths.managed_web_password_dir().join(format!(
         "password-{}-{}",
@@ -78,7 +78,7 @@ pub fn stage_managed_web_password(paths: &MiyuPaths, password: &str) -> Result<P
     Ok(path)
 }
 
-pub fn stage_web_password_file(paths: &MiyuPaths, source: &Path) -> Result<PathBuf> {
+pub fn stage_web_password_file(paths: &GqyPaths, source: &Path) -> Result<PathBuf> {
     let contents = std::fs::read_to_string(source)
         .with_context(|| format!("reading WebUI password file: {}", source.display()))?;
     stage_managed_web_password(paths, contents.trim_end_matches(['\r', '\n']))
@@ -95,7 +95,7 @@ pub(crate) fn validate_web_password(password: &str) -> Result<()> {
 }
 
 pub(crate) fn try_load_daemon_launch_config(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Option<DaemonLaunchConfig>> {
     let path = paths.daemon_launch_state_file();
     let bytes = match std::fs::read(&path) {
@@ -108,7 +108,7 @@ pub(crate) fn try_load_daemon_launch_config(
         .with_context(|| format!("parsing daemon launch state at {}", path.display()))
 }
 
-pub(crate) fn load_daemon_launch_config(paths: &MiyuPaths) -> Result<DaemonLaunchConfig> {
+pub(crate) fn load_daemon_launch_config(paths: &GqyPaths) -> Result<DaemonLaunchConfig> {
     let mut config = try_load_daemon_launch_config(paths)?.unwrap_or_default();
     let Some(password_file) = config.password_file.as_ref() else {
         return Ok(config);
@@ -137,7 +137,7 @@ pub(crate) fn load_daemon_launch_config(paths: &MiyuPaths) -> Result<DaemonLaunc
 }
 
 pub(crate) fn daemon_launch_config_with_port(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     port: u16,
 ) -> Result<DaemonLaunchConfig> {
     let mut config = load_daemon_launch_config(paths)?;
@@ -146,7 +146,7 @@ pub(crate) fn daemon_launch_config_with_port(
 }
 
 pub(crate) fn save_daemon_launch_config(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &DaemonLaunchConfig,
 ) -> Result<()> {
     let path = paths.daemon_launch_state_file();
@@ -157,7 +157,7 @@ pub(crate) fn save_daemon_launch_config(
 }
 
 pub(crate) fn commit_daemon_launch_config(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &DaemonLaunchConfig,
 ) -> Result<()> {
     let previous = try_load_daemon_launch_config(paths)?;
@@ -170,7 +170,7 @@ pub(crate) fn commit_daemon_launch_config(
     Ok(())
 }
 
-pub(crate) fn abandon_daemon_launch_candidate(paths: &MiyuPaths, config: &DaemonLaunchConfig) {
+pub(crate) fn abandon_daemon_launch_candidate(paths: &GqyPaths, config: &DaemonLaunchConfig) {
     let persisted_password = try_load_daemon_launch_config(paths)
         .ok()
         .flatten()
@@ -182,7 +182,7 @@ pub(crate) fn abandon_daemon_launch_candidate(paths: &MiyuPaths, config: &Daemon
     }
 }
 
-pub(crate) fn remove_managed_password(paths: &MiyuPaths, path: &Path) {
+pub(crate) fn remove_managed_password(paths: &GqyPaths, path: &Path) {
     if path.parent() == Some(paths.managed_web_password_dir().as_path()) {
         let _ = std::fs::remove_file(path);
     }
@@ -190,8 +190,8 @@ pub(crate) fn remove_managed_password(paths: &MiyuPaths, path: &Path) {
 
 pub(crate) fn remap_managed_password(
     config: &mut DaemonLaunchConfig,
-    previous: &MiyuPaths,
-    current: &MiyuPaths,
+    previous: &GqyPaths,
+    current: &GqyPaths,
 ) {
     let Some(path) = config.password_file.as_ref() else {
         return;
@@ -204,7 +204,7 @@ pub(crate) fn remap_managed_password(
 }
 
 pub(crate) fn write_private_state(path: &Path, contents: &[u8]) -> Result<()> {
-    let parent = path.parent().context("Miyu state file has no parent")?;
+    let parent = path.parent().context("GQY state file has no parent")?;
     std::fs::create_dir_all(parent)?;
     std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
     let temporary = parent.join(format!(
@@ -239,7 +239,7 @@ pub(crate) fn finish_private_state_commit(
         tracing::warn!(
             directory = %parent.display(),
             error = %error,
-            "Miyu state file was committed, but syncing its parent directory failed"
+            "GQY state file was committed, but syncing its parent directory failed"
         );
     }
     Ok(())
@@ -319,19 +319,19 @@ pub(crate) fn parse_legacy_password(value: &[u8]) -> Result<String> {
 
 #[cfg(target_os = "linux")]
 pub(crate) fn recover_legacy_daemon_launch(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     pid: u32,
 ) -> Result<DaemonLaunchConfig> {
     let cmdline = std::fs::read(format!("/proc/{pid}/cmdline"))
-        .context("reading legacy Miyu daemon arguments")?;
+        .context("reading legacy GQY daemon arguments")?;
     let cwd = std::fs::read_link(format!("/proc/{pid}/cwd"))
-        .context("reading legacy Miyu daemon working directory")?;
+        .context("reading legacy GQY daemon working directory")?;
     recover_legacy_daemon_launch_from_cmdline(paths, &cmdline, Some(&cwd))
 }
 
 #[cfg(target_os = "linux")]
 pub(crate) fn recover_legacy_daemon_launch_from_cmdline(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     cmdline: &[u8],
     cwd: Option<&Path>,
 ) -> Result<DaemonLaunchConfig> {
@@ -361,14 +361,14 @@ pub(crate) fn recover_legacy_daemon_launch_from_cmdline(
 
 #[cfg(not(target_os = "linux"))]
 pub(crate) fn recover_legacy_daemon_launch(
-    _paths: &MiyuPaths,
+    _paths: &GqyPaths,
     _pid: u32,
 ) -> Result<DaemonLaunchConfig> {
     Ok(DaemonLaunchConfig::default())
 }
 
 pub fn recover_daemon_launch_if_missing(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     pid: u32,
 ) -> Result<Option<DaemonLaunchConfig>> {
     if try_load_daemon_launch_config(paths)?.is_some() {
@@ -378,6 +378,6 @@ pub fn recover_daemon_launch_if_missing(
     }
 }
 
-pub fn discard_daemon_launch_candidate(paths: &MiyuPaths, config: &DaemonLaunchConfig) {
+pub fn discard_daemon_launch_candidate(paths: &GqyPaths, config: &DaemonLaunchConfig) {
     abandon_daemon_launch_candidate(paths, config);
 }

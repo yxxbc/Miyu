@@ -23,7 +23,7 @@ pub(crate) struct ScriptLayer {
 }
 
 /// 用户可写的两层,persona 在前(扫描时它压在 global 之上)。
-pub(crate) fn user_layers(config: &AppConfig, paths: &MiyuPaths) -> [ScriptLayer; 2] {
+pub(crate) fn user_layers(config: &AppConfig, paths: &GqyPaths) -> [ScriptLayer; 2] {
     [
         ScriptLayer {
             scope: "persona",
@@ -64,7 +64,7 @@ fn string_arg(args: &Value, key: &str) -> String {
 pub(crate) fn register_script_tools(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
 ) {
     // 描述与 schema 的真相源是 descriptions/manage_script.json,这里只是占位。
     registry.register(
@@ -194,7 +194,7 @@ pub(crate) fn clear_disabled_id(index_path: &Path, id: &str) -> Result<bool> {
 pub(crate) async fn register_script_handler(
     args: Value,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<String> {
     register_script(args, config, paths)
 }
@@ -203,7 +203,7 @@ pub(crate) async fn register_script_handler(
 pub(crate) fn register_script(
     args: Value,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<String> {
     let layers = user_layers(config, paths);
     let requested_id = string_arg(&args, "id");
@@ -385,7 +385,7 @@ pub(crate) fn register_script(
     }))?)
 }
 
-fn builtin_has_script(config: &AppConfig, paths: &MiyuPaths, id: &str) -> Result<bool> {
+fn builtin_has_script(config: &AppConfig, paths: &GqyPaths, id: &str) -> Result<bool> {
     let roots = script_scan_roots(config, paths);
     let dirs: Vec<&Path> = roots.iter().take(2).map(PathBuf::as_path).collect();
     let scan = scan_scripts(&dirs)?;
@@ -395,7 +395,7 @@ fn builtin_has_script(config: &AppConfig, paths: &MiyuPaths, id: &str) -> Result
 pub(crate) async fn unregister_script_handler(
     args: Value,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<String> {
     unregister_script(args, config, paths)
 }
@@ -403,7 +403,7 @@ pub(crate) async fn unregister_script_handler(
 pub(crate) fn unregister_script(
     args: Value,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<String> {
     let id = string_arg(&args, "id");
     if id.is_empty() {
@@ -476,7 +476,7 @@ pub(crate) fn unregister_script(
     }))?)
 }
 
-pub(crate) fn list_scripts_handler(config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
+pub(crate) fn list_scripts_handler(config: &AppConfig, paths: &GqyPaths) -> Result<String> {
     let roots = script_scan_roots(config, paths);
     let dirs: Vec<&Path> = roots.iter().map(PathBuf::as_path).collect();
     let mut scan = scan_scripts(&dirs)?;

@@ -8,16 +8,16 @@ fn session_crud_switching_and_persona_adoption() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
     // Migrated/default rows start persona-less and are claimed on adoption.
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let default_id = store.session_id();
     let default = store.session_record(&default_id).unwrap().unwrap();
-    assert_eq!(default.persona, "miyu");
+    assert_eq!(default.persona, "gqy");
 
     store.start_turn("t1", "hello", std::process::id()).unwrap();
     store.complete_turn("t1", "hi", None).unwrap();
 
     let created = store
-        .create_session("miyu", "旅行计划", "user", None)
+        .create_session("gqy", "旅行计划", "user", None)
         .unwrap();
     store.switch_session(&created.session_id).unwrap();
     assert_eq!(&*store.session_id(), created.session_id.as_str());
@@ -28,7 +28,7 @@ fn session_crud_switching_and_persona_adoption() {
     let reopened = StateStore::new(&test_paths(temp.path())).unwrap();
     assert_eq!(&*reopened.session_id(), created.session_id.as_str());
 
-    let listed = store.list_sessions("miyu").unwrap();
+    let listed = store.list_sessions("gqy").unwrap();
     assert_eq!(listed.len(), 2);
     let default_overview = listed
         .iter()
@@ -38,19 +38,19 @@ fn session_crud_switching_and_persona_adoption() {
     assert_eq!(default_overview.last_user_content.as_deref(), Some("hello"));
 
     assert!(store
-        .find_session_by_name("miyu", "旅行计划")
+        .find_session_by_name("gqy", "旅行计划")
         .unwrap()
         .is_some());
     store.rename_session(&created.session_id, "新名字").unwrap();
     assert!(store
-        .find_session_by_name("miyu", "旅行计划")
+        .find_session_by_name("gqy", "旅行计划")
         .unwrap()
         .is_none());
 
     // Deleting a session cascades its turns away.
     store.delete_session(&default_id).unwrap();
     assert!(store.session_record(&default_id).unwrap().is_none());
-    assert_eq!(store.list_sessions("miyu").unwrap().len(), 1);
+    assert_eq!(store.list_sessions("gqy").unwrap().len(), 1);
 
     // A dangling pointer self-heals back to a default session.
     store.delete_session(&created.session_id).unwrap();
@@ -64,16 +64,16 @@ fn session_crud_switching_and_persona_adoption() {
 #[test]
 fn persona_reset_clears_active_local_and_onebot_contexts_only() {
     let (_temp, store) = test_store();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let current = store.session_id().to_string();
-    let local = store.create_session("miyu", "local", "user", None).unwrap();
+    let local = store.create_session("gqy", "local", "user", None).unwrap();
     let second = store
-        .create_session("miyu", "second", "user", None)
+        .create_session("gqy", "second", "user", None)
         .unwrap();
     let other_persona = store
         .create_session("other", "other", "user", None)
         .unwrap();
-    let qq = store.create_session("miyu", "qq", "user", None).unwrap();
+    let qq = store.create_session("gqy", "qq", "user", None).unwrap();
     store
         .bind_platform_session(
             &PlatformSessionBindingKey {
@@ -82,16 +82,16 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
                 conversation_kind: "group".to_string(),
                 conversation_id: "42".to_string(),
                 participant_id: None,
-                persona: "miyu".to_string(),
+                persona: "gqy".to_string(),
             },
             &qq.session_id,
         )
         .unwrap();
     let subagent = store
-        .create_session("miyu", "child", "subagent", Some(&local.session_id))
+        .create_session("gqy", "child", "subagent", Some(&local.session_id))
         .unwrap();
     let second_child = store
-        .create_session("miyu", "second-child", "subagent", Some(&second.session_id))
+        .create_session("gqy", "second-child", "subagent", Some(&second.session_id))
         .unwrap();
 
     let sessions = [
@@ -112,7 +112,7 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
         pinned.complete_turn(&turn_id, "after", None).unwrap();
     }
 
-    let targets = store.persona_reset_session_ids("miyu", "onebot").unwrap();
+    let targets = store.persona_reset_session_ids("gqy", "onebot").unwrap();
     assert!(targets.contains(&current));
     assert!(targets.contains(&local.session_id));
     assert!(targets.contains(&qq.session_id));
@@ -122,7 +122,7 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
     assert!(targets.contains(&second_child.session_id));
     assert!(!targets.contains(&other_persona.session_id));
 
-    let cleared = store.reset_persona_contexts("miyu", "onebot").unwrap();
+    let cleared = store.reset_persona_contexts("gqy", "onebot").unwrap();
     assert_eq!(cleared, targets);
     for session_id in [
         &current,
@@ -138,7 +138,7 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
         assert_eq!(store.pinned(session_id).load_turns().unwrap().len(), 1);
     }
     assert_eq!(
-        store.platform_session_bindings("miyu", "onebot").unwrap()[0].session_id,
+        store.platform_session_bindings("gqy", "onebot").unwrap()[0].session_id,
         qq.session_id
     );
 }
@@ -231,18 +231,18 @@ fn persona_scope_rename_migrates_sessions_bindings_and_affection() {
 fn local_session_listing_excludes_platform_owned_history() {
     let (_temp, store) = test_store();
     let local = store
-        .create_session("miyu", "shared name", "user", None)
+        .create_session("gqy", "shared name", "user", None)
         .unwrap();
     let platform = store
-        .create_session("miyu", "shared name", "user", None)
+        .create_session("gqy", "shared name", "user", None)
         .unwrap();
-    let key = platform_binding_key("20000", None, "miyu");
+    let key = platform_binding_key("20000", None, "gqy");
     store
         .bind_platform_session(&key, &platform.session_id)
         .unwrap();
 
     let all_ids = store
-        .list_sessions("miyu")
+        .list_sessions("gqy")
         .unwrap()
         .into_iter()
         .map(|overview| overview.record.session_id)
@@ -251,7 +251,7 @@ fn local_session_listing_excludes_platform_owned_history() {
     assert!(all_ids.contains(&platform.session_id));
 
     let local_ids = store
-        .list_local_sessions("miyu")
+        .list_local_sessions("gqy")
         .unwrap()
         .into_iter()
         .map(|overview| overview.record.session_id)
@@ -262,7 +262,7 @@ fn local_session_listing_excludes_platform_owned_history() {
     assert!(store.is_platform_session(&platform.session_id).unwrap());
     assert_eq!(
         store
-            .find_local_session_by_name("miyu", "SHARED NAME")
+            .find_local_session_by_name("gqy", "SHARED NAME")
             .unwrap()
             .unwrap()
             .session_id,
@@ -274,10 +274,10 @@ fn local_session_listing_excludes_platform_owned_history() {
 fn wiping_the_persona_takes_the_subagent_rows_with_it() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let parent = store.session_id();
     let audit = store
-        .create_session("miyu", "深挖", "subagent", Some(&parent))
+        .create_session("gqy", "深挖", "subagent", Some(&parent))
         .unwrap();
     store
         .record_subagent_usage(&audit.session_id, None, None, None, 400, 100, 500, 200)
@@ -286,7 +286,7 @@ fn wiping_the_persona_takes_the_subagent_rows_with_it() {
 
     // Subagent usage lives on the session row, not in `turns` — clearing
     // the turns alone left every Σ still carrying it.
-    store.reset_persona_contexts("miyu", "onebot").unwrap();
+    store.reset_persona_contexts("gqy", "onebot").unwrap();
     assert_eq!(
         store.session_cumulative_token_totals().unwrap(),
         TurnTokens::default()
@@ -297,7 +297,7 @@ fn wiping_the_persona_takes_the_subagent_rows_with_it() {
 fn a_subagents_tokens_land_in_the_launching_sessions_total() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let parent = store.session_id();
 
     let turn_id = "turn_parent_1";
@@ -329,7 +329,7 @@ fn a_subagents_tokens_land_in_the_launching_sessions_total() {
     );
 
     let audit = store
-        .create_session("miyu", "深挖", "subagent", Some(&parent))
+        .create_session("gqy", "深挖", "subagent", Some(&parent))
         .unwrap();
     store
         .record_subagent_usage(&audit.session_id, None, None, None, 400, 100, 500, 200)
@@ -359,10 +359,10 @@ fn a_subagents_tokens_land_in_the_launching_sessions_total() {
 fn a_subagent_run_recorded_before_the_cache_column_stays_out_of_the_rate() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let parent = store.session_id();
     let audit = store
-        .create_session("miyu", "升级前的一次", "subagent", Some(&parent))
+        .create_session("gqy", "升级前的一次", "subagent", Some(&parent))
         .unwrap();
     // Exactly what the v19 migration leaves behind: usage recorded, cache
     // unknown (NULL). Counting its prompt with no hits to match turned a
@@ -384,10 +384,10 @@ fn a_subagent_run_recorded_before_the_cache_column_stays_out_of_the_rate() {
 fn an_estimated_subagent_run_never_reaches_the_cache_denominator() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let parent = store.session_id();
     let audit = store
-        .create_session("miyu", "估算的一次", "subagent", Some(&parent))
+        .create_session("gqy", "估算的一次", "subagent", Some(&parent))
         .unwrap();
     // The provider reported nothing, so only the char estimate is known:
     // it inflates the total but must not pretend to be measured prompt.
@@ -404,10 +404,10 @@ fn an_estimated_subagent_run_never_reaches_the_cache_denominator() {
 fn subagent_audit_sessions_are_hidden_and_expire() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let parent = store.session_id();
     let audit = store
-        .create_session("miyu", "探索代码库", "subagent", Some(&parent))
+        .create_session("gqy", "探索代码库", "subagent", Some(&parent))
         .unwrap();
     let pinned = store.pinned(&audit.session_id);
     pinned
@@ -431,7 +431,7 @@ fn subagent_audit_sessions_are_hidden_and_expire() {
 
     // Hidden from the user-facing session list.
     assert!(store
-        .list_sessions("miyu")
+        .list_sessions("gqy")
         .unwrap()
         .iter()
         .all(|overview| overview.record.session_id != audit.session_id));
@@ -469,15 +469,15 @@ fn one_shot_sessions_stay_invisible_and_stale_ones_are_swept() {
     let (temp, store) = test_store();
     store.init_files().unwrap();
     let user = store
-        .create_session("miyu", "real", USER_SESSION_KIND, None)
+        .create_session("gqy", "real", USER_SESSION_KIND, None)
         .unwrap();
     let ask = store
-        .create_session("miyu", "一次性对话", ASK_SESSION_KIND, None)
+        .create_session("gqy", "一次性对话", ASK_SESSION_KIND, None)
         .unwrap();
 
     // Never listed, never findable by name — only the client holding the
     // freshly minted id can address it.
-    let listed = store.list_sessions("miyu").unwrap();
+    let listed = store.list_sessions("gqy").unwrap();
     assert!(listed
         .iter()
         .any(|overview| overview.record.session_id == user.session_id));
@@ -485,7 +485,7 @@ fn one_shot_sessions_stay_invisible_and_stale_ones_are_swept() {
         .iter()
         .all(|overview| overview.record.session_id != ask.session_id));
     assert!(store
-        .find_local_session_by_name("miyu", "一次性对话")
+        .find_local_session_by_name("gqy", "一次性对话")
         .unwrap()
         .is_none());
 
@@ -516,25 +516,25 @@ fn ensure_repl_session_never_lands_on_the_terminal_session() {
     let terminal = store.session_id().to_string();
 
     // 库里只有终端会话:自举新会话而不是借用终端车道。
-    let bootstrapped = store.ensure_repl_session("miyu").unwrap();
+    let bootstrapped = store.ensure_repl_session("gqy").unwrap();
     assert_ne!(bootstrapped, terminal);
 
     // 指针被钉到终端会话:视同缺失,自愈成另一条新会话。生产形态里终端
     // 会话已被 daemon 启动时的 adopt 认领(persona 匹配、kind=user),指针
     // 校验放行——生产实锤 repl_session_persona:default=default 正是这么
     // 进的终端车道,测试必须先复刻认领。
-    store.adopt_sessions_for_persona("miyu").unwrap();
-    store.set_repl_session("miyu", &terminal).unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
+    store.set_repl_session("gqy", &terminal).unwrap();
     assert_eq!(
-        store.repl_session("miyu").unwrap().as_deref(),
+        store.repl_session("gqy").unwrap().as_deref(),
         Some(terminal.as_str()),
         "认领后指针校验应放行终端会话,否则本用例测不到守卫"
     );
-    let healed = store.ensure_repl_session("miyu").unwrap();
+    let healed = store.ensure_repl_session("gqy").unwrap();
     assert_ne!(healed, terminal);
     assert_ne!(healed, bootstrapped);
     assert_eq!(
-        store.repl_session("miyu").unwrap().as_deref(),
+        store.repl_session("gqy").unwrap().as_deref(),
         Some(healed.as_str())
     );
 }
@@ -545,13 +545,13 @@ fn repl_session_pointer_is_separate_and_drops_when_stale() {
     store.init_files().unwrap();
     let terminal = store.session_id().to_string();
     let repl = store
-        .create_session("miyu", "repl lane", USER_SESSION_KIND, None)
+        .create_session("gqy", "repl lane", USER_SESSION_KIND, None)
         .unwrap();
 
-    assert!(store.repl_session("miyu").unwrap().is_none());
-    store.set_repl_session("miyu", &repl.session_id).unwrap();
+    assert!(store.repl_session("gqy").unwrap().is_none());
+    store.set_repl_session("gqy", &repl.session_id).unwrap();
     assert_eq!(
-        store.repl_session("miyu").unwrap().as_deref(),
+        store.repl_session("gqy").unwrap().as_deref(),
         Some(repl.session_id.as_str())
     );
     // Moving the REPL lane must not drag the terminal lane along.
@@ -560,7 +560,7 @@ fn repl_session_pointer_is_separate_and_drops_when_stale() {
     // Deleted: the pointer goes stale rather than returning a session
     // the REPL must not land on.
     store.delete_session(&repl.session_id).unwrap();
-    assert!(store.repl_session("miyu").unwrap().is_none());
+    assert!(store.repl_session("gqy").unwrap().is_none());
 }
 
 #[test]
@@ -575,7 +575,7 @@ fn clearing_pinned_session_content_is_isolated_and_preserves_usage_and_binding()
         .unwrap();
 
     let target_record = store
-        .create_session("miyu", "qq:10000:private:42", "user", None)
+        .create_session("gqy", "qq:10000:private:42", "user", None)
         .unwrap();
     let target = store.pinned(&target_record.session_id);
     target
@@ -585,7 +585,7 @@ fn clearing_pinned_session_content_is_isolated_and_preserves_usage_and_binding()
     target
         .enqueue_prompt("qq_queue", "queued", "queued", &[])
         .unwrap();
-    let binding = platform_binding_key("42", None, "miyu");
+    let binding = platform_binding_key("42", None, "gqy");
     store
         .bind_platform_session(&binding, &target_record.session_id)
         .unwrap();

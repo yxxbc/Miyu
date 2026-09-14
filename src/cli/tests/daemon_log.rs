@@ -25,18 +25,18 @@ fn config_reload_response_uses_codes_and_supports_legacy_busy_errors() {
 #[test]
 fn daemon_log_formatter_parses_targets_and_preserves_multiline_content() {
     let parsed =
-        parse_daemon_log_line("2026-07-29T12:34:56.789Z  INFO miyu::qq: listener ready port=8090")
+        parse_daemon_log_line("2026-07-29T12:34:56.789Z  INFO gqy::qq: listener ready port=8090")
             .unwrap();
     assert_eq!(parsed.level, "INFO");
-    assert_eq!(parsed.module, "miyu::qq");
+    assert_eq!(parsed.module, "gqy::qq");
     assert_eq!(parsed.message, "listener ready port=8090");
 
     let rendered = format_daemon_log_line(
-        "2026-07-29T12:34:56.789Z  INFO miyu::qq: listener ready port=8090",
+        "2026-07-29T12:34:56.789Z  INFO gqy::qq: listener ready port=8090",
         false,
     );
     assert!(!rendered.contains('\x1b'));
-    assert!(rendered.ends_with("[INFO] [miyu::qq] listener ready port=8090"));
+    assert!(rendered.ends_with("[INFO] [gqy::qq] listener ready port=8090"));
     assert_eq!(
         format_daemon_log_line("判断原因：保留这一行原有的内容", true),
         "判断原因：保留这一行原有的内容"
@@ -47,7 +47,7 @@ fn daemon_log_formatter_parses_targets_and_preserves_multiline_content() {
 fn daemon_log_formatter_supports_legacy_lines_and_tty_colors() {
     let legacy = "2026-07-29T12:34:56.789Z  WARN OneBot connection closed reason=timeout";
     let parsed = parse_daemon_log_line(legacy).unwrap();
-    assert_eq!(parsed.module, "miyu");
+    assert_eq!(parsed.module, "gqy");
     assert_eq!(parsed.message, "OneBot connection closed reason=timeout");
 
     let rendered = format_daemon_log_line(legacy, true);
@@ -62,7 +62,7 @@ fn daemon_log_formatter_colors_entire_active_reply_decisions() {
     let mut reply = Vec::new();
     formatter
         .push(
-            b"2026-07-29T12:34:56.789Z  INFO miyu::qq: \xe3\x80\x90\xe7\xbb\xad\xe8\x81\x8a\xe7\xaa\x97\xe5\x8f\xa3\xe5\x88\xa4\xe6\x96\xad\xef\xbc\x9a\xe5\x9b\x9e\xe5\xa4\x8d\xe3\x80\x91\n\xe7\xbb\x93\xe6\x9e\x9c\xef\xbc\x9a\xe5\x9b\x9e\xe5\xa4\x8d\n",
+            b"2026-07-29T12:34:56.789Z  INFO gqy::qq: \xe3\x80\x90\xe7\xbb\xad\xe8\x81\x8a\xe7\xaa\x97\xe5\x8f\xa3\xe5\x88\xa4\xe6\x96\xad\xef\xbc\x9a\xe5\x9b\x9e\xe5\xa4\x8d\xe3\x80\x91\n\xe7\xbb\x93\xe6\x9e\x9c\xef\xbc\x9a\xe5\x9b\x9e\xe5\xa4\x8d\n",
             true,
             &mut reply,
         )
@@ -73,7 +73,7 @@ fn daemon_log_formatter_colors_entire_active_reply_decisions() {
     let mut no_reply = Vec::new();
     formatter
         .push(
-            b"2026-07-29T12:34:57.789Z  INFO miyu::qq: \xe3\x80\x90\xe4\xb8\xbb\xe5\x8a\xa8\xe5\x9b\x9e\xe5\xa4\x8d\xe5\x88\xa4\xe6\x96\xad\xef\xbc\x9a\xe4\xb8\x8d\xe5\x9b\x9e\xe5\xa4\x8d\xe3\x80\x91\n\xe7\xbb\x93\xe6\x9e\x9c\xef\xbc\x9a\xe4\xb8\x8d\xe5\x9b\x9e\xe5\xa4\x8d\n",
+            b"2026-07-29T12:34:57.789Z  INFO gqy::qq: \xe3\x80\x90\xe4\xb8\xbb\xe5\x8a\xa8\xe5\x9b\x9e\xe5\xa4\x8d\xe5\x88\xa4\xe6\x96\xad\xef\xbc\x9a\xe4\xb8\x8d\xe5\x9b\x9e\xe5\xa4\x8d\xe3\x80\x91\n\xe7\xbb\x93\xe6\x9e\x9c\xef\xbc\x9a\xe4\xb8\x8d\xe5\x9b\x9e\xe5\xa4\x8d\n",
             true,
             &mut no_reply,
         )
@@ -85,13 +85,13 @@ fn daemon_log_formatter_colors_entire_active_reply_decisions() {
     let mut reset = Vec::new();
     formatter
         .push(
-            b"2026-07-29T12:34:58.789Z  INFO miyu::qq: listener ready\nplain continuation\n",
+            b"2026-07-29T12:34:58.789Z  INFO gqy::qq: listener ready\nplain continuation\n",
             false,
             &mut reset,
         )
         .unwrap();
     let reset = String::from_utf8(reset).unwrap();
-    assert!(reset.ends_with("[INFO] [miyu::qq] listener ready\nplain continuation\n"));
+    assert!(reset.ends_with("[INFO] [gqy::qq] listener ready\nplain continuation\n"));
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn daemon_log_formatter_recognizes_english_active_reply_decisions() {
 
     let mut color = None;
     let timestamp = format_daemon_log_line_with_state(
-        "2026-07-29T12:34:56.789Z  INFO miyu::qq: ",
+        "2026-07-29T12:34:56.789Z  INFO gqy::qq: ",
         true,
         &mut color,
     );
@@ -126,7 +126,7 @@ fn daemon_log_stream_formatter_waits_for_complete_lines() {
     let mut output = Vec::new();
     formatter
         .push(
-            b"2026-07-29T12:34:56.789Z  INFO miyu::qq: part",
+            b"2026-07-29T12:34:56.789Z  INFO gqy::qq: part",
             false,
             &mut output,
         )
@@ -137,7 +137,7 @@ fn daemon_log_stream_formatter_waits_for_complete_lines() {
         .push(b"ial\n  continuation\nlast", false, &mut output)
         .unwrap();
     let rendered = String::from_utf8(output).unwrap();
-    assert!(rendered.contains("[INFO] [miyu::qq] partial\n"));
+    assert!(rendered.contains("[INFO] [gqy::qq] partial\n"));
     assert!(rendered.ends_with("  continuation\n"));
 
     let mut tail = Vec::new();
@@ -152,13 +152,13 @@ fn recent_daemon_logs_keep_multiline_order_across_rotated_files() {
     let logs_dir = paths.logs_dir();
     std::fs::create_dir_all(&logs_dir).unwrap();
     std::fs::write(
-        logs_dir.join("miyu.2026-07-28.log"),
-        "2026-07-28T12:00:00Z  INFO miyu::qq: old event\n  old continuation\n",
+        logs_dir.join("gqy.2026-07-28.log"),
+        "2026-07-28T12:00:00Z  INFO gqy::qq: old event\n  old continuation\n",
     )
     .unwrap();
     std::fs::write(
-        logs_dir.join("miyu.2026-07-29.log"),
-        "2026-07-29T12:00:00Z  WARN miyu::qq: new event\n  new continuation\n判断原因：保持多行\n",
+        logs_dir.join("gqy.2026-07-29.log"),
+        "2026-07-29T12:00:00Z  WARN gqy::qq: new event\n  new continuation\n判断原因：保持多行\n",
     )
     .unwrap();
 
@@ -167,7 +167,7 @@ fn recent_daemon_logs_keep_multiline_order_across_rotated_files() {
         lines,
         [
             "  old continuation",
-            "2026-07-29T12:00:00Z  WARN miyu::qq: new event",
+            "2026-07-29T12:00:00Z  WARN gqy::qq: new event",
             "  new continuation",
             "判断原因：保持多行",
         ]
@@ -178,7 +178,7 @@ fn recent_daemon_logs_keep_multiline_order_across_rotated_files() {
         .collect::<Vec<_>>()
         .join("\n");
     assert!(!rendered.contains('\x1b'));
-    assert!(rendered.contains("[WARN] [miyu::qq] new event"));
+    assert!(rendered.contains("[WARN] [gqy::qq] new event"));
     assert!(rendered.ends_with("  new continuation\n判断原因：保持多行"));
 }
 
@@ -190,8 +190,8 @@ fn recent_daemon_logs_include_unstructured_daemon_stream_before_rotating_logs() 
     std::fs::create_dir_all(&logs_dir).unwrap();
     std::fs::write(logs_dir.join("daemon.log"), "startup banner\npanic: boom\n").unwrap();
     std::fs::write(
-        logs_dir.join("miyu.2026-07-29.log"),
-        "2026-07-29T12:00:00Z  INFO miyu::qq: listener ready\n",
+        logs_dir.join("gqy.2026-07-29.log"),
+        "2026-07-29T12:00:00Z  INFO gqy::qq: listener ready\n",
     )
     .unwrap();
 
@@ -201,7 +201,7 @@ fn recent_daemon_logs_include_unstructured_daemon_stream_before_rotating_logs() 
         [
             "startup banner",
             "panic: boom",
-            "2026-07-29T12:00:00Z  INFO miyu::qq: listener ready",
+            "2026-07-29T12:00:00Z  INFO gqy::qq: listener ready",
         ]
     );
 }
@@ -213,7 +213,7 @@ fn daemon_log_follow_cursor_starts_after_the_snapshot_for_each_source() {
     let logs_dir = paths.logs_dir();
     std::fs::create_dir_all(&logs_dir).unwrap();
     let fallback = logs_dir.join("daemon.log");
-    let rotating = logs_dir.join("miyu.2026-07-29.log");
+    let rotating = logs_dir.join("gqy.2026-07-29.log");
     std::fs::write(&fallback, b"before fallback\n").unwrap();
     std::fs::write(&rotating, b"before rotating\n").unwrap();
 
@@ -250,8 +250,8 @@ fn daemon_log_delta_avoids_duplicates_across_append_rotation_and_truncation() {
     }
 
     let temp = tempfile::tempdir().unwrap();
-    let old = temp.path().join("miyu.2026-07-28.log");
-    let current = temp.path().join("miyu.2026-07-29.log");
+    let old = temp.path().join("gqy.2026-07-28.log");
+    let current = temp.path().join("gqy.2026-07-29.log");
     std::fs::write(&old, b"old partial").unwrap();
 
     let mut formatter = DaemonLogStreamFormatter::default();
@@ -269,7 +269,7 @@ fn daemon_log_delta_avoids_duplicates_across_append_rotation_and_truncation() {
 
     std::fs::write(
         &current,
-        b"2026-07-29T12:00:00Z  INFO miyu::qq: first\n  continuation\n",
+        b"2026-07-29T12:00:00Z  INFO gqy::qq: first\n  continuation\n",
     )
     .unwrap();
     let mut offset = 0;
@@ -281,7 +281,7 @@ fn daemon_log_delta_avoids_duplicates_across_append_rotation_and_truncation() {
             .unwrap()
     );
 
-    append(&current, b"2026-07-29T12:00:01Z  INFO miyu::qq: \xe7\xbe");
+    append(&current, b"2026-07-29T12:00:01Z  INFO gqy::qq: \xe7\xbe");
     assert!(
         write_daemon_log_delta(&current, &mut offset, &mut formatter, false, &mut output,).unwrap()
     );
@@ -304,9 +304,9 @@ fn daemon_log_delta_avoids_duplicates_across_append_rotation_and_truncation() {
     assert!(!rendered.contains('\x1b'));
     assert_eq!(rendered.matches("old partial completed").count(), 1);
     assert_eq!(rendered.matches("old tail").count(), 1);
-    assert_eq!(rendered.matches("[INFO] [miyu::qq] first").count(), 1);
+    assert_eq!(rendered.matches("[INFO] [gqy::qq] first").count(), 1);
     assert_eq!(rendered.matches("  continuation").count(), 1);
-    assert_eq!(rendered.matches("[INFO] [miyu::qq] 群聊").count(), 1);
+    assert_eq!(rendered.matches("[INFO] [gqy::qq] 群聊").count(), 1);
     assert_eq!(rendered.matches("dangling").count(), 1);
     assert_eq!(rendered.matches("reset").count(), 1);
 }

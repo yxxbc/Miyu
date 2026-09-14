@@ -4,7 +4,7 @@
 //! `http://192.168.1.7:8300` 是两个源，同一台 daemon 换个地址进来就是另一份主题
 //! 设置——这就是「从不同 IP 进 WebUI 主题不一样」的全部原因。
 //!
-//! 外观是「这台 Miyu 长什么样」，不是「这个浏览器长什么样」，所以落盘在服务端。
+//! 外观是「这台 顾清影 长什么样」，不是「这个浏览器长什么样」，所以落盘在服务端。
 //! 只收白名单里那几个键、只收短字符串：这里不是给前端当通用键值仓库用的，
 //! 窗口尺寸相关的偏好（侧栏折叠、分栏比例）仍然留在浏览器本地，手机和台式机
 //! 本来就该不一样。
@@ -26,11 +26,11 @@ const MAX_VALUE_LEN: usize = 64;
 /// 读改写要互斥：两个标签页同时切主题会互相覆盖掉对方那半份文件。
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
-fn prefs_file(paths: &MiyuPaths) -> PathBuf {
+fn prefs_file(paths: &GqyPaths) -> PathBuf {
     paths.state_dir.join("web-ui.json")
 }
 
-fn load(paths: &MiyuPaths) -> Map<String, Value> {
+fn load(paths: &GqyPaths) -> Map<String, Value> {
     let Ok(raw) = std::fs::read_to_string(prefs_file(paths)) else {
         return Map::new();
     };

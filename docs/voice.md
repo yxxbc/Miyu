@@ -1,23 +1,23 @@
-# Miyu 语音功能: 唤醒、识别、听写与回复播报 (TTS)
+# 顾清影 语音功能: 唤醒、识别、听写与回复播报 (TTS)
 
-> 本文档描述 Miyu 当前语音系统的完整架构与运行机制：安装使用、各部件职责、音频管线、TTS 播报、配置规范、排查与测试。
+> 本文档描述 顾清影 当前语音系统的完整架构与运行机制：安装使用、各部件职责、音频管线、TTS 播报、配置规范、排查与测试。
 > 语音子系统涵盖 **唤醒 (KWS)**、**离线识别 (STT)**、**多端流式听写 (Dictation)** 与 **多源回复播报 (TTS)**，并在无语音活动时保持极低资源占用。
 
 ---
 
 ## 一、一句话概括
 
-装上可选组件 `miyu-voice`，在配置或设置面板中启用「语音功能」：
-- **语音唤醒**：喊「清影清影」（或自定义唤醒词） → 提示音 + 桌面通知「Miyu 在听」 → 给出指令 → 通知「Miyu 收到: …」 → 在专属「语音会话」lane 中执行 → 执行完成触发提示音、桌面摘要通知并朗读回复。
-- **快捷键唤醒**：桌面快捷键绑定 `miyu listen`，无需喊唤醒词直接进入收听状态；若正在收听或播报中，再按一次立即打断全停。
-- **听写输入**：终端 REPL `/stt`、命令行 `miyu stt`、WebUI 麦克风按钮（WebSocket 流式）共享同一套离线 VAD/分句/识别管线。
+装上可选组件 `gqy-voice`，在配置或设置面板中启用「语音功能」：
+- **语音唤醒**：喊「清影清影」（或自定义唤醒词） → 提示音 + 桌面通知「顾清影 在听」 → 给出指令 → 通知「顾清影 收到: …」 → 在专属「语音会话」lane 中执行 → 执行完成触发提示音、桌面摘要通知并朗读回复。
+- **快捷键唤醒**：桌面快捷键绑定 `gqy listen`，无需喊唤醒词直接进入收听状态；若正在收听或播报中，再按一次立即打断全停。
+- **听写输入**：终端 REPL `/stt`、命令行 `gqy stt`、WebUI 麦克风按钮（WebSocket 流式）共享同一套离线 VAD/分句/识别管线。
 - **回复播报 (TTS)**：支持 `<speak>` 标签优先朗读与 Markdown 正文清洗，集成 MiniMax 与 Xiaomi MiMo 双引擎，并支持 `speak` 工具让模型主动开口。
 
 ---
 
 ## 二、为什么拆分为两个可执行文件
 
-| 维度 | `miyu` (主程序 / daemon) | `miyu-voice` (语音前端进程) |
+| 维度 | `gqy` (主程序 / daemon) | `gqy-voice` (语音前端进程) |
 |---|---|---|
 | **链接依赖** | 不含 sherpa-onnx / onnxruntime（轻量运行） | 静态链接 sherpa-onnx（二进制 ≈ +30MB） |
 | **音频硬件** | 不直接访问麦克风与扬声器底层 | 独占常驻麦克风流，负责播放提示音与 TTS WAV |
@@ -30,27 +30,27 @@
 - **会话调度**：驱动语音回合、通知分发、打断控制与听写中继。
 
 ```text
-miyu (daemon) ───────spawn/supervise───────> miyu-voice
+gqy (daemon) ───────spawn/supervise───────> gqy-voice
    voice_bridge  <───VoiceAttach 双向信令帧───>  voice::worker
    · voice.command{text} ──────> 专属语音会话 Lane ───> 通知 / TTS 播报 / cue(done)
    · voice.speech_start ───────> 打断当前正在进行的推理或播报
    · voice.listen ─────────────> 快捷键免唤醒直接收听 / 再次按下全停
-   · voice.dictation{text} ────> 听写认领者 (REPL /stt、miyu stt)
+   · voice.dictation{text} ────> 听写认领者 (REPL /stt、gqy stt)
    · voice.audio{pcm16} ───────> WebUI 浏览器录音经 WebSocket 转发 worker 识别
    · voice.play{wav_path} ─────> 交付 daemon 合成好的 TTS 音频进行物理播放
 ```
 
 ### 编译与打包契约
-- **Cargo Feature**：主 crate 的 `voice` 特性默认关闭；`[[bin]] miyu-voice` 标记了 `required-features = ["voice"]`。
-  - 仅构建主程序：`cargo build --release`（仅产出 `miyu`）。
-  - 构建全套语音：`cargo build --release --features voice`（同时产出 `miyu` 与 `miyu-voice`）。
-- **打包规范**：在 Arch Linux / AUR 中拆分为 `miyu` 与 `miyu-voice` 两个包；`sherpa-onnx` 静态库预先打包并校验哈希，构建期完全离线。
+- **Cargo Feature**：主 crate 的 `voice` 特性默认关闭；`[[bin]] gqy-voice` 标记了 `required-features = ["voice"]`。
+  - 仅构建主程序：`cargo build --release`（仅产出 `gqy`）。
+  - 构建全套语音：`cargo build --release --features voice`（同时产出 `gqy` 与 `gqy-voice`）。
+- **打包规范**：在 Arch Linux / AUR 中拆分为 `gqy` 与 `gqy-voice` 两个包；`sherpa-onnx` 静态库预先打包并校验哈希，构建期完全离线。
 
 ---
 
 ## 三、离线模型体系 (~190MB)
 
-模型统一存放在 `state_dir/models/`（通常为 `~/.miyu/models/`，可通过环境变量 `MIYU_VOICE_MODELS_DIR` 覆盖）：
+模型统一存放在 `state_dir/models/`（通常为 `~/.gqy/models/`，可通过环境变量 `GQY_VOICE_MODELS_DIR` 覆盖）：
 
 | 模型 | 预估体积 | 职责说明 | 常驻策略 |
 |---|---|---|---|
@@ -68,8 +68,8 @@ miyu (daemon) ───────spawn/supervise───────> miyu-vo
 |---|---|---|
 | **汉字** | `清影清影`、`顾清影` | 逐字注带调拼音，按 tokens.txt 贪婪最长匹配拆分为音节单元 |
 | **显式拼音** | `qing1 ying3 qing1 ying3` | 空格分隔的“拼音+声调数字”（0 或无数字为轻声），精确控制读音 |
-| **假名 / 拉丁字母** | `みゆみゆ`、`miyumiyu` | 假名转罗马音，按日语音节切分后映射为近似发音，并自动展开为轻声与 1~4 声组合候选 |
-| **混合形式** | `小miyu` | 汉字保持固定声调，外来词部分展开为多声调候选矩阵 |
+| **假名 / 拉丁字母** | `みゆみゆ`、`gqygqy` | 假名转罗马音，按日语音节切分后映射为近似发音，并自动展开为轻声与 1~4 声组合候选 |
+| **混合形式** | `小gqy` | 汉字保持固定声调，外来词部分展开为多声调候选矩阵 |
 
 - **灵敏度调节**：
   - `wake_threshold`（默认 `0.25`，越低越灵敏）：对应 sherpa 的关键词检出概率阈值。
@@ -114,13 +114,13 @@ miyu (daemon) ───────spawn/supervise───────> miyu-vo
 
 | 触发事件 | 提示音效 (`assets/voice/`) | 桌面通知 |
 |---|---|---|
-| **唤醒词命中** | `wake.wav` (上行双音) | 「Miyu 在听 / 请讲」（与提示音同时呈现） |
-| **识别出有效指令** | `heard.wav` (清脆单点音) | 「Miyu 收到 / <指令内容>」 |
-| **指令执行完成** | `done.wav` (下行三音) | 「Miyu / <回复前 N 字摘要>」(`notify_reply_chars`) |
-| **手动关闭收听 (`miyu listen`)** | `off.wav` (下行双音) | 「Miyu / 不听了」 |
+| **唤醒词命中** | `wake.wav` (上行双音) | 「顾清影 在听 / 请讲」（与提示音同时呈现） |
+| **识别出有效指令** | `heard.wav` (清脆单点音) | 「顾清影 收到 / <指令内容>」 |
+| **指令执行完成** | `done.wav` (下行三音) | 「顾清影 / <回复前 N 字摘要>」(`notify_reply_chars`) |
+| **手动关闭收听 (`gqy listen`)** | `off.wav` (下行双音) | 「顾清影 / 不听了」 |
 | **执行异常失败** | `error.wav` (低沉警示音) | 「语音会话出错 / <错误详情>」 |
 
-> 提示音内置于 `miyu-voice` 二进制中（木琴音色，24kHz mono）。Linux 系统下通知使用 `notify-send -p/-r` 机制，实现同一气泡的原地平滑替换，避免屏幕被多条通知轰炸。
+> 提示音内置于 `gqy-voice` 二进制中（木琴音色，24kHz mono）。Linux 系统下通知使用 `notify-send -p/-r` 机制，实现同一气泡的原地平滑替换，避免屏幕被多条通知轰炸。
 
 ### 2. 免唤醒追问与主动退下
 
@@ -129,7 +129,7 @@ miyu (daemon) ───────spawn/supervise───────> miyu-vo
   - 用户在 30 秒内直接说话无需重复喊唤醒词；每次回合交互完毕后重新重置 30 秒窗口。
 - **主动结束**：
   - 用户对她说“没事了”、“就降吧”、“去忙吧”等，模型将自动调用内置工具 `end_voice_chat` 关窗，回到待命状态。
-- **快捷键开/关切换器 (`miyu listen`)**：
+- **快捷键开/关切换器 (`gqy listen`)**：
   - **待命时按下**：跳过唤醒词，直接发出提示音并进入 8 秒等待指令窗口。
   - **收听中/播报中按下**：彻底停止当前回合、打断 TTS 播放、销毁未播音频，并弹出「不听了」通知。
   - 推荐将其绑定到桌面环境快捷键（如 Niri、Hyprland、i3 等）。
@@ -139,14 +139,14 @@ miyu (daemon) ───────spawn/supervise───────> miyu-vo
 | 入口方式 | 音频输入源 | 识别文本流向与行为 |
 |---|---|---|
 | **终端 REPL `/stt`** | 本机麦克风 | 开启 10 秒静默短窗口（期间唤醒暂停），逐句填入终端输入框；回车发送，Esc 取消。 |
-| **命令行 `miyu stt`** | 本机麦克风 | 录入单句指令，识别完成后直接提交为回合消息并流式打印回复（Shellhook 风格）。 |
+| **命令行 `gqy stt`** | 本机麦克风 | 录入单句指令，识别完成后直接提交为回合消息并流式打印回复（Shellhook 风格）。 |
 | **WebUI 麦克风按钮** | 浏览器 `getUserMedia` | 前端通过 WebSocket (`/api/voice/stream`) 上传 16kHz PCM16 音频流，复用服务端的 VAD 与识别管线，逐句回传并在输入框中实时追加。 |
 
 ---
 
 ## 六、文本转语音 (TTS) 与平台语音生态
 
-Miyu 提供独立的 `voice.tts` 配置节。文本转语音与语音唤醒相互独立（`voice.enabled` 控麦克风唤醒，`voice.tts.enabled` 控音频合成与朗读）。
+顾清影 提供独立的 `voice.tts` 配置节。文本转语音与语音唤醒相互独立（`voice.enabled` 控麦克风唤醒，`voice.tts.enabled` 控音频合成与朗读）。
 
 ### 1. 朗读内容提取与清洗规范
 
@@ -173,15 +173,15 @@ Miyu 提供独立的 `voice.tts` 配置节。文本转语音与语音唤醒相�
 - **主动开口工具 (`speak`)**：
   在本地会话中注册，允许模型在需要主动向用户汇报进展时调用扬声器发声。
 - **QQ 语音消息入站 (`voice_inbound.rs`)**：
-  接收到群友或好友发送的 QQ 语音消息后，自动拉取 WAV 音频经本地 `miyu-voice` 转写为 `[语音] 转写内容`，使大模型能够理解语音输入。
+  接收到群友或好友发送的 QQ 语音消息后，自动拉取 WAV 音频经本地 `gqy-voice` 转写为 `[语音] 转写内容`，使大模型能够理解语音输入。
 - **QQ 语音消息出站 (`send_voice_message` / `send_qq_message`)**：
   将待回复文本经 TTS 引擎合成为音频后，作为 OneBot `record` 语音段发送，并在历史记录中完整保留 `[语音] 原文`。
 
 ---
 
-## 七、完整配置参考 (`~/.miyu/config.json`)
+## 七、完整配置参考 (`~/.gqy/config.json`)
 
-在配置文件的 `voice` 节配置（亦可在 TUI `miyu config` 或 WebUI 设置面板中图形化配置）：
+在配置文件的 `voice` 节配置（亦可在 TUI `gqy config` 或 WebUI 设置面板中图形化配置）：
 
 ```jsonc
 "voice": {
@@ -194,7 +194,7 @@ Miyu 提供独立的 `voice.tts` 配置节。文本转语音与语音唤醒相�
   ],
   "wake_threshold": 0.25,                   // 唤醒灵敏度阈值 (0~1，越低越灵敏)
   "wake_boost": 1.0,                        // 唤醒路径加分 (越大越灵敏)
-  "microphone": null,                       // 指定麦克风源名 (null 或 "" 表示系统默认源，可通过 miyu-voice devices 查看)
+  "microphone": null,                       // 指定麦克风源名 (null 或 "" 表示系统默认源，可通过 gqy-voice devices 查看)
   "stt_threads": 2,                         // 离线识别并发线程数
   "stt_language": "zh",                     // 识别语言锁定 (auto | zh | en | ja | ko | yue；锁定 zh 可防环境噪音误判)
   "stt_unload_seconds": 60,                 // 识别模型空闲卸载等待秒数 (0 为常驻内存)
@@ -244,35 +244,35 @@ Miyu 提供独立的 `voice.tts` 配置节。文本转语音与语音唤醒相�
 ## 八、常用排查与诊断命令
 
 ### 1. 运行状态检视
-- **命令行状态**：`miyu voice status`（查看 worker 进程 PID、IPC 挂载状态、采集设备、日志文件路径等）。
+- **命令行状态**：`gqy voice status`（查看 worker 进程 PID、IPC 挂载状态、采集设备、日志文件路径等）。
 - **REST 接口**：`GET /api/voice/status`（与 WebUI 共享同样的状态快照）。
-- **进程日志**：查看 `~/.miyu/logs/voice-worker.log`（若需观察 VAD/KWS/STT 各阶段精细耗时，可添加环境变量 `MIYU_VOICE_DEBUG=1`）。
+- **进程日志**：查看 `~/.gqy/logs/voice-worker.log`（若需观察 VAD/KWS/STT 各阶段精细耗时，可添加环境变量 `GQY_VOICE_DEBUG=1`）。
 
 ### 2. 独立排查与硬件测试
-当怀疑麦克风无声或唤醒词识别不灵敏时，可绕过主程序直接运行 `miyu-voice` 进行验证：
+当怀疑麦克风无声或唤醒词识别不灵敏时，可绕过主程序直接运行 `gqy-voice` 进行验证：
 ```bash
 # 列出系统当前检测到的所有音频采集源 (源名与标签)
-miyu-voice devices
+gqy-voice devices
 
 # 独立运行唤醒与识别测试 (观察实时 RMS 能量门、VAD 状态与耗时)
-miyu-voice test --keyword 清影清影 --timings
+gqy-voice test --keyword 清影清影 --timings
 
 # 试听内置提示音 (wake / heard / done / error / off)
-miyu-voice cue done --volume 0.8
+gqy-voice cue done --volume 0.8
 
 # 测试 TTS 合成与扬声器回放
-miyu voice say "你好，这是语音功能测试"
+gqy voice say "你好，这是语音功能测试"
 ```
 
 ### 3. Linux PipeWire / WirePlumber 踩坑指南
 - **声音静音或流串线问题**：
   如果出现提示音无声或唤醒失灵，检查 WirePlumber 是否错误记录了设备路由：
   ```bash
-  grep miyu-voice ~/.local/state/wireplumber/stream-properties
+  grep gqy-voice ~/.local/state/wireplumber/stream-properties
   ```
   若发现带有 `"target"` 的条目，说明曾使用 pavucontrol 移动过该流，导致后续流被永久锁死。清理方式：停用 wireplumber 服务并清除上述配置文件中的 target 字段后重启。
 - **USB 麦克风带宽瓶颈**：
-  当多个 USB 高保真音频设备挂载于同一 USB Hub 时，麦克风常开可能导致带宽耗尽报错。建议将配置项 `voice.microphone` 显式指定为 `miyu-voice devices` 输出的真实物理设备名，避免跟随系统默认设备漂移。
+  当多个 USB 高保真音频设备挂载于同一 USB Hub 时，麦克风常开可能导致带宽耗尽报错。建议将配置项 `voice.microphone` 显式指定为 `gqy-voice devices` 输出的真实物理设备名，避免跟随系统默认设备漂移。
 
 ---
 
@@ -289,4 +289,4 @@ miyu voice say "你好，这是语音功能测试"
 | **空闲 60s 卸载后** | 回落至 **0.4%** | 回落至 **75MB** | 彻底回收 ~300MB ASR 模型内存 |
 
 **总结**：
-Miyu 语音系统的底层设计始终秉持低足迹与高响应：在无语音时近乎零开销，在唤醒触发瞬间毫秒级反馈，在交互结束后自动回收重型 ASR 内存，并无缝融合端侧离线识别与云端高品质 TTS 表现力。
+顾清影 语音系统的底层设计始终秉持低足迹与高响应：在无语音时近乎零开销，在唤醒触发瞬间毫秒级反馈，在交互结束后自动回收重型 ASR 内存，并无缝融合端侧离线识别与云端高品质 TTS 表现力。

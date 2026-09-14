@@ -38,10 +38,10 @@ echo '{"type":"turn.started"}'
 echo '{"type":"item.completed","item":{"id":"item_0","type":"reasoning","text":"thinking about it"}}'
 echo '{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"bash -lc ls","aggregated_output":"","status":"in_progress"}}'
 echo '{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"bash -lc ls","aggregated_output":"a\r\nb\r\n","exit_code":0,"status":"completed"}}'
-echo '{"type":"item.started","item":{"id":"item_2","type":"mcp_tool_call","server":"miyu","tool":"use_meme","arguments":{"action":"show","id":"m1"},"status":"in_progress"}}'
-echo '{"type":"item.completed","item":{"id":"item_2","type":"mcp_tool_call","server":"miyu","tool":"use_meme","arguments":{"action":"show","id":"m1"},"result":{"content":[{"type":"text","text":"meme sent ok"}]},"status":"completed"}}'
-echo '{"type":"item.started","item":{"id":"item_9","type":"mcp_tool_call","server":"miyu","tool":"ask_question","arguments":{},"status":"in_progress"}}'
-echo '{"type":"item.completed","item":{"id":"item_9","type":"mcp_tool_call","server":"miyu","tool":"ask_question","arguments":{},"result":{"content":[]},"status":"completed"}}'
+echo '{"type":"item.started","item":{"id":"item_2","type":"mcp_tool_call","server":"gqy","tool":"use_meme","arguments":{"action":"show","id":"m1"},"status":"in_progress"}}'
+echo '{"type":"item.completed","item":{"id":"item_2","type":"mcp_tool_call","server":"gqy","tool":"use_meme","arguments":{"action":"show","id":"m1"},"result":{"content":[{"type":"text","text":"meme sent ok"}]},"status":"completed"}}'
+echo '{"type":"item.started","item":{"id":"item_9","type":"mcp_tool_call","server":"gqy","tool":"ask_question","arguments":{},"status":"in_progress"}}'
+echo '{"type":"item.completed","item":{"id":"item_9","type":"mcp_tool_call","server":"gqy","tool":"ask_question","arguments":{},"result":{"content":[]},"status":"completed"}}'
 echo '{"type":"item.completed","item":{"id":"item_3","type":"file_change","changes":[{"path":"/w/a.rs","kind":"update"}],"status":"completed"}}'
 echo '{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"Hello from fake"}}'
 echo '{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":40,"output_tokens":5,"reasoning_output_tokens":2}}'
@@ -57,7 +57,7 @@ fn codex_client(
     dir: &std::path::Path,
     provider_id: &str,
     native: &str,
-    miyu: &str,
+    gqy: &str,
 ) -> OpenAiCompatibleClient {
     let mut provider = test_provider(provider_id, "");
     provider.protocol = "codex".to_string();
@@ -66,7 +66,7 @@ fn codex_client(
     client.codex = Some(Arc::new(CodexRuntime {
         binary: fake_codex_script(dir),
         native_tools: native.to_string(),
-        miyu_tools: miyu.to_string(),
+        gqy_tools: gqy.to_string(),
         sandbox_mode: "danger-full-access".to_string(),
         ignore_user_config: true,
         idle_timeout: Duration::from_secs(30),
@@ -155,8 +155,8 @@ async fn first_turn_injects_config_per_process_and_translates_items() {
         "提示词应从 stdin 读: {args}"
     );
     assert!(!args.contains("\nresume\n"), "首轮不该续传: {args}");
-    // 测试里没有回合作用域(无 Miyu 会话)→ 不挂桥。
-    assert!(!args.contains("mcp_servers.miyu"), "{args}");
+    // 测试里没有回合作用域(无 顾清影 会话)→ 不挂桥。
+    assert!(!args.contains("mcp_servers.gqy"), "{args}");
     assert_eq!(read(dir.path(), "stdin.txt"), "hello\n");
     // 指令文件 = 人格 + 环境事实,按内容哈希落盘。
     let instr = std::fs::read_dir(dir.path().join("instr"))

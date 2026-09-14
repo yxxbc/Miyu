@@ -1,6 +1,6 @@
 //! 进程内直连的回合驱动。
 //!
-//! `MIYU_DIRECT=1` 或 daemon 起不来时走这条：agent 直接在本进程跑，事件不过
+//! `GQY_DIRECT=1` 或 daemon 起不来时走这条：agent 直接在本进程跑，事件不过
 //! IPC。功能与远端那条等价，但少一层进程边界——调试和排查时用它能把「是不是
 //! IPC 丢了东西」这个变量排除掉。
 
@@ -11,7 +11,7 @@ use crate::cli::repl::tail::*;
 use crate::cli::*;
 
 pub(in crate::cli) async fn run_chat_with_images(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     message: String,
     pasted_images: Vec<Option<crate::clipboard::PastedImage>>,
 ) -> Result<()> {
@@ -121,7 +121,7 @@ pub(in crate::cli) async fn run_chat_with_images(
 /// 程序驱动的文本模式回合:会话已由 `turn_request` 定好,带附图与覆盖,
 /// 只走 daemon(没有 daemon 就报错,不退回进程内直连)。
 pub(in crate::cli) async fn run_chat_with_images_and_options(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     message: String,
     images: Vec<Option<crate::clipboard::PastedImage>>,
     plain: bool,
@@ -150,14 +150,14 @@ pub(in crate::cli) async fn run_chat_with_images_and_options(
     {
         Some(_) => Ok(()),
         None => Err(crate::cli::exit_code::usage_error(t(
-            "this command needs the Miyu daemon (unset MIYU_DIRECT)",
-            "这条命令需要 Miyu daemon(请去掉 MIYU_DIRECT)",
+            "this command needs the GQY daemon (unset GQY_DIRECT)",
+            "这条命令需要 顾清影 daemon(请去掉 GQY_DIRECT)",
         ))),
     }
 }
 
 pub(in crate::cli) async fn run_chat_with_options(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     message: String,
     show_reasoning: Option<bool>,
     plain: bool,
@@ -204,8 +204,8 @@ pub(in crate::cli) async fn run_chat_with_options(
     if overrides.is_some() {
         // 回合级覆盖由 daemon 套用;进程内直连没有那层。
         return Err(crate::cli::exit_code::usage_error(t(
-            "per-turn overrides need the Miyu daemon (unset MIYU_DIRECT)",
-            "回合级覆盖需要 Miyu daemon(请去掉 MIYU_DIRECT)",
+            "per-turn overrides need the GQY daemon (unset GQY_DIRECT)",
+            "回合级覆盖需要 顾清影 daemon(请去掉 GQY_DIRECT)",
         )));
     }
     let _core_lease = ipc::acquire_direct_core(paths)?;
@@ -304,7 +304,7 @@ pub(in crate::cli) async fn run_chat_with_options(
 }
 
 pub(in crate::cli) async fn run_direct_repl(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     initial_mode: AgentMode,
 ) -> Result<()> {
     let _core_lease = ipc::acquire_direct_core(paths)?;
@@ -768,8 +768,8 @@ pub(in crate::cli) async fn run_direct_repl(
             println!(
                 "{}",
                 t(
-                    "this command needs the full (daemon) REPL; start without MIYU_DIRECT to use it",
-                    "该命令需要完整(daemon)REPL;不带 MIYU_DIRECT 启动即可使用"
+                    "this command needs the full (daemon) REPL; start without GQY_DIRECT to use it",
+                    "该命令需要完整(daemon)REPL;不带 GQY_DIRECT 启动即可使用"
                 )
             );
             continue;

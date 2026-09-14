@@ -150,7 +150,7 @@ fn the_mention_line_marks_the_bot_itself_and_says_nothing_when_absent() {
     let mentions = vec![
         PlatformMention {
             user_id: "10000".to_string(),
-            display_name: Some("Miyu".to_string()),
+            display_name: Some("GQY".to_string()),
         },
         PlatformMention {
             user_id: "40000".to_string(),
@@ -174,5 +174,5 @@ fn the_mention_line_marks_the_bot_itself_and_says_nothing_when_absent() {
 
     // 历史块传 None:行为与改动前一致。
     let rendered = format_mentioned_users(&mentions, &ids, true, None).unwrap();
-    assert_eq!(rendered, "Miyu(QQ:10000)、yuyi(QQ:40000)");
+    assert_eq!(rendered, "GQY(QQ:10000)、yuyi(QQ:40000)");
 }

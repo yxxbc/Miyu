@@ -636,7 +636,7 @@ impl ConversationDb {
     }
 
     /// Deletes abandoned one-shot sessions older than the retention window. A
-    /// `miyu ask` turn deletes its own session; anything still here was
+    /// `gqy ask` turn deletes its own session; anything still here was
     /// orphaned by a client that died mid-turn (Ctrl+C, SIGKILL).
     pub fn delete_ask_sessions_older_than(&self, hours: i64) -> Result<usize> {
         let mut conn = self.conn.lock().unwrap();

@@ -8,14 +8,14 @@
 
 use super::*;
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use serde_json::json;
 use tempfile::TempDir;
 
-fn sandbox() -> (TempDir, MiyuPaths, AppConfig) {
+fn sandbox() -> (TempDir, GqyPaths, AppConfig) {
     let dir = TempDir::new().unwrap();
     let root = dir.path();
-    let paths = MiyuPaths {
+    let paths = GqyPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -24,7 +24,7 @@ fn sandbox() -> (TempDir, MiyuPaths, AppConfig) {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("pictures"),
-        fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+        fish_hook_file: root.join("config/fish/conf.d/gqy.fish"),
         bash_hook_file: root.join("config/shell/bash-hook.sh"),
         zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
         scripts_dir: root.join("data/scripts"),
@@ -33,21 +33,21 @@ fn sandbox() -> (TempDir, MiyuPaths, AppConfig) {
     (dir, paths, AppConfig::default())
 }
 
-async fn call(args: Value, paths: &MiyuPaths, config: &AppConfig) -> Value {
+async fn call(args: Value, paths: &GqyPaths, config: &AppConfig) -> Value {
     let raw = run_ledger(args, paths.clone(), config.clone())
         .await
         .expect("tool call");
     serde_json::from_str(&raw).expect("tool returns json")
 }
 
-async fn call_err(args: Value, paths: &MiyuPaths, config: &AppConfig) -> String {
+async fn call_err(args: Value, paths: &GqyPaths, config: &AppConfig) -> String {
     run_ledger(args, paths.clone(), config.clone())
         .await
         .expect_err("expected an error")
         .to_string()
 }
 
-async fn manage(args: Value, paths: &MiyuPaths) -> Value {
+async fn manage(args: Value, paths: &GqyPaths) -> Value {
     // 记账管理只拿 config 定「谁的账本」;默认配置 = 管理员那份。
     let raw = manage::run(args, paths.clone(), AppConfig::default())
         .await

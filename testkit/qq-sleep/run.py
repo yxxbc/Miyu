@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """QQ 睡眠时间黑盒:沙箱 daemon + OpenAI 桩 + 假 NapCat(反向 WS)。
 
-    BIN=<miyu> python3 sleep_e2e.py
+    BIN=<gqy> python3 sleep_e2e.py
 
 判定:
   睡眠中  游客群 @ / 游客私聊 / 白名单群 @ → 不回;白名单私聊 / 管理员私聊 / 管理员群 @ → 回
@@ -24,14 +24,14 @@ from pathlib import Path
 
 REPO = Path("/home/shorin/Documents/github/Miyu")
 BIN = Path(os.environ["BIN"])
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-sleep-e2e")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-sleep-e2e")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18523"))
 QQ_PORT = int(os.environ.get("QQ_PORT", "18524"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18525"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
 
 spec = importlib.util.spec_from_file_location("fake", REPO / "testkit" / "fake-onebot" / "run.py")
 fake = importlib.util.module_from_spec(spec)

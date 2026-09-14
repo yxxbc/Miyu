@@ -4,11 +4,11 @@
 //! - 会话归成员(归属键非空、账号不是管理员)→ 工作区 = `home/<用户>/workspace`
 //!   (不看会话记录——成员改不了,也不该把 daemon 的 cwd 当工作区),成员策略
 //!   (09-11 用户拍板:沙盒外的读取也禁):可写 {工作区, /tmp, /dev/null, 脚本缓存};
-//!   只读只给跑程序必需的系统目录(/usr /etc /proc …)、内置与已装脚本目录、miyu
-//!   自己的二进制;管理员的家、`~/.miyu` 的配置与库都摸不到。
+//!   只读只给跑程序必需的系统目录(/usr /etc /proc …)、内置与已装脚本目录、gqy
+//!   自己的二进制;管理员的家、`~/.gqy` 的配置与库都摸不到。
 //! - 管理员会话绑了沙盒根(`/sandbox <路径>`,会话记录 `sandbox`)→ 工作区 = 根,
 //!   管理员策略:同样读写都锁,只比成员多配置里的工具链清单(`tools.sandbox`)与
-//!   Miyu 自己的产出目录(artifact 库、生图/深研落盘)。
+//!   顾清影 自己的产出目录(artifact 库、生图/深研落盘)。
 //! - 其余(管理员没绑、终端、平台回合)→ 客户端 cwd,否则 daemon cwd,不套沙盒。
 
 use crate::tools::sandbox::SandboxPolicy;
@@ -38,7 +38,7 @@ const TOOLCHAIN_ENV: &[(&str, &str)] = &[
 const PATH_PREPEND: &[&str] = &[".cargo/bin", ".local/bin"];
 
 pub(in crate::web) fn session_scope(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     admin_store: &StateStore,
     stores: &StoreRegistry,
     config: &AppConfig,
@@ -69,30 +69,30 @@ pub(in crate::web) fn session_scope(
     }
 }
 
-fn system_read_only(paths: &MiyuPaths) -> Vec<PathBuf> {
+fn system_read_only(paths: &GqyPaths) -> Vec<PathBuf> {
     let mut read_only: Vec<PathBuf> = SYSTEM_READ_ONLY.iter().map(PathBuf::from).collect();
     read_only.push(paths.scripts_dir.clone());
     read_only.push(paths.system_scripts_dir.clone());
-    // 用 miyu_executable()(剥掉 `/proc/self/exe` 的「 (deleted)」后缀)而不是裸
+    // 用 gqy_executable()(剥掉 `/proc/self/exe` 的「 (deleted)」后缀)而不是裸
     // current_exe():部署/重建把二进制换掉后,运行中 daemon 的 current_exe() 读成
-    // `.../miyu (deleted)`,那条会被下面 retain(exists) 剔掉→沙盒不放行真二进制的
-    // EXECUTE;而 CLI 后端(claude-code 等)起的 `miyu mcp-serve` 用的正是剥过后缀
+    // `.../gqy (deleted)`,那条会被下面 retain(exists) 剔掉→沙盒不放行真二进制的
+    // EXECUTE;而 CLI 后端(claude-code 等)起的 `gqy mcp-serve` 用的正是剥过后缀
     // 的真路径,exec 被 Landlock 挡下→claude 报 CONNECTION_CLOSED、MCP 用不了
     // (09-12 坐实的 MCP 桥连不上真凶)。两处取同一条路径。
-    if let Ok(exe) = crate::paths::miyu_executable() {
+    if let Ok(exe) = crate::paths::gqy_executable() {
         read_only.push(exe);
     }
     read_only
 }
 
 /// daemon 的运行时目录(IPC socket core.sock 在里面):沙盒会话用 claude-code 等
-/// CLI 后端时,CLI 起的 `miyu mcp-serve` 桥要连这个 socket 把工具调用转回 daemon
-/// 才拿得到 Miyu 工具。CLI 进程被 Landlock 关着,桥子进程继承规则,不放行这条就
+/// CLI 后端时,CLI 起的 `gqy mcp-serve` 桥要连这个 socket 把工具调用转回 daemon
+/// 才拿得到 顾清影 工具。CLI 进程被 Landlock 关着,桥子进程继承规则,不放行这条就
 /// 连不上、报 CONNECTION_CLOSED(09-11 实测)。桥转的工具调用带会话、在 daemon 侧
 /// 按会话作用域执行,不越权;裸 IPC 的特权命令(Shutdown 等)按「防君子不防小人」
-/// 的既定尺度不设防(Landlock 本就不管 socket)。runtime 目录只含 miyu 自己的
+/// 的既定尺度不设防(Landlock 本就不管 socket)。runtime 目录只含 gqy 自己的
 /// 运行时文件,给读写(connect 需要)。
-fn base_read_write(paths: &MiyuPaths, root: &std::path::Path) -> Vec<PathBuf> {
+fn base_read_write(paths: &GqyPaths, root: &std::path::Path) -> Vec<PathBuf> {
     let mut read_write = vec![
         root.to_path_buf(),
         PathBuf::from("/tmp"),
@@ -107,7 +107,7 @@ fn base_read_write(paths: &MiyuPaths, root: &std::path::Path) -> Vec<PathBuf> {
 }
 
 fn member_scope(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     admin_store: &StateStore,
     stores: &StoreRegistry,
     session_id: &str,
@@ -171,7 +171,7 @@ fn member_scope(
 /// 管理员 `/sandbox <root>` 的策略。`/sandbox` 查看也走这里,所以摘要里列的就是
 /// 真正装进规则集的东西(清单里不存在的路径不会出现)。
 pub(in crate::web) fn admin_scope(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     root: PathBuf,
 ) -> TurnScope {
@@ -206,7 +206,7 @@ pub(in crate::web) fn admin_scope(
     read_only.retain(|path| path.exists());
 
     let mut read_write = base_read_write(paths, &root);
-    // Miyu 自己经工具产出的目录:artifact 库(artifact 工具写、read artifact: 读)、
+    // 顾清影 自己经工具产出的目录:artifact 库(artifact 工具写、read artifact: 读)、
     // 生图/深研落盘(print_image/vision 回读自己生成的图)。成员版少放行一条就
     // 「读 artifact:x 报 outside your workspace」,这里一次放齐。不存在的不建,
     // 由各工具自己按需建;建出来之前那一轮读不到,下一轮策略重算就有了。

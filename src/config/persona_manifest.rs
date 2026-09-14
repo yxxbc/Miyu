@@ -11,7 +11,7 @@
 //! 错误把 persona 整个弄哑。
 
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -146,14 +146,14 @@ impl PersonaManifest {
         }
     }
 
-    pub fn manifest_path(config: &AppConfig, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn manifest_path(config: &AppConfig, paths: &GqyPaths, persona: &str) -> PathBuf {
         config
             .persona_memory_data_dir(paths, persona)
             .join(PERSONA_MANIFEST_FILE)
     }
 
     /// 读 persona 目录里的清单;没有文件用内置默认,坏文件记 warn 退回默认。
-    pub fn load(config: &AppConfig, paths: &MiyuPaths, persona: &str) -> Self {
+    pub fn load(config: &AppConfig, paths: &GqyPaths, persona: &str) -> Self {
         let path = Self::manifest_path(config, paths, persona);
         match std::fs::read_to_string(&path) {
             Ok(raw) => match Self::parse(&raw) {
@@ -315,7 +315,7 @@ mod tests {
     fn missing_or_broken_file_falls_back_to_builtin() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path();
-        let paths = crate::paths::MiyuPaths {
+        let paths = crate::paths::GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -324,7 +324,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("config/fish/conf.d/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),

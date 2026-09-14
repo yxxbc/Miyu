@@ -53,8 +53,8 @@ class Runner:
 
     def call(self, args, argv=None):
         environ = dict(os.environ)
-        environ["MIYU_SCRIPT_CACHE_DIR"] = self.cache or self.fresh_cache()
-        environ.pop("MIYU_ARGS_JSON", None)
+        environ["GQY_SCRIPT_CACHE_DIR"] = self.cache or self.fresh_cache()
+        environ.pop("GQY_ARGS_JSON", None)
         proc = subprocess.run([self.script] + (argv or []),
                               input=json.dumps(args), capture_output=True,
                               text=True, timeout=60, env=environ)

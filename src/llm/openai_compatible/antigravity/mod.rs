@@ -1,16 +1,16 @@
 //! Antigravity CLI 中转协议(`protocol = "antigravity"`)。
 //!
 //! 传输层是本机 `agy` 子进程的 stream-json 流,与 claude-code 线同构:CLI 用
-//! 用户既有的 Google 登录态,Miyu 不经手凭据;工具循环的所有权在 agy 侧,Miyu
-//! 工具经 `miyu mcp-serve` 桥挂进去,回合循环看到的永远是「一次请求、纯文本回
+//! 用户既有的 Google 登录态,顾清影 不经手凭据;工具循环的所有权在 agy 侧,顾清影
+//! 工具经 `gqy mcp-serve` 桥挂进去,回合循环看到的永远是「一次请求、纯文本回
 //! 来、没有 tool_calls」。
 //!
 //! 与 claude-code 的三处实质差异(09-03 实测):
 //! ①没有 `--system-prompt`——人格写成全局自定义代理
-//! `~/.gemini/config/agents/miyu/agent.md`,正文整体替换 agy 默认指令,
+//! `~/.gemini/config/agents/gqy/agent.md`,正文整体替换 agy 默认指令,
 //! `tools:` 白名单同时决定原生工具面(不写只得缩水集;列全 57 件会整轮出错);
 //! ②没有 `--mcp-config`——桥只能全局注册在 `~/.gemini/config/mcp_config.json`,
-//! 靠 agy 把自己的环境(MIYU_SESSION 等)原样继承给 MCP 子进程按会话分流;
+//! 靠 agy 把自己的环境(GQY_SESSION 等)原样继承给 MCP 子进程按会话分流;
 //! ③续传目标丢失**不报错**而是静默新开会话,判据是 init 首行的 id 与请求不符。
 //!
 //! 作用域裁决、哈希链续传、载荷转写、子进程泵都在 [`cli_relay`]:键本就带
@@ -36,14 +36,14 @@ pub(in crate::llm::openai_compatible) struct AntigravityRuntime {
     pub(in crate::llm::openai_compatible) binary: PathBuf,
     /// agy 原生工具的模式作用域:off/dev/normal/all。
     pub(in crate::llm::openai_compatible) native_tools: String,
-    /// Miyu 工具经 MCP 桥挂给 agy 的模式作用域:off/dev/normal/all。
-    pub(in crate::llm::openai_compatible) miyu_tools: String,
+    /// 顾清影 工具经 MCP 桥挂给 agy 的模式作用域:off/dev/normal/all。
+    pub(in crate::llm::openai_compatible) gqy_tools: String,
     /// 桥工具按 eager 注册(原生名直调)还是走 agy 的懒加载。
-    pub(in crate::llm::openai_compatible) miyu_tools_eager: bool,
+    pub(in crate::llm::openai_compatible) gqy_tools_eager: bool,
     pub(in crate::llm::openai_compatible) idle_timeout: Duration,
     pub(in crate::llm::openai_compatible) print_timeout: Duration,
     /// agy 的用户配置根(`~/.gemini/config`):代理文件与 MCP 注册都落这里。
-    /// 测试经 `MIYU_AGY_CONFIG_DIR` 改道,免得碰真实配置。
+    /// 测试经 `GQY_AGY_CONFIG_DIR` 改道,免得碰真实配置。
     pub(in crate::llm::openai_compatible) config_dir: PathBuf,
 }
 
@@ -58,8 +58,8 @@ impl AntigravityRuntime {
         Self {
             binary,
             native_tools: plugin.native_tools.clone(),
-            miyu_tools: plugin.miyu_tools.clone(),
-            miyu_tools_eager: plugin.miyu_tools_eager,
+            gqy_tools: plugin.gqy_tools.clone(),
+            gqy_tools_eager: plugin.gqy_tools_eager,
             idle_timeout: Duration::from_secs(plugin.idle_timeout_seconds.max(30)),
             print_timeout: Duration::from_secs(plugin.print_timeout_seconds.max(60)),
             config_dir: setup::default_config_dir(),
@@ -67,21 +67,21 @@ impl AntigravityRuntime {
     }
 }
 
-/// 人格代理在 agy 侧的名字前缀:`miyu-<内容哈希>`。一个固定名字不够——代理
+/// 人格代理在 agy 侧的名字前缀:`gqy-<内容哈希>`。一个固定名字不够——代理
 /// 文件是全局的,别的会话/辅助请求(不同人格、不带环境事实、`tools: []`)
 /// 会在本轮 agy 还没拉起时把它改写掉,agy 启动时读到的就是别人的人格
 /// (评审 09-03)。按内容哈希各占一目录,互不相扰;旧目录按 mtime 过期回收。
-pub(in crate::llm::openai_compatible) const AGENT_PREFIX: &str = "miyu-";
+pub(in crate::llm::openai_compatible) const AGENT_PREFIX: &str = "gqy-";
 
 /// 全局 mcp_config.json 里桥条目的键。
-pub(in crate::llm::openai_compatible) const MCP_SERVER_NAME: &str = "miyu";
+pub(in crate::llm::openai_compatible) const MCP_SERVER_NAME: &str = "gqy";
 
 /// `tools:` 白名单——「原生全开」的实际内容。取自默认代理自报的工具集里
 /// **注册表实测认识**的名字(09-03:command_status/wait_5_seconds 不在注册表,
 /// 列了会让整轮静默失败;browser_* 系需要浏览器上下文,列了整轮报错)。
 /// 故意不列的两件:`ask_question`(无头下必被跳过,不列它模型就只剩桥版
-/// `mcp_miyu_ask_question`)与 `generate_image`(原生生图落在 agy 自己的产物
-/// 目录,不进 Miyu 的 tool.image 通道,用户看不到)。
+/// `mcp_gqy_ask_question`)与 `generate_image`(原生生图落在 agy 自己的产物
+/// 目录,不进 顾清影 的 tool.image 通道,用户看不到)。
 pub(in crate::llm::openai_compatible) const NATIVE_TOOLS: &[&str] = &[
     "run_command",
     "view_file",
@@ -94,7 +94,7 @@ pub(in crate::llm::openai_compatible) const NATIVE_TOOLS: &[&str] = &[
     "search_web",
 ];
 
-/// 两套工具同开时从桥里剔除的 Miyu 工具(与 agy 原生功能重复,原生在训练
+/// 两套工具同开时从桥里剔除的 顾清影 工具(与 agy 原生功能重复,原生在训练
 /// 分布内且吃订阅额度,优先)。与 claude 线的差异:agy 没有 todowrite 对应物
 /// (`manage_task` 管的是后台任务),所以不剔;`read`/`edit`/`task`/`job`/`alarm`
 /// 不剔的理由同 claude 线(kb:/artifact: 域、daemon 常驻后台)。
@@ -102,10 +102,10 @@ pub(in crate::llm::openai_compatible) const BRIDGE_DUPLICATE_TOOLS: &[&str] =
     &["run_command", "web_search", "web_fetch", "glob", "grep"];
 
 /// 中转环境事实(声明式,不写指令;常量字节保证提示词哈希稳定)。
-const RELAY_ENVIRONMENT_NOTE: &str = "\n\n<relay-environment>\nThis session runs inside Miyu's relay: each turn is a fresh agy process that exits when the turn ends. Work backgrounded through the built-in tools (run_command background runs, manage_task, schedule, subagents) dies with the process, and its completion notifications never arrive. The built-in ask_question and generate_image tools are not wired to the user here. Messages reach you as text only: images, videos, audio and documents the user sends are saved to local files and the message carries their absolute paths. Open such a path with view_file to see or hear the media itself.\n</relay-environment>";
+const RELAY_ENVIRONMENT_NOTE: &str = "\n\n<relay-environment>\nThis session runs inside GQY's relay: each turn is a fresh agy process that exits when the turn ends. Work backgrounded through the built-in tools (run_command background runs, manage_task, schedule, subagents) dies with the process, and its completion notifications never arrive. The built-in ask_question and generate_image tools are not wired to the user here. Messages reach you as text only: images, videos, audio and documents the user sends are saved to local files and the message carries their absolute paths. Open such a path with view_file to see or hear the media itself.\n</relay-environment>";
 
-/// miyu 工具桥在场时的补充事实。
-const RELAY_MIYU_TOOLS_NOTE: &str = "\n<relay-environment-tools>\nThe mcp_miyu_ tools live in the persistent Miyu daemon and survive across turns: mcp_miyu_subagent runs a background subagent that wakes a follow-up turn when it finishes, mcp_miyu_job inspects or stops those, mcp_miyu_alarm schedules timed reminders, mcp_miyu_ask_question actually reaches the user and waits for the answer, and mcp_miyu_generate_image delivers the picture to the user.\n</relay-environment-tools>";
+/// gqy 工具桥在场时的补充事实。
+const RELAY_GQY_TOOLS_NOTE: &str = "\n<relay-environment-tools>\nThe mcp_gqy_ tools live in the persistent GQY daemon and survive across turns: mcp_gqy_subagent runs a background subagent that wakes a follow-up turn when it finishes, mcp_gqy_job inspects or stops those, mcp_gqy_alarm schedules timed reminders, mcp_gqy_ask_question actually reaches the user and waits for the answer, and mcp_gqy_generate_image delivers the picture to the user.\n</relay-environment-tools>";
 
 /// 续传目标在 agy 侧已不存在:agy 不报错,静默新开了别的会话。
 #[derive(Debug)]
@@ -150,20 +150,20 @@ impl OpenAiCompatibleClient {
         let model = self.provider.default_model.clone();
         let (system_prompt, conversation) = payload::split_system(messages);
         let workdir = crate::tools::workspace::effective_workdir();
-        let miyu_session = crate::tools::workspace::try_session();
-        let miyu_session = miyu_session.as_deref();
-        let host_tools = cli_relay::host_tools_face(miyu_session);
+        let gqy_session = crate::tools::workspace::try_session();
+        let gqy_session = gqy_session.as_deref();
+        let host_tools = cli_relay::host_tools_face(gqy_session);
         let scopes = cli_relay::tool_scopes(
             self.request_scope,
             &runtime.native_tools,
-            &runtime.miyu_tools,
+            &runtime.gqy_tools,
             self.claude_code_dev_mode,
         );
         let agent_prompt = cli_relay::compose_prompt(
             &system_prompt,
             scopes,
             RELAY_ENVIRONMENT_NOTE,
-            RELAY_MIYU_TOOLS_NOTE,
+            RELAY_GQY_TOOLS_NOTE,
         );
         let mut plan = ResumePlan::new(
             &self.provider.id,
@@ -171,7 +171,7 @@ impl OpenAiCompatibleClient {
             &agent_prompt,
             conversation,
             self.request_scope,
-            miyu_session,
+            gqy_session,
             host_tools,
         );
         // 人格代理落盘(按内容哈希,内容不变就不写)。桥只在「作用域开着且有
@@ -179,9 +179,9 @@ impl OpenAiCompatibleClient {
         // 表,写一份空 eager 名单只会覆盖别的会话正在用的那份。
         let agent_name =
             setup::ensure_agent_file(&runtime.config_dir, &agent_prompt, scopes.native_on)?;
-        let bridge_on = scopes.miyu_on && miyu_session.is_some();
+        let bridge_on = scopes.gqy_on && gqy_session.is_some();
         if bridge_on {
-            let eager_tools: Vec<String> = if runtime.miyu_tools_eager {
+            let eager_tools: Vec<String> = if runtime.gqy_tools_eager {
                 tools
                     .iter()
                     .map(|tool| tool.function.name.clone())
@@ -194,7 +194,7 @@ impl OpenAiCompatibleClient {
             };
             setup::ensure_mcp_entry(&runtime.config_dir, &eager_tools)?;
         }
-        let env = relay_env(scopes, miyu_session);
+        let env = relay_env(scopes, gqy_session);
         let mut outcome = self
             .agy_turn(
                 &runtime,
@@ -324,21 +324,21 @@ impl OpenAiCompatibleClient {
 }
 
 /// 给 agy 进程的环境:它会原样继承给 MCP 子进程(实测),所以桥的会话身份
-/// 走这里而不是 mcp_config 的静态 env。MIYU_HOME/XDG_RUNTIME_DIR 本来就在
+/// 走这里而不是 mcp_config 的静态 env。GQY_HOME/XDG_RUNTIME_DIR 本来就在
 /// 我们自己的环境里,自然继承,不再显式塞(claude 线第六轮的「如实透传」教训
 /// 在这里天然满足)。
-fn relay_env(scopes: ToolScopes, miyu_session: Option<&str>) -> Vec<(String, Option<String>)> {
+fn relay_env(scopes: ToolScopes, gqy_session: Option<&str>) -> Vec<(String, Option<String>)> {
     let mut env: Vec<(String, Option<String>)> = Vec::new();
-    match (scopes.miyu_on, miyu_session) {
+    match (scopes.gqy_on, gqy_session) {
         (true, Some(session)) => {
-            env.push(("MIYU_SESSION".into(), Some(session.to_string())));
+            env.push(("GQY_SESSION".into(), Some(session.to_string())));
             let origin = serde_json::to_string(&crate::tools::workspace::current_turn_origin())
                 .unwrap_or_default();
-            env.push(("MIYU_TURN_ORIGIN".into(), Some(origin)));
+            env.push(("GQY_TURN_ORIGIN".into(), Some(origin)));
             // 桥吐的 schema 按 Gemini 方言整形(空 enum/联合类型/多余键会被 400)。
-            env.push(("MIYU_MCP_SCHEMA_DIALECT".into(), Some("gemini".into())));
+            env.push(("GQY_MCP_SCHEMA_DIALECT".into(), Some("gemini".into())));
             env.push((
-                "MIYU_MCP_EXCLUDE".into(),
+                "GQY_MCP_EXCLUDE".into(),
                 Some(if scopes.native_on {
                     BRIDGE_DUPLICATE_TOOLS.join(",")
                 } else {
@@ -348,10 +348,10 @@ fn relay_env(scopes: ToolScopes, miyu_session: Option<&str>) -> Vec<(String, Opt
         }
         _ => {
             // 桥关着:抹掉会话身份,守卫让 mcp-serve 只应答空工具表。
-            env.push(("MIYU_SESSION".into(), None));
-            env.push(("MIYU_TURN_ORIGIN".into(), None));
-            env.push(("MIYU_MCP_EXCLUDE".into(), None));
-            env.push(("MIYU_MCP_SCHEMA_DIALECT".into(), None));
+            env.push(("GQY_SESSION".into(), None));
+            env.push(("GQY_TURN_ORIGIN".into(), None));
+            env.push(("GQY_MCP_EXCLUDE".into(), None));
+            env.push(("GQY_MCP_SCHEMA_DIALECT".into(), None));
         }
     }
     env
@@ -394,13 +394,13 @@ fn render_stdin_line(delta: &[ChatMessage]) -> String {
 mod bridge_dedup_tests {
     use super::{BRIDGE_DUPLICATE_TOOLS, NATIVE_TOOLS};
 
-    /// 去重名单里的每个名字都必须真的是一件已注册的 Miyu 工具(改名会让
+    /// 去重名单里的每个名字都必须真的是一件已注册的 顾清影 工具(改名会让
     /// 纯字符串名单静默失效,claude 线的 read_file/apply_patch 教训)。
     #[test]
     fn every_deduplicated_name_is_a_real_tool() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path();
-        let paths = crate::paths::MiyuPaths {
+        let paths = crate::paths::GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -409,7 +409,7 @@ mod bridge_dedup_tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("config/fish/conf.d/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -427,15 +427,15 @@ mod bridge_dedup_tests {
         }
     }
 
-    /// 白名单是给 agy 的原生名,与 Miyu 工具名撞上的只能是同名剔除项:同名
+    /// 白名单是给 agy 的原生名,与 顾清影 工具名撞上的只能是同名剔除项:同名
     /// 两源同时出现会让卡片没法区分。
     #[test]
-    fn native_allowlist_does_not_collide_with_bridged_miyu_names() {
+    fn native_allowlist_does_not_collide_with_bridged_gqy_names() {
         for name in NATIVE_TOOLS {
-            let miyu_has_it = name == &"run_command";
+            let gqy_has_it = name == &"run_command";
             assert!(
-                !miyu_has_it || BRIDGE_DUPLICATE_TOOLS.contains(name),
-                "{name} 同时是 agy 原生名与 Miyu 工具名,必须进去重名单"
+                !gqy_has_it || BRIDGE_DUPLICATE_TOOLS.contains(name),
+                "{name} 同时是 agy 原生名与 顾清影 工具名,必须进去重名单"
             );
         }
     }

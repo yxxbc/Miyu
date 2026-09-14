@@ -266,7 +266,7 @@ pub(in crate::cli) fn repl_footer_left(
     let thinking = footer.thinking.as_deref().unwrap_or_default();
     let colored_thinking = (!thinking.is_empty()).then(|| primary_footer_text(thinking));
     let colored_thinking = colored_thinking.as_deref().unwrap_or_default();
-    // 回合运行中,模型信息右侧是 Miyu 的声波律动(用户 08-20 选定):五柱
+    // 回合运行中,模型信息右侧是 顾清影 的声波律动(用户 08-20 选定):五柱
     // 波浪的高度与亮度随帧流动,颜色跟随模式主色(普通蓝/dev 酒红)。与
     // 模型信息之间隔三个空格,不进 " · " 序列(用户点名)。
     let wave = footer
@@ -403,7 +403,7 @@ pub(in crate::cli) fn turn_meter(
 /// The footer/status display must reflect the session's pinned model pool,
 /// not just the global config.
 pub(in crate::cli) fn footer_config_for_session(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     session_id: &str,
 ) -> AppConfig {
@@ -413,7 +413,7 @@ pub(in crate::cli) fn footer_config_for_session(
     };
     if let Ok(Some(models)) = store.session_model_override(session_id) {
         // 与 `apply_session_model_override` 同一道守卫:远端 REPL 走的是这条路,
-        // 覆盖指向已删除的模型时曾让 `miyu normal` 整个起不来(08-28)。
+        // 覆盖指向已删除的模型时曾让 `gqy normal` 整个起不来(08-28)。
         match config.usable_model_override(models) {
             Some(usable) => config.active_provider_models = Some(usable),
             None => crate::cli::model_cmds::drop_stale_model_override(&store, session_id),

@@ -13,7 +13,7 @@
 
 Rust job 的两档工具链最多同时运行两个任务，且在格式/Python 检查通过后启动。发布构建矩阵也是 `max-parallel: 2`，GNU 与 Arch 各一条；各自的 core、voice 顺序构建。MSRV job 不使用 `continue-on-error`，当前依赖若不支持 1.89.0 会明确失败。
 
-源码测试使用 `packaging/ci/run_tests.py --suite source-unit` 的归属标记和独立 HOME/MIYU_HOME/XDG、进程回收规则。PR 工作流不引用模型凭据。
+源码测试使用 `packaging/ci/run_tests.py --suite source-unit` 的归属标记和独立 HOME/GQY_HOME/XDG、进程回收规则。PR 工作流不引用模型凭据。
 
 ## 运行主机与构建基线
 

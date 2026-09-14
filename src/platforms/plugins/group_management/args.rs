@@ -18,7 +18,7 @@ pub(in crate::platforms::plugins::group_management) async fn validate_target(
     protect_managers: bool,
 ) -> Result<PlatformGroupMember> {
     if user_id == context.conversation.account_id {
-        bail!("不能对 Miyu 自身执行该操作");
+        bail!("不能对 顾清影 自身执行该操作");
     }
     // Fresh lookup on purpose: this gate exists to stop kicks/mutes aimed at
     // members who already left, and a cached roster cannot answer that.
@@ -196,7 +196,7 @@ pub(in crate::platforms::plugins::group_management) fn history_query_schema() ->
             // sort_order 已从 schema 撤下(08-21 token-diet):默认 desc 够用,
             // 处理器仍兼容解析 asc。
             "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
-            "group_id": { "type": "string", "description": "跨群查询的目标群号；仅 Miyu 管理员可用，群聊之外调用时必填。" }
+            "group_id": { "type": "string", "description": "跨群查询的目标群号；仅 顾清影 管理员可用，群聊之外调用时必填。" }
         },
         "additionalProperties": false
     })

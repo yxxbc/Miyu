@@ -80,7 +80,7 @@ impl RealContextPlugin {
                 Ok(skip) => skip,
                 Err(error) => {
                     tracing::warn!(
-                        target: "miyu::qq",
+                        target: "gqy::qq",
                         error = %error,
                         sender_id = %event.sender_id,
                         "{}",
@@ -345,7 +345,7 @@ impl RealContextPlugin {
                     "读取真实群聊历史失败",
                 );
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %error,
                     group_id = %event.conversation.conversation_id,
                     sender_id = %event.sender_id,
@@ -383,7 +383,7 @@ impl RealContextPlugin {
             Ok(value) => value,
             Err(error) => {
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %error,
                     sender_id = %event.sender_id,
                     "{}",
@@ -407,7 +407,7 @@ impl RealContextPlugin {
         let emotion_adjustment = match emotion::snapshot(context, settings) {
             Ok(snapshot) => snapshot.map_or(0.0, |value| value.effective.threshold_adjust),
             Err(error) => {
-                tracing::warn!(target: "miyu::qq", error = %error, "{}", crate::i18n::text("real-context emotion snapshot lookup failed", "查询情绪状态失败"));
+                tracing::warn!(target: "gqy::qq", error = %error, "{}", crate::i18n::text("real-context emotion snapshot lookup failed", "查询情绪状态失败"));
                 0.0
             }
         };
@@ -464,7 +464,7 @@ impl RealContextPlugin {
                     "主动回复判断模型调用失败",
                 );
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %error,
                     group_id = %event.conversation.conversation_id,
                     sender_id = %event.sender_id,
@@ -506,7 +506,7 @@ impl RealContextPlugin {
                 reason: &judged.reasoning,
                 endpoint: judged.endpoint.as_deref(),
             });
-            tracing::info!(target: "miyu::qq", "\n{readable}");
+            tracing::info!(target: "gqy::qq", "\n{readable}");
         }
         if system_triggered && !active_judgement_allowed {
             if judged.moderation.violation {
@@ -586,7 +586,7 @@ impl RealContextPlugin {
             trigger,
             reason,
         );
-        tracing::info!(target: "miyu::qq", "\n{readable}");
+        tracing::info!(target: "gqy::qq", "\n{readable}");
     }
 
     /// 自认被禁言而放弃这一轮。两处判定共用,别让它再变回静默返回。
@@ -602,7 +602,7 @@ impl RealContextPlugin {
             &context.sender_id,
             trigger,
         );
-        tracing::info!(target: "miyu::qq", "\n{readable}");
+        tracing::info!(target: "gqy::qq", "\n{readable}");
     }
 
     pub(in crate::platforms::plugins::real_context) fn log_skip(
@@ -620,7 +620,7 @@ impl RealContextPlugin {
             trigger,
             reason,
         );
-        tracing::info!(target: "miyu::qq", "\n{readable}");
+        tracing::info!(target: "gqy::qq", "\n{readable}");
     }
 
     /// 私聊的历史图片引用。只建 id 列表,不注入记录块。
@@ -663,7 +663,7 @@ impl RealContextPlugin {
             MAX_CONTEXT_FILE_REFS,
         );
         tracing::info!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             conversation_id = %context.conversation.conversation_id,
             scanned = page.messages.len(),
             refs = images.len(),
@@ -741,7 +741,7 @@ impl RealContextPlugin {
         // More arrived since the last turn than one block carries, and the
         // watermark is about to move past the remainder. Skipping them is the
         // intended behaviour — nobody scrolling a busy group reads every line —
-        // but the replayed history reads as continuous, so Miyu is told it
+        // but the replayed history reads as continuous, so GQY is told it
         // skimmed rather than left to assume it saw everything.
         let truncated_backlog = watermark.is_some() && page.next_cursor.is_some();
         let mut history = page.messages;
@@ -765,7 +765,7 @@ impl RealContextPlugin {
         );
         let injected_messages = formatted.message_count;
         tracing::debug!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             conversation_id = %context.conversation.conversation_id,
             sender_id = %context.sender_id,
             requested_messages = count,

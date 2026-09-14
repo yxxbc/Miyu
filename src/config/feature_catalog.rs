@@ -8,10 +8,10 @@
 //! - **可开关的内置插件**（[`TOGGLE_PLUGINS`]）：闹钟、汇率、Arch、API 额度、
 //!   表情包、生图、记账——生活助理的配件，不是每个人都要。
 //! - **逐个勾的外装件**：每个内置/全局脚本、每个非平台级技能；语音只在本机
-//!   装了 `miyu-voice` 时才给开关。
+//!   装了 `gqy-voice` 时才给开关。
 //!
 //! 内置脚本与内置技能对**自定义人格**是可选件：默认不勾（换上自定义人格仍是
-//! 纯净状态，09-01），勾了就写进白名单。默认人格（Miyu 本人）默认全勾。
+//! 纯净状态，09-01），勾了就写进白名单。默认人格（顾清影 本人）默认全勾。
 //!
 //! 选择最终落到 [`PersonaManifest`]：`plugins.enabled` / `plugins.scripts` /
 //! `plugins.skills` 三个白名单与 `subsystems.voice`。全开时白名单写 `None`
@@ -76,7 +76,7 @@ pub struct FeatureItem {
     pub name: String,
     pub hint: String,
     pub on: bool,
-    /// 内置件（Miyu 出厂脚本/技能）。自定义人格下默认不勾，勾了要写进白名单。
+    /// 内置件（顾清影 出厂脚本/技能）。自定义人格下默认不勾，勾了要写进白名单。
     pub builtin: bool,
 }
 

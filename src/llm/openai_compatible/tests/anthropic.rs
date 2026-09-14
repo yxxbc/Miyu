@@ -66,7 +66,7 @@ fn anthropic_lowering_keeps_remote_image_urls() {
 }
 
 /// PDF 下放到 Anthropic:`document` 块 + base64 source,而且要摆在文本块
-/// **之前**(官方规格)。Miyu 组装 parts 时正文在最前,所以这里必须前置。
+/// **之前**(官方规格)。顾清影 组装 parts 时正文在最前,所以这里必须前置。
 #[test]
 fn anthropic_lowering_puts_pdf_documents_before_text() {
     let content = lower_anthropic_user_content(Some(ChatContent::Parts(vec![

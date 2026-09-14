@@ -1,7 +1,7 @@
 //! 新手引导（OOBE）。
 //!
-//! 入口两个：新用户第一次跑裸 `miyu`（`config.oobe_done` 还是 false），或者
-//! 手动 `miyu oobe`。`miyu init` 仍是非交互的脚本化初始化（建目录、写默认配置、
+//! 入口两个：新用户第一次跑裸 `gqy`（`config.oobe_done` 还是 false），或者
+//! 手动 `gqy oobe`。`gqy init` 仍是非交互的脚本化初始化（建目录、写默认配置、
 //! 导默认知识库），**不**标记引导完成——脚本部署完的机器上第一次由人打开 TUI
 //! 照样走一遍引导，只是已经装好的东西（shell hook）会显示成「已经装了」。
 //! 旧版本升上来的配置在 `config_version` 迁移里直接标成完成，老用户不会被拦。
@@ -18,7 +18,7 @@ mod providers;
 mod ui;
 
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::Result;
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::event::{self, Event, KeyEventKind};
@@ -34,7 +34,7 @@ use std::time::{Duration, Instant};
 
 pub(crate) use ui::Outcome;
 
-/// 裸 `miyu` 要不要先走引导。
+/// 裸 `gqy` 要不要先走引导。
 pub(crate) fn needed(config: &AppConfig) -> bool {
     !config.oobe_done
 }
@@ -71,7 +71,7 @@ impl Drop for TerminalGuard {
 /// 跑一遍引导。返回怎么收的场；配置已经写好（或按 [`Outcome::Aborted`] 一个字没写）。
 ///
 /// `keep_alt_screen`：调用方紧接着要进全屏画面，备用屏留着别退。
-pub(crate) fn run(paths: &MiyuPaths, keep_alt_screen: bool) -> Result<Outcome> {
+pub(crate) fn run(paths: &GqyPaths, keep_alt_screen: bool) -> Result<Outcome> {
     let config = AppConfig::load_or_default(paths)?;
     // models.dev 目录：选完模型按它补上下文窗口与模态（和设置界面同一套动作）。
     crate::models_cache::try_load(paths);

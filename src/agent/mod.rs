@@ -54,7 +54,7 @@ use crate::llm::{
 use crate::memory::{
     EvictedTurn, MemoryAccess, MemoryOrganizerHandle, MemoryOrigin, MemoryResetSummary, MemoryStore,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::persona_hint;
 use crate::platforms::{PlatformContextFileRef, PlatformContextImageRef, PlatformTurnContext};
 use crate::question::{
@@ -277,7 +277,7 @@ pub struct Agent {
     mode: AgentMode,
     prompt_audience: PromptAudience,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     on_overflow: String,
     turn_display_content: Option<String>,
     attachment_run_id: Option<String>,

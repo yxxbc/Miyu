@@ -90,7 +90,7 @@ impl KnowledgeBase {
                         lock_path.display()
                     );
                     println!(
-                        "if no miyu reindex process is running, remove the stale lock file and retry"
+                        "if no gqy reindex process is running, remove the stale lock file and retry"
                     );
                 }
                 return Ok(0);
@@ -416,13 +416,13 @@ impl KnowledgeBase {
             return Ok(());
         }
         // 测试里不起后台重建:测试二进制"再执行自己"会变成 fork 炸弹(见
-        // `paths::miyu_executable` 的说明,那里也有一道闸)。
+        // `paths::gqy_executable` 的说明,那里也有一道闸)。
         if cfg!(test) {
             return Ok(());
         }
         std::fs::create_dir_all(&self.root)?;
         let log = self.open_reindex_log()?;
-        let exe = crate::paths::miyu_executable()?;
+        let exe = crate::paths::gqy_executable()?;
         // 起手先写一帧「正在启动」:子进程从 exec 到建锁有几百毫秒,而前端 POST
         // 完立刻刷新概览——不占住这个窗口,用户看到的第一帧就是「空闲」,于是
         // 认定点了没反应(09-09 实拍)。已经有人在跑就别碰,那份进度是人家的。
@@ -449,7 +449,7 @@ impl KnowledgeBase {
             // 子进程是不带成员身份的裸 CLI,靠这个环境变量认出「该重建哪一个
             // 库」——否则成员发起的重建会跑去建默认库,成员这份进度永远停在
             // starting,看门狗判失败(kb_root_for 里有详述)。
-            .env("MIYU_KB_ROOT", &self.root)
+            .env("GQY_KB_ROOT", &self.root)
             .stdin(Stdio::null())
             .stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log))

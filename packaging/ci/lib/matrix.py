@@ -24,7 +24,7 @@ def selected_targets(profile, selection):
 
 
 def filename(asset_id, version, revision, fedora):
-    component = 'miyu-voice' if asset_id.endswith('-voice') else 'miyu'
+    component = 'gqy-voice' if asset_id.endswith('-voice') else 'gqy'
     stem = f'{component}-{version}-{revision}'
     family = asset_id.rsplit('-', 1)[0]
     if family == 'arch':

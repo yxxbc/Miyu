@@ -135,11 +135,11 @@ pub(crate) fn parse_version(text: &str) -> Option<(u32, u32, u32)> {
 /// 模式、`ESC[?8452l` 要求画完光标落到图下方）。查"图在 Konsole 里整张消失"
 /// 时一度怀疑是抑制这两位惹的祸，去掉它验过——**无关**（真因是图放不进屏幕
 /// 剩余空间、绘制中滚动，见 `print.rs` 的 `make_room_for_image`）。既然无关，
-/// 就按原样留着：它本来的用处是别让 chafa 把 Miyu 自己管的光标藏起来。
+/// 就按原样留着：它本来的用处是别让 chafa 把 顾清影 自己管的光标藏起来。
 pub fn direct_args() -> Vec<String> {
     // 调参口子：真终端上的图像问题只能在真终端上试，而每试一组参数就重编一次
-    // 二进制要八分钟。`MIYU_CHAFA_ARGS="--probe off --format sixels"` 直接顶替。
-    if let Ok(extra) = std::env::var("MIYU_CHAFA_ARGS") {
+    // 二进制要八分钟。`GQY_CHAFA_ARGS="--probe off --format sixels"` 直接顶替。
+    if let Ok(extra) = std::env::var("GQY_CHAFA_ARGS") {
         return extra
             .split_whitespace()
             .map(str::to_string)
@@ -179,13 +179,13 @@ pub fn stdin_should_be_tty() -> bool {
     caps.probe && !caps.probe_mode
 }
 
-/// 取证：`MIYU_IMAGE_TRACE=1` 时把这一次 chafa 调用的全貌写进日志。
+/// 取证：`GQY_IMAGE_TRACE=1` 时把这一次 chafa 调用的全貌写进日志。
 ///
 /// 图片渲染的报障几乎全是"我这儿不对、开发机上好好的"，而差别藏在 chafa 版
 /// 本、终端应答、选中的输出格式这三层里，光看屏幕分不出来。日志落在
-/// `~/.miyu/cache/logs/image-trace.log`，与 kitty 那条路同一个文件。
+/// `~/.gqy/cache/logs/image-trace.log`，与 kitty 那条路同一个文件。
 pub fn trace_enabled() -> bool {
-    std::env::var_os("MIYU_IMAGE_TRACE").is_some()
+    std::env::var_os("GQY_IMAGE_TRACE").is_some()
 }
 
 /// 从 chafa 的输出字节判断它最终选了哪种格式。
@@ -225,7 +225,7 @@ pub fn trace(line: &str) {
     let Some(home) = std::env::var_os("HOME") else {
         return;
     };
-    let path = std::path::Path::new(&home).join(".miyu/cache/logs/image-trace.log");
+    let path = std::path::Path::new(&home).join(".gqy/cache/logs/image-trace.log");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

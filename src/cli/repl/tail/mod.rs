@@ -25,8 +25,8 @@ use crate::cli::*;
 /// down with "The cursor position could not be read within a normal duration".
 /// The answer is only ever used to re-anchor a redraw, so a stale one costs a
 /// single imperfect frame — losing the session costs the session.
-/// 活动区重绘轨迹（`MIYU_TAIL_TRACE=1` 打开，落
-/// `~/.miyu/cache/logs/tail-trace.log`）。
+/// 活动区重绘轨迹（`GQY_TAIL_TRACE=1` 打开，落
+/// `~/.gqy/cache/logs/tail-trace.log`）。
 ///
 /// 这段重绘靠绝对屏幕行号 + DECSTBM 受限滚动区 + 插入/删除行来搬动活动
 /// 区（上边距为 1 时，受限区里滚出去的行照样进 scrollback）。kitty 的占位
@@ -76,7 +76,7 @@ pub(in crate::cli) fn trace_tail_redraw(
         }
     );
     let path = std::path::Path::new(&std::env::var("HOME").unwrap_or_default())
-        .join(".miyu/cache/logs/tail-trace.log");
+        .join(".gqy/cache/logs/tail-trace.log");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -188,7 +188,7 @@ pub(in crate::cli) struct LiveReplTail {
     /// 活动区靠 DECSTBM 钉在底下。`Some` 时正文改由它持有，活动区照旧
     /// 由 `render_repl_input_with_footer` 打，只是 `tail_start` 指向视口底部。
     pub(in crate::cli) screen: Option<screen::Screen>,
-    /// 空会话的画面(渐变 MIYU + 星空 + 模式行)。会话一有回合就撤。
+    /// 空会话的画面(渐变 GQY + 星空 + 模式行)。会话一有回合就撤。
     pub(in crate::cli) banner: Option<crate::cli::repl::banner::BannerScene>,
     /// inline 后端里 banner 占了活动区顶上的几行(全屏下为 0,画在正文区)。
     pub(in crate::cli) banner_rows: u16,
@@ -649,7 +649,7 @@ impl LiveReplTail {
     pub(in crate::cli) fn set_session_empty(
         &mut self,
         config: &AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         empty: bool,
     ) {
         self.editor.mode_switchable = empty;

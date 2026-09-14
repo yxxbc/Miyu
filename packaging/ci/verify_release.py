@@ -29,7 +29,7 @@ def public_report(report, records, manifest, cleanup_path):
         result = results[asset_id]
         record = records[asset_id]
         component = record['asset']['component']
-        binary = 'miyu-voice' if component == 'voice' else 'miyu'
+        binary = 'gqy-voice' if component == 'voice' else 'gqy'
         if (result.get('asset_id') != asset_id
                 or result.get('binary_sha256') != record['build_evidence']['binary_sha256']
                 or result.get('version') != binary+' '+manifest['version']):
@@ -74,7 +74,7 @@ def aggregate(manifest_path,artifacts,reports,publish_dir):
                 or sha256_file(folder/asset['filename'])!=record['sha256']):
             raise ValueError(f'Final package identity/hash mismatch: {asset_id}')
         files=record['files']
-        license_root='share/licenses/miyu-voice/' if asset['component']=='voice' else 'share/licenses/miyu/'
+        license_root='share/licenses/gqy-voice/' if asset['component']=='voice' else 'share/licenses/gqy/'
         if not any(f['path']==license_root+'LICENSE' and f['size']>0 for f in files):
             raise ValueError(f'Package license is missing: {asset_id}')
         evidence=validate_build_evidence(record.get('build_evidence'),manifest,input_hash,
@@ -132,7 +132,7 @@ def aggregate(manifest_path,artifacts,reports,publish_dir):
                     'digest':{'gitCommit':manifest['source_commit'],'sourceSnapshotSha256':manifest['source_snapshot_sha256']}}]+
                     [{'uri':'docker-image:'+image,'digest':{'sha256':image.removeprefix('sha256:')}}
                      for image in sorted({build['builder_image'] for build in builds.values()})]},
-            'runDetails':{'builder':{'id':'miyu-distribution-local'},'metadata':{'invocationId':input_hash},
+            'runDetails':{'builder':{'id':'gqy-distribution-local'},'metadata':{'invocationId':input_hash},
                 'byproducts':[builds[key] for key in sorted(builds)]}}})
     register(provenance,'provenance')
     # An SPDX file inventory records the exact distributed payload, including licenses.
@@ -147,9 +147,9 @@ def aggregate(manifest_path,artifacts,reports,publish_dir):
                 'checksums':[{'algorithm':'SHA256','checksumValue':f['sha256']}],
                 'licenseConcluded':'NOASSERTION','copyrightText':'NOASSERTION'} for i,f in enumerate(payload)]
             write_json(sbom,{'spdxVersion':'SPDX-2.3','dataLicense':'CC0-1.0','SPDXID':'SPDXRef-DOCUMENT',
-                'name':f'miyu-{build_id}-{component}-{version}',
+                'name':f'gqy-{build_id}-{component}-{version}',
                 'documentNamespace':f'https://miyu.dev/spdx/{input_hash}/{build_id}/{component}',
-                'creationInfo':{'creators':['Tool: Miyu-distribution'],'created':created},
+                'creationInfo':{'creators':['Tool: GQY-distribution'],'created':created},
                 'files':spdx_files,'relationships':[{'spdxElementId':'SPDXRef-DOCUMENT',
                     'relationshipType':'DESCRIBES','relatedSpdxElement':f['SPDXID']} for f in spdx_files]})
             register(sbom,'sbom',build_id=build_id,component=component)

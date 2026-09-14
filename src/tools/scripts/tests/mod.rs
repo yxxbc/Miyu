@@ -8,13 +8,13 @@ mod manage;
 mod run;
 
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use std::path::Path;
 
 /// 隔离的路径集:用户层在 `<root>/data/scripts`(persona 子层
 /// `personas/default`),内置层在 `<root>/system`。
-pub(super) fn test_env(root: &Path) -> (AppConfig, MiyuPaths) {
-    let mut paths = MiyuPaths::new().unwrap();
+pub(super) fn test_env(root: &Path) -> (AppConfig, GqyPaths) {
+    let mut paths = GqyPaths::new().unwrap();
     paths.scripts_dir = root.join("data/scripts");
     paths.system_scripts_dir = root.join("system");
     paths.cache_dir = root.join("cache");

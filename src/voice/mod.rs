@@ -1,7 +1,7 @@
 //! 语音前端:本地唤醒词 + VAD + 语音识别。
 //!
-//! 只在 `voice` feature 下编译,而且只被 `miyu-voice` 二进制使用——主程序
-//! `miyu` 永远不链接 sherpa-onnx。模块对外两个面:`models::ensure_models`
+//! 只在 `voice` feature 下编译,而且只被 `gqy-voice` 二进制使用——主程序
+//! `gqy` 永远不链接 sherpa-onnx。模块对外两个面:`models::ensure_models`
 //! (模型就位)与 [`VoiceService::start`](启动监听,事件经 channel 吐出,
 //! 控制经 [`VoiceService`] 的方法下发)。调用方不感知 VAD/KWS/STT 实现,
 //! STT 是 trait,本地 SenseVoice 与云端 OpenAI 兼容端点各一个实现。
@@ -142,7 +142,7 @@ impl VoiceService {
         let device_description = capture.description.clone();
 
         let worker = std::thread::Builder::new()
-            .name("miyu-voice-pipeline".into())
+            .name("gqy-voice-pipeline".into())
             .spawn(move || {
                 // capture 的生命周期挂在管线线程上:线程退出即停止采集。
                 let _capture = capture;

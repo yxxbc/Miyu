@@ -91,10 +91,10 @@ pub(in crate::web) async fn shared_file_upload(
             "file sharing is disabled in plugins.file_sharing",
         ));
     }
-    let file_name = header_file_name(&headers, "x-miyu-filename")?
+    let file_name = header_file_name(&headers, "x-gqy-filename")?
         .ok_or_else(|| ApiError::new(StatusCode::BAD_REQUEST, "attachment filename is required"))?;
     let file_name = sanitize_attachment_file_name(&file_name)?;
-    let title = header_file_name(&headers, "x-miyu-title")?.unwrap_or_default();
+    let title = header_file_name(&headers, "x-gqy-title")?.unwrap_or_default();
 
     let store = &state.state_store;
     let staging_dir = store.shared_files_incoming_dir().join(random_id("up", 16));

@@ -47,7 +47,7 @@ fn group_trigger_matrix() {
     let replied_message = PlatformMessageInfo {
         message_id: "previous".into(),
         sender_id: "10000".into(),
-        sender_display_name: "Miyu".into(),
+        sender_display_name: "GQY".into(),
         timestamp: 1,
         text: "previous reply".into(),
         reply_to_message_id: None,
@@ -63,7 +63,7 @@ fn group_trigger_matrix() {
     );
 }
 
-/// 唤醒词不剥离。剥离本来是给名字型唤醒词写的(`miyu 你好` → `你好`),
+/// 唤醒词不剥离。剥离本来是给名字型唤醒词写的(`gqy 你好` → `你好`),
 /// 但关键词表里可以是任何词:用户把「为什么」设成唤醒词,
 /// 「为什么不查知识库」被剥成「不查知识库」——疑问句变祈使句,意思正好
 /// 反过来,她照着"别查"去做(08-29 用户实测)。
@@ -74,13 +74,13 @@ fn group_trigger_matrix() {
 #[test]
 fn keyword_wake_keeps_the_whole_sentence() {
     let config = config_with(|config| {
-        config.group_chats.trigger_keywords = vec!["miyu".into(), "为什么".into()];
+        config.group_chats.trigger_keywords = vec!["gqy".into(), "为什么".into()];
     });
     for text in [
         "为什么不查知识库",
         "为什么 不查知识库",
-        "miyu 你好",
-        "miyu：你好",
+        "gqy 你好",
+        "gqy：你好",
     ] {
         let parsed = InboundMessage {
             text: text.into(),
@@ -116,7 +116,7 @@ async fn busy_model_capacity_waits_silently_without_merging_the_turn() {
             .group_chats
             .non_whitelist_rate_limit
             .max_messages = 0;
-        manager.config.platforms.qq.group_chats.trigger_keywords = vec!["miyu".to_string()];
+        manager.config.platforms.qq.group_chats.trigger_keywords = vec!["gqy".to_string()];
     }
     assert!(state
         .platforms
@@ -150,7 +150,7 @@ async fn busy_model_capacity_waits_silently_without_merging_the_turn() {
     assert!(frames.try_recv().is_err());
 
     let mut triggered = base;
-    triggered["message"] = json!([{ "type": "text", "data": { "text": "miyu hello" } }]);
+    triggered["message"] = json!([{ "type": "text", "data": { "text": "gqy hello" } }]);
     let task = tokio::spawn(handle_message(
         state,
         handle,

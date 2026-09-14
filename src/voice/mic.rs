@@ -130,7 +130,7 @@ fn list_pipewire_sources() -> Vec<InputSource> {
 ///
 /// `CARD=` 是 **ALSA 的设备名约定**,只在 Linux 上成立。macOS 的 CoreAudio
 /// 设备叫「MacBook Air麦克风」这种名字,永远不含 `CARD=`——套这条过滤器会把
-/// 所有设备滤光,`miyu-voice devices` 于是永远是空的(09-13 macOS 实测)。
+/// 所有设备滤光,`gqy-voice devices` 于是永远是空的(09-13 macOS 实测)。
 pub fn list_input_devices() -> Vec<String> {
     let _quiet = SilencedStderr::new();
     let host = cpal::default_host();
@@ -195,7 +195,7 @@ pub fn start_capture(device_name: Option<&str>) -> Result<(Receiver<Vec<f32>>, C
     let device_name = device_name.map(str::to_string);
 
     let thread = std::thread::Builder::new()
-        .name("miyu-voice-mic".into())
+        .name("gqy-voice-mic".into())
         .spawn(move || {
             let stream = match open_stream(device_name.as_deref(), frame_tx) {
                 Ok((stream, description)) => {

@@ -1,9 +1,9 @@
 //! Claude Code CLI 中转协议(`protocol = "claude-code"`)。
 //!
 //! 传输层不是 HTTP,是本机 `claude` 子进程的 stream-json 双向流:CLI 用用户
-//! 既有的订阅登录态,Miyu 不经手任何凭据。工具循环的所有权在 claude 侧——
-//! Miyu 的工具经 `miyu mcp-serve` 桥挂进去(内层调用照走 daemon 的 guard 管
-//! 线),所以这条线对 Miyu 的回合循环呈现为「一次请求、纯文本(+思考)回来、
+//! 既有的订阅登录态,顾清影 不经手任何凭据。工具循环的所有权在 claude 侧——
+//! 顾清影 的工具经 `gqy mcp-serve` 桥挂进去(内层调用照走 daemon 的 guard 管
+//! 线),所以这条线对 顾清影 的回合循环呈现为「一次请求、纯文本(+思考)回来、
 //! 永远没有 tool_calls」。
 //!
 //! 作用域裁决、哈希链续传、载荷转写、子进程泵都在 [`cli_relay`];这里只剩
@@ -22,8 +22,8 @@ pub(in crate::llm::openai_compatible) struct ClaudeCodeRuntime {
     pub(in crate::llm::openai_compatible) binary: PathBuf,
     /// claude 原生工具(Bash/Edit/Read…)的模式作用域:off/dev/normal/all。
     pub(in crate::llm::openai_compatible) native_tools: String,
-    /// Miyu 工具经 MCP 桥挂给 claude 的模式作用域:off/dev/normal/all。
-    pub(in crate::llm::openai_compatible) miyu_tools: String,
+    /// 顾清影 工具经 MCP 桥挂给 claude 的模式作用域:off/dev/normal/all。
+    pub(in crate::llm::openai_compatible) gqy_tools: String,
     /// 原生工具开启时的 --permission-mode(无头模式没有交互审批)。
     pub(in crate::llm::openai_compatible) permission_mode: String,
     pub(in crate::llm::openai_compatible) idle_timeout: Duration,
@@ -41,7 +41,7 @@ impl ClaudeCodeRuntime {
         Self {
             binary,
             native_tools: plugin.native_tools.clone(),
-            miyu_tools: plugin.miyu_tools.clone(),
+            gqy_tools: plugin.gqy_tools.clone(),
             permission_mode: plugin.permission_mode.clone(),
             idle_timeout: Duration::from_secs(plugin.idle_timeout_seconds.max(30)),
             prefer_subscription: plugin.prefer_subscription,
@@ -69,22 +69,22 @@ impl OpenAiCompatibleClient {
         // 一律用会话工作区(与 run_command 同源):原生工具在这里操作文件,
         // 无工具时 cwd 无关紧要。回合作用域外(测试/辅助)回退进程 cwd。
         let workdir = crate::tools::workspace::effective_workdir();
-        let miyu_session = crate::tools::workspace::try_session();
-        let miyu_session = miyu_session.as_deref();
+        let gqy_session = crate::tools::workspace::try_session();
+        let gqy_session = gqy_session.as_deref();
         // 续传按工具面档位隔离:桥每轮按触发者身份重算工具面,两档共用一条
         // claude 会话会让清单逐轮增删,模型读成"工具掉线"(见 session 模块头)。
-        let host_tools = cli_relay::host_tools_face(miyu_session);
+        let host_tools = cli_relay::host_tools_face(gqy_session);
         let scopes = cli_relay::tool_scopes(
             self.request_scope,
             &runtime.native_tools,
-            &runtime.miyu_tools,
+            &runtime.gqy_tools,
             self.claude_code_dev_mode,
         );
         let prompt = cli_relay::compose_prompt(
             &system_prompt,
             scopes,
             RELAY_ENVIRONMENT_NOTE,
-            RELAY_MIYU_TOOLS_NOTE,
+            RELAY_GQY_TOOLS_NOTE,
         );
         let mut plan = ResumePlan::new(
             &self.provider.id,
@@ -92,7 +92,7 @@ impl OpenAiCompatibleClient {
             &prompt,
             conversation,
             self.request_scope,
-            miyu_session,
+            gqy_session,
             host_tools,
         );
         let mut outcome = self
@@ -174,11 +174,11 @@ impl OpenAiCompatibleClient {
         .collect();
         args.push("--model".into());
         args.push(model.to_string());
-        // 不传 --autocompact(09-10 用户裁定):压缩统一由 Miyu 做。此前把
-        // Miyu 窗口透传给 claude 自压缩,但 Miyu 的 0.8 线在默认 168k 下比
-        // claude 的 W−33k 线早 600 tok 到,先压的总是 Miyu;Miyu 一压哈希链
+        // 不传 --autocompact(09-10 用户裁定):压缩统一由 顾清影 做。此前把
+        // 顾清影 窗口透传给 claude 自压缩,但 顾清影 的 0.8 线在默认 168k 下比
+        // claude 的 W−33k 线早 600 tok 到,先压的总是 顾清影;顾清影 一压哈希链
         // 断、CLI 会话重开,claude 那次自压缩从没跑过。两套并存只剩歧义。
-        // 思考档:Miyu 的 thinking-variant 选择映射到 CLI 的 --effort。
+        // 思考档:顾清影 的 thinking-variant 选择映射到 CLI 的 --effort。
         if let Some((_, variant)) = self.selected_reasoning_variant() {
             if let crate::models_cache::ReasoningSetting::Effort(effort) = variant.setting {
                 args.push("--effort".into());
@@ -201,15 +201,15 @@ impl OpenAiCompatibleClient {
             args.push(String::new());
         }
         args.push("--strict-mcp-config".into());
-        if scopes.miyu_on {
-            // 两套同开时去重:与 claude 原生重复的 Miyu 工具剔除,原生优先
+        if scopes.gqy_on {
+            // 两套同开时去重:与 claude 原生重复的 顾清影 工具剔除,原生优先
             // (用户拍板清单;load_skill/manage_skill 与 claude 的 Skill 内容
             // 不同,不算重复)。
             if let Some(mcp_config) = mcp_bridge_config(scopes.native_on) {
                 args.push("--mcp-config".into());
                 args.push(mcp_config);
                 args.push("--allowedTools".into());
-                args.push("mcp__miyu".into());
+                args.push("mcp__gqy".into());
             }
         }
         if let Some(resume) = resume {
@@ -228,16 +228,16 @@ impl OpenAiCompatibleClient {
 /// 3.4:各家上限不同、没有数据)。不给预算:量出来之前不改这条线的行为。
 const STDIN_BYTE_BUDGET: Option<usize> = None;
 
-const RELAY_ENVIRONMENT_NOTE: &str = "\n\n<relay-environment>\nThis session runs inside Miyu's relay: each turn is a fresh CLI process that exits when the turn ends. Work backgrounded through the built-in tools (Bash run_in_background, background Task) dies with the process, and its completion notifications never arrive.\n</relay-environment>";
+const RELAY_ENVIRONMENT_NOTE: &str = "\n\n<relay-environment>\nThis session runs inside GQY's relay: each turn is a fresh CLI process that exits when the turn ends. Work backgrounded through the built-in tools (Bash run_in_background, background Task) dies with the process, and its completion notifications never arrive.\n</relay-environment>";
 
-/// miyu 工具桥在场时的补充事实。
-const RELAY_MIYU_TOOLS_NOTE: &str = "\n<relay-environment-tools>\nThe mcp__miyu__ tools live in the persistent Miyu daemon and survive across turns: mcp__miyu__subagent runs a background subagent that wakes a follow-up turn when it finishes, mcp__miyu__job inspects or stops those, and mcp__miyu__alarm schedules timed reminders.\n</relay-environment-tools>";
+/// gqy 工具桥在场时的补充事实。
+const RELAY_GQY_TOOLS_NOTE: &str = "\n<relay-environment-tools>\nThe mcp__gqy__ tools live in the persistent GQY daemon and survive across turns: mcp__gqy__subagent runs a background subagent that wakes a follow-up turn when it finishes, mcp__gqy__job inspects or stops those, and mcp__gqy__alarm schedules timed reminders.\n</relay-environment-tools>";
 
-/// 两套工具同开时从桥里剔除的 Miyu 工具(与 claude 原生功能重复,原生
-/// 在训练分布内、优先)。subagent **不剔**:与原生 Task 语义不同——Miyu 子代理
+/// 两套工具同开时从桥里剔除的 顾清影 工具(与 claude 原生功能重复,原生
+/// 在训练分布内、优先)。subagent **不剔**:与原生 Task 语义不同——顾清影 子代理
 /// 在 daemon 里作为后台任务运行、完成后唤醒开新轮跟进,与 job(查/停)成对。
 /// job/alarm **不剔**:claude 自己的后台/定时机制
-/// 活在单次进程里,中转每轮一进程、轮末即杀,活不过回合;Miyu 的 job 走
+/// 活在单次进程里,中转每轮一进程、轮末即杀,活不过回合;顾清影 的 job 走
 /// daemon 常驻 + 完成唤醒开新轮,才是这套架构下唯一能跟进的后台。
 ///
 /// `read` **不剔**:它不只管文件,还认 `kb:`(知识库)与 `artifact:`(WebUI
@@ -264,20 +264,20 @@ const BRIDGE_DUPLICATE_TOOLS: &[&str] = &[
     "edit",
 ];
 
-/// Miyu 工具经 MCP stdio 桥挂给 claude:`miyu mcp-serve` 打回 daemon,与
-/// `miyu tool-call` 同一条会话→模式→registry 解析链。没有会话作用域(测试
+/// 顾清影 工具经 MCP stdio 桥挂给 claude:`gqy mcp-serve` 打回 daemon,与
+/// `gqy tool-call` 同一条会话→模式→registry 解析链。没有会话作用域(测试
 /// /直连辅助请求)就不挂桥。claude 给 MCP server 的是洁净环境,home/runtime
 /// 识别变量要显式带(如实透传,见 cli_relay::bridge_env_passthrough)。
 fn mcp_bridge_config(exclude_duplicates: bool) -> Option<String> {
     let session = crate::tools::workspace::try_session()?;
-    let exe = crate::paths::miyu_executable().ok()?;
+    let exe = crate::paths::gqy_executable().ok()?;
     let origin = serde_json::to_string(&crate::tools::workspace::current_turn_origin()).ok()?;
     let mut env = serde_json::Map::new();
-    env.insert("MIYU_SESSION".into(), json!(&*session));
-    env.insert("MIYU_TURN_ORIGIN".into(), json!(origin));
+    env.insert("GQY_SESSION".into(), json!(&*session));
+    env.insert("GQY_TURN_ORIGIN".into(), json!(origin));
     if exclude_duplicates {
         env.insert(
-            "MIYU_MCP_EXCLUDE".into(),
+            "GQY_MCP_EXCLUDE".into(),
             json!(BRIDGE_DUPLICATE_TOOLS.join(",")),
         );
     }
@@ -287,7 +287,7 @@ fn mcp_bridge_config(exclude_duplicates: bool) -> Option<String> {
     Some(
         json!({
             "mcpServers": {
-                "miyu": {
+                "gqy": {
                     "command": exe,
                     "args": ["mcp-serve"],
                     "env": env,
@@ -298,10 +298,10 @@ fn mcp_bridge_config(exclude_duplicates: bool) -> Option<String> {
     )
 }
 
-/// 清空 Miyu 会话时的联动:尽力删除 claude 侧的会话转录
+/// 清空 顾清影 会话时的联动:尽力删除 claude 侧的会话转录
 /// (`~/.claude/projects/<项目槽>/<会话id>.jsonl`)。
 pub(in crate::llm::openai_compatible) fn remove_transcript(
-    miyu_session: &str,
+    gqy_session: &str,
     claude_session: &str,
 ) {
     let Some(home) = std::env::var_os("HOME") else {
@@ -318,9 +318,9 @@ pub(in crate::llm::openai_compatible) fn remove_transcript(
         }
         match std::fs::remove_file(&transcript) {
             Ok(()) => tracing::info!(
-                miyu_session,
+                gqy_session,
                 claude_session = %claude_session,
-                "removed the claude-side transcript for a cleared Miyu session"
+                "removed the claude-side transcript for a cleared GQY session"
             ),
             Err(error) => tracing::warn!(
                 %error,
@@ -342,7 +342,7 @@ mod bridge_dedup_tests {
     fn every_deduplicated_name_is_a_real_tool() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path();
-        let paths = crate::paths::MiyuPaths {
+        let paths = crate::paths::GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -351,7 +351,7 @@ mod bridge_dedup_tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("config/fish/conf.d/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),

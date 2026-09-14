@@ -2,7 +2,7 @@
 //!
 //! 落点 `home/<用户>/pictures/album/<人格 scope>/`:
 //!
-//! - 藏在 `pictures` 下面是**故意的**——`miyu export` 的清单里有 `home.pictures`,
+//! - 藏在 `pictures` 下面是**故意的**——`gqy export` 的清单里有 `home.pictures`,
 //!   图库于是白拿一份导出,不用动导出清单。
 //! - 按人格 scope 再分一层(用户裁定,与表情包同口径):换人格不串图。scope 取
 //!   [`AppConfig::active_persona_scope`],成员私有人格是 `home-<用户>-<slug>`,
@@ -14,7 +14,7 @@
 //! 量级(几十到几百),没有上数据库的理由;真长到需要索引结构再说。
 
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -52,7 +52,7 @@ impl AlbumEntry {
 }
 
 /// 当前回合该用哪个图库目录。
-pub fn album_root(config: &AppConfig, paths: &MiyuPaths) -> PathBuf {
+pub fn album_root(config: &AppConfig, paths: &GqyPaths) -> PathBuf {
     let pictures_base = match config.member_home_dir() {
         Some(home) => home.join("pictures"),
         None => paths.pictures_dir.clone(),

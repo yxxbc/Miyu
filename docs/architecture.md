@@ -1,4 +1,4 @@
-# Miyu 架构（as-built，2026-09-11）
+# 顾清影 架构（as-built，2026-09-11）
 
 配套架构图：https://claude.ai/code/artifact/20ce2a89-cd70-41f4-a25a-36bdb303f2ea
 
@@ -77,15 +77,15 @@ dev persona 启用集为空：第 3 步只有骨架和一行提示词，第 4 �
 ## 三、persona = preset
 
 配置只有一种。一个目录 = 一个 persona = 提示词 + 关系档案 + 启用哪些扩展。`mode` 概念退场，
-`miyu dev` 只是切到 dev persona。
+`gqy dev` 只是切到 dev persona。
 
-- **共享 persona**：`personas/<name>/`，管理员发布，成员只读。当前有 `default`（出厂 Miyu，
+- **共享 persona**：`personas/<name>/`，管理员发布，成员只读。当前有 `default`（出厂 顾清影，
   全扩展开）和 `dev`（启用集为空）。记忆一个库、三层可见性（privileged 只管理员 / principal
   只本人 / public 所有人）。
 - **私有 persona**：`home/<user>/personas/<name>/`，用户 OOBE 自建。自己一个记忆库、不分层；
   提示词本人可改；启用集 ⊆ 管理员白名单；缺的扩展装前提示。角色扮演的主场。
 
-> **与计划的出入**：计划要把出厂人格目录从 `default` 改名 `miyu`；as-built 仍叫 `default`。
+> **与计划的出入**：计划要把出厂人格目录从 `default` 改名 `gqy`；as-built 仍叫 `default`。
 
 ---
 
@@ -122,10 +122,10 @@ dev persona 启用集为空：第 3 步只有骨架和一行提示词，第 4 �
 但机器级与共享数据仍留在根 `data/`（计划设想的一次性全量迁移未做完）。
 
 ```
-~/.miyu/
+~/.gqy/
 ├── config/              机器级配置（config.jsonc、shell/、scripts/、skills/），≈ /etc
 ├── personas/            共享人格，管理员发布、成员只读，≈ /usr/share
-│   ├── default/         出厂 Miyu，全扩展开
+│   ├── default/         出厂 顾清影，全扩展开
 │   └── dev/             启用集为空
 ├── extensions/          包管理器只写这里（scripts/、skills/），≈ /usr/lib
 ├── models/  cache/  state/   机器级运行时，≈ /var（账号表、邀请表、用量表、平台状态）
@@ -147,7 +147,7 @@ state/cache/models。目录名用用户名，账号 id 另存账号表，princip
 ## 六、多用户（已落地）
 
 - **账号**：邀请制。管理员在设置页生成一次性邀请码；注册页只收邀请码、用户名、密码。
-  第一个账号即超级管理员，所有已有数据归它。首次访问用内置账号 `miyu` / 密码 `miyu` 登录，
+  第一个账号即超级管理员，所有已有数据归它。首次访问用内置账号 `gqy` / 密码 `gqy` 登录，
   建出管理员后内置账号失效。
 - **登录**：WebUI 一律要登录。令牌以 sha256 落盘（`state/web-sessions.json`），30 天有效；
   过期前端回登录页。
@@ -174,7 +174,7 @@ state/cache/models。目录名用用户名，账号 id 另存账号表，princip
 - **成员回合**：Landlock 限制。可读写 `home/<user>/workspace`、`/tmp`、`/dev/null`、cache 目录；
   只读 `/usr /bin /sbin /lib /lib64 /etc /proc /sys /dev /run /opt /var` + 脚本目录 +
   当前可执行文件。**沙盒外的读取也禁**——成员只能读工作区和系统目录。
-- **管理员**：默认不套。`/sandbox <root>`（REPL / WebUI / `miyu session sandbox`，IPC `SetSandbox`）
+- **管理员**：默认不套。`/sandbox <root>`（REPL / WebUI / `gqy session sandbox`，IPC `SetSandbox`）
   绑定后同样读写都锁：可写 root、`/tmp`、`/dev/null`、cache、runtime(IPC socket)、artifact 库、
   documents / pictures 产出目录 + 配置 `tools.sandbox.writable`（默认 `~/.cargo ~/.npm`）；只读
   系统目录 + 脚本目录 + 可执行文件 + `tools.sandbox.readable`（默认 `~/.rustup ~/.local ~/.gitconfig`）。
@@ -196,5 +196,5 @@ state/cache/models。目录名用用户名，账号 id 另存账号表，princip
 
 三层代码分层、流水线挂接点、入口清单按 `src/agent`、`src/web`、`src/platforms`、`src/state`、
 `src/llm`、`src/config` 的实际模块核对。沙盒行为经隔离 daemon + claude-code/sonnet 真机逐条
-验证（工作区可写、`~/.miyu/config` 权限不够、`/etc/hostname` 可读）。目录树按本机
-`~/.miyu` 实况列出。多用户与登录态经 testkit/multi-user、testkit/pm 覆盖。
+验证（工作区可写、`~/.gqy/config` 权限不够、`/etc/hostname` 可读）。目录树按本机
+`~/.gqy` 实况列出。多用户与登录态经 testkit/multi-user、testkit/pm 覆盖。

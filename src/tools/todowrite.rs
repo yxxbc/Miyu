@@ -1,5 +1,5 @@
 use super::{ToolRegistry, ToolSpec};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -20,7 +20,7 @@ pub type TodoList = Arc<Mutex<Vec<Todo>>>;
 // registry 后所有会话共享同一份(串味实锤);现在每次调用按当前回合的
 // 会话加载/回存,纯函数 todo_write/todo_update 与其测试原样保留。
 
-fn todos_path(paths: &MiyuPaths, session: &str) -> PathBuf {
+fn todos_path(paths: &GqyPaths, session: &str) -> PathBuf {
     paths
         .state_dir
         .join("todos")
@@ -32,7 +32,7 @@ fn todos_path(paths: &MiyuPaths, session: &str) -> PathBuf {
 /// WebUI 的常驻面板要在刷新之后还能显示当前状态，而工具事件只在工具跑的
 /// 那一刻发生一次。读取收口在这里，调用方不自己拼 `todos/{session}.json`
 /// ——路径和损坏容错的规则只该有一份。
-pub(crate) fn session_todos(paths: &MiyuPaths, session: &str) -> Vec<Todo> {
+pub(crate) fn session_todos(paths: &GqyPaths, session: &str) -> Vec<Todo> {
     load_todos(paths, session)
 }
 
@@ -41,7 +41,7 @@ pub(crate) fn session_todos(paths: &MiyuPaths, session: &str) -> Vec<Todo> {
 /// 待办按会话存在库外面（`todos/{session}.json`），所以「重置对话」那条路上
 /// 一串清理动作全走 `StateStore`，唯独漏了它——对话重来了，上一轮的待办还挂
 /// 在侧边面板上，模型下一次读 todo 也还是旧的。
-pub(crate) fn clear_session_todos(paths: &MiyuPaths, session: &str) -> Result<()> {
+pub(crate) fn clear_session_todos(paths: &GqyPaths, session: &str) -> Result<()> {
     match std::fs::remove_file(todos_path(paths, session)) {
         Ok(()) => Ok(()),
         // 没建过清单是常态，不是错误。
@@ -50,7 +50,7 @@ pub(crate) fn clear_session_todos(paths: &MiyuPaths, session: &str) -> Result<()
     }
 }
 
-fn load_todos(paths: &MiyuPaths, session: &str) -> Vec<Todo> {
+fn load_todos(paths: &GqyPaths, session: &str) -> Vec<Todo> {
     let Ok(raw) = std::fs::read_to_string(todos_path(paths, session)) else {
         return Vec::new();
     };
@@ -69,7 +69,7 @@ fn load_todos(paths: &MiyuPaths, session: &str) -> Vec<Todo> {
     }
 }
 
-fn save_todos(paths: &MiyuPaths, session: &str, todos: &[Todo]) -> Result<()> {
+fn save_todos(paths: &GqyPaths, session: &str, todos: &[Todo]) -> Result<()> {
     let path = todos_path(paths, session);
     let Some(parent) = path.parent() else {
         anyhow::bail!("todo path has no parent directory");
@@ -89,7 +89,7 @@ fn session_for_call() -> Result<String> {
 }
 
 fn run_scoped(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     args: Value,
     apply: fn(Value, TodoList) -> Result<String>,
 ) -> Result<(String, Vec<Todo>)> {
@@ -103,7 +103,7 @@ fn run_scoped(
 
 /// todowrite + todoupdate 合并(08-17):同一份清单的整表替换与增量修改。
 /// 给了 updates 就走增量,给了 todos 就整表替换。
-pub fn register(registry: &mut ToolRegistry, paths: MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, paths: GqyPaths) {
     registry.register(ToolSpec::new_with_progress(
         "todowrite",
         "Maintain the structured task list for the current session. Pass todos to create or replace the whole list; pass updates to apply small atomic changes (add, update, remove, clear) without resending everything. Exactly one of the two.",

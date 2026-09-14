@@ -221,9 +221,9 @@ fn local_session_resolution_rejects_platform_ids_and_prefers_local_names() {
 fn startup_repairs_a_platform_owned_current_session() {
     let temp = tempfile::tempdir().unwrap();
     let store = StateStore::new(&test_paths(temp.path())).unwrap();
-    store.adopt_sessions_for_persona("miyu").unwrap();
+    store.adopt_sessions_for_persona("gqy").unwrap();
     let qq_session = store
-        .create_session("miyu", "QQ group 20000", "user", None)
+        .create_session("gqy", "QQ group 20000", "user", None)
         .unwrap();
     store
         .bind_platform_session(
@@ -233,21 +233,21 @@ fn startup_repairs_a_platform_owned_current_session() {
                 conversation_kind: "group".to_string(),
                 conversation_id: "20000".to_string(),
                 participant_id: None,
-                persona: "miyu".to_string(),
+                persona: "gqy".to_string(),
             },
             &qq_session.session_id,
         )
         .unwrap();
     store.switch_session(&qq_session.session_id).unwrap();
 
-    ensure_local_current_session(&store, "miyu").unwrap();
+    ensure_local_current_session(&store, "gqy").unwrap();
 
     let repaired = store.session_id();
     assert_ne!(&*repaired, qq_session.session_id);
     assert!(!store.is_platform_session(&repaired).unwrap());
     assert_eq!(
         store.session_record(&repaired).unwrap().unwrap().persona,
-        "miyu"
+        "gqy"
     );
 }
 
@@ -289,7 +289,7 @@ fn persona_identity_uses_default_and_custom_values() {
     let prompts = PromptDocuments::default();
     let default = persona_identity(&config, &prompts);
     assert_eq!(default.name, "顾清影");
-    assert_eq!(default.avatar_url.as_deref(), Some("/assets/miyu-logo.png"));
+    assert_eq!(default.avatar_url.as_deref(), Some("/assets/gqy-logo.png"));
     assert_eq!(default.composer_placeholder, "给 顾清影 发消息");
 
     config.prompt.active_persona = "Alice.md".to_string();
@@ -311,7 +311,7 @@ fn persona_identity_uses_default_and_custom_values() {
     assert_eq!(custom.name, "Alice");
     assert_eq!(custom.avatar_url.as_deref(), Some("/api/persona/avatar"));
     // 没配就跟着人格名走——此前这句写死在 index.html 里,改了人格名输入框
-    // 还留着 "给 Miyu 发消息"。
+    // 还留着 "给 顾清影 发消息"。
     assert_eq!(custom.composer_placeholder, "给 Alice 发消息");
 
     // 配了就用配的;空白串不算配置(与看板文案同一把尺)。

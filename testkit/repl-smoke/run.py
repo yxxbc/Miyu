@@ -10,7 +10,7 @@
 
     python3 testkit/repl-smoke/run.py
 
-产物在 ~/.cache/miyu-repl-smoke/:raw.bin、report.json、daemon.log。
+产物在 ~/.cache/gqy-repl-smoke/:raw.bin、report.json、daemon.log。
 """
 
 import json
@@ -30,14 +30,14 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-repl-smoke/home"))
-RUNTIME = os.environ.get("MIYU_RS_RUNTIME", "/tmp/mx-rs")
-PORT = int(os.environ.get("MIYU_RS_PORT", "18423"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-repl-smoke/home"))
+RUNTIME = os.environ.get("GQY_RS_RUNTIME", "/tmp/mx-rs")
+PORT = int(os.environ.get("GQY_RS_PORT", "18423"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18498"))
-OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "miyu-repl-smoke"))
+OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "gqy-repl-smoke"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
 PASTED_LINES = ["第一行走查", "第二行走查", "第三行走查", "第四行走查"]
 PLACEHOLDER = "粘贴 1"
@@ -86,7 +86,7 @@ def spawn_repl():
         fcntl.ioctl(1, termios.TIOCSCTTY, 0)
 
     process = subprocess.Popen(
-        # 裸 `miyu` 在真终端里先弹模式选择再退出;走查要的是普通模式的 REPL。
+        # 裸 `gqy` 在真终端里先弹模式选择再退出;走查要的是普通模式的 REPL。
         [str(BIN)], stdin=slave, stdout=slave, stderr=slave,
         env=ENV, cwd=str(HOME), preexec_fn=child_setup, close_fds=True,
     )

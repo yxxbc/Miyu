@@ -1,12 +1,12 @@
-# Miyu 0.6.0 · 从第一次见面，到完整的工作时间线
+# 顾清影 0.6.0 · 从第一次见面，到完整的工作时间线
 
 0.6.0 带来了五屏新手引导、默认开启的全屏 TUI，以及重新设计的 WebUI 时间线。这个版本也补齐了程序调用接口、会话沙盒、压缩后的文件回读、记账与赞助等能力，并修复了长会话、多用户、后台子代理与移动端的一批实际问题。
 
 ## 第一次见面：五屏 OOBE 与星空大厅
 
-新安装会依次带你完成 **人格 → 功能 → 认识你 → 终端集成 → 接模型**。可以使用内置 Miyu，也可以起名字、写设定创建自己的角色；记忆、知识库、MCP、技能和每项内置脚本都能选择。终端页识别本机 shell，并标明已经集成的项目。
+新安装会依次带你完成 **人格 → 功能 → 认识你 → 终端集成 → 接模型**。可以使用内置 顾清影，也可以起名字、写设定创建自己的角色；记忆、知识库、MCP、技能和每项内置脚本都能选择。终端页识别本机 shell，并标明已经集成的项目。
 
-接模型支持本机已登录的 Claude Code / Codex / Antigravity，也提供 16 条国内外供应商预设，填入 key 后即可选择模型，列表支持 `/` 搜索。每屏确认就保存，中途退出可继续。老用户升级不会被引导拦住，随时运行 `miyu oobe` 可以重走一遍。
+接模型支持本机已登录的 Claude Code / Codex / Antigravity，也提供 16 条国内外供应商预设，填入 key 后即可选择模型，列表支持 `/` 搜索。每屏确认就保存，中途退出可继续。老用户升级不会被引导拦住，随时运行 `gqy oobe` 可以重走一遍。
 
 ![首次见面](https://raw.githubusercontent.com/SHORiN-KiWATA/miyu-agent/v0.6.0/docs/releases/0.6.0/oobe/01-welcome.png)
 
@@ -19,7 +19,7 @@
 
 </details>
 
-空会话换上星空与渐变 MIYU 艺术字，输入框收在字下方。发出第一句话之前按 **Tab** 可切换普通 / 开发模式；`/new`、`/reset` 回到大厅并清理画布，`/session` 切回旧会话时回放最近的对话。可以用 `config/banner.txt` 换自己的看板，或用 `display.banner = false` 关闭。
+空会话换上星空与渐变 GQY 艺术字，输入框收在字下方。发出第一句话之前按 **Tab** 可切换普通 / 开发模式；`/new`、`/reset` 回到大厅并清理画布，`/session` 切回旧会话时回放最近的对话。可以用 `config/banner.txt` 换自己的看板，或用 `display.banner = false` 关闭。
 
 ## 默认全屏 TUI：过程可以回看、展开、追踪
 
@@ -29,7 +29,7 @@
 
 - 正文从顶部开始，输入框固定在底部；可以滚动回看、拖选复制、点击链接。
 - 子代理和后台子代理各有自己的时间线浮层，显示思考、工具、Markdown 正文、实时词元与耗时；运行期间也可以继续给后台子代理追加指令。
-- shellhook 和单次 `miyu "…"` 使用同一套过程样式，命令输出、diff、错误、问答与后台跟进都按顺序展示。
+- shellhook 和单次 `gqy "…"` 使用同一套过程样式，命令输出、diff、错误、问答与后台跟进都按顺序展示。
 - `/compact` 会显示压缩进度和摘要；Ctrl+C 中断能正确收尾，重开会话后仍能回看被中断的一轮。
 - 修复多行粘贴丢换行、历史占位符丢内容、模型切换后 footer 不刷新、设置进出闪屏，以及终端鼠标转义码泄漏。
 - 修复 Konsole 图片消失、kitty 环境变量污染其他终端、旧版 chafa 不兼容和小图被过度放大等问题。
@@ -51,14 +51,14 @@ AI 正文直接铺在页面上，工具过程用细线连接图标，失败步�
 
 ## 可供其他程序调用的 AI 后端
 
-- `miyu ask --output-format json|stream-json` 输出最终正文或逐行事件，含用量、模型和耗时；支持模型、上下文窗口、system prompt、记忆、工具、图片、工作目录与超时等覆盖选项。
-- **`miyu stdio`** 提供常驻的逐行 JSON 协议：一个进程可并发管理多会话、多回合，支持宿主回答提问和中途取消。见 [CLI 后端协议](https://github.com/SHORiN-KiWATA/miyu-agent/blob/v0.6.0/docs/cli-backend.md)。
-- `miyu session` 支持列出、新建、查看、删除、重命名、清空、回退、压缩、模型与沙盒管理，支持 `--json`。单回合正文上限提高到 20 万字符。
+- `gqy ask --output-format json|stream-json` 输出最终正文或逐行事件，含用量、模型和耗时；支持模型、上下文窗口、system prompt、记忆、工具、图片、工作目录与超时等覆盖选项。
+- **`gqy stdio`** 提供常驻的逐行 JSON 协议：一个进程可并发管理多会话、多回合，支持宿主回答提问和中途取消。见 [CLI 后端协议](https://github.com/SHORiN-KiWATA/miyu-agent/blob/v0.6.0/docs/cli-backend.md)。
+- `gqy session` 支持列出、新建、查看、删除、重命名、清空、回退、压缩、模型与沙盒管理，支持 `--json`。单回合正文上限提高到 20 万字符。
 - QQ、终端和 WebUI 统一支持 **PDF**：模型支持时直接发送文件，不支持时提供路径供工具处理，单份上限 20 MB。供应商菜单也能手填未公开在目录中的模型名。
 
 ## 会话沙盒、开发模式与子代理
 
-新增 **`/sandbox <路径>`**，将会话的命令、后台任务、脚本、文件读写和 CLI 供应商进程限制在指定目录及明确放行的路径内。`/sandbox` 查看范围，`/sandbox clear` 解绑；WebUI 和 `miyu session sandbox` 同样可用。绑定时会探测 Linux Landlock 支持。
+新增 **`/sandbox <路径>`**，将会话的命令、后台任务、脚本、文件读写和 CLI 供应商进程限制在指定目录及明确放行的路径内。`/sandbox` 查看范围，`/sandbox clear` 解绑；WebUI 和 `gqy session sandbox` 同样可用。绑定时会探测 Linux Landlock 支持。
 
 开发模式减少无关的固定提示开销，原实测约 **3900 → 2950 token（−24%）**。开发任务可委派给 `dev=true` 子代理，使用相同的开发人格与精简工具面。后台执行现在保留工作区、沙盒和会话身份；成员使用 CLI 后端时，工具桥也能在自身权限范围内连接 daemon。
 
@@ -71,7 +71,7 @@ AI 正文直接铺在页面上，工具过程用细线连接图标，失败步�
 - 被折叠的原始对话与旧摘要归档在 `state/compact/<会话>/`，保留最近 5 份，模型可回读细节。摘要强化用户要求、错误纠正、当前工作与下一步。
 - 上下文占用优先使用供应商真实用量；修复摘要缓存命中漏记，终端与 WebUI 增加输出速度，接近 100% 的缓存命中率保留必要精度。
 - 记忆整理更关注人物偏好、环境配置、实测结果与约定，减少通用百科内容和重复记忆。
-- `/reset-memory` 只清本会话记忆；新增 `/reset-all-memory` 清当前人格全部长期记忆。`/wipe` 保留磁盘技能，若要一并清理请明确使用 `miyu memory reset --include-skills`。
+- `/reset-memory` 只清本会话记忆；新增 `/reset-all-memory` 清当前人格全部长期记忆。`/wipe` 保留磁盘技能，若要一并清理请明确使用 `gqy memory reset --include-skills`。
 
 ## 知识库、人格与扩展
 
@@ -94,9 +94,9 @@ AI 正文直接铺在页面上，工具过程用细线连接图标，失败步�
 - 修复 OpenCode Go 缺少会话头导致的 400；Zen 请求补齐对应客户端识别头。多模型池各自轮询，辅助请求不再打偏主会话轮换。
 - 缺失工具返回在发送前补齐，避免部分模型将会话永久拒收；空推理字段不再把流式正文拆成一行一段。
 - 修改供应商 ID 时同步历史用量记录；成员可以独立设置模型思考程度。读取更新版本写入的配置时保留未知字段，不再拒绝启动。
-- **命令变化**：`miyu normal` 退役，普通模式直接运行 `miyu`；`/workspace` 与 `miyu session workspace` 改为沙盒命令。旧工作目录不会在升级后被悄悄绑定成沙盒。
+- **命令变化**：`gqy normal` 退役，普通模式直接运行 `gqy`；`/workspace` 与 `gqy session workspace` 改为沙盒命令。旧工作目录不会在升级后被悄悄绑定成沙盒。
 - 移除 deep_research、check_issue 与输入法诊断技能；Arch 工具合并进 archlinux 插件，保留工具名。上面的 TUI 截图展示时间线样式，其中 `check_issue` 是早期实机记录。
-- 更新前的旧记忆没有会话标记，需用 `/reset-all-memory` 清理；已有 `MIYU_HOME` / `~/.miyu` 继续使用。
+- 更新前的旧记忆没有会话标记，需用 `/reset-all-memory` 清理；已有 `GQY_HOME` / `~/.gqy` 继续使用。
 
 ## 下载与安装
 
@@ -104,19 +104,19 @@ AI 正文直接铺在页面上，工具过程用细线连接图标，失败步�
 
 | 发行版 | 主包 | 可选语音包 |
 | --- | --- | --- |
-| Arch Linux | `miyu-0.6.0-2-x86_64.pkg.tar.zst` | `miyu-voice-0.6.0-2-x86_64.pkg.tar.zst` |
-| Debian 13 / Ubuntu 25.10、26.04 | `miyu_0.6.0-2_amd64.deb` | `miyu-voice_0.6.0-2_amd64.deb` |
-| Fedora 44 | `miyu-0.6.0-2.fc44.x86_64.rpm` | `miyu-voice-0.6.0-2.fc44.x86_64.rpm` |
+| Arch Linux | `gqy-0.6.0-2-x86_64.pkg.tar.zst` | `gqy-voice-0.6.0-2-x86_64.pkg.tar.zst` |
+| Debian 13 / Ubuntu 25.10、26.04 | `gqy_0.6.0-2_amd64.deb` | `gqy-voice_0.6.0-2_amd64.deb` |
+| Fedora 44 | `gqy-0.6.0-2.fc44.x86_64.rpm` | `gqy-voice-0.6.0-2.fc44.x86_64.rpm` |
 
 ```bash
 # Arch Linux
-sudo pacman -U ./miyu-0.6.0-2-x86_64.pkg.tar.zst
+sudo pacman -U ./gqy-0.6.0-2-x86_64.pkg.tar.zst
 
 # Debian / Ubuntu
-sudo apt install ./miyu_0.6.0-2_amd64.deb
+sudo apt install ./gqy_0.6.0-2_amd64.deb
 
 # Fedora 44
-sudo dnf install ./miyu-0.6.0-2.fc44.x86_64.rpm
+sudo dnf install ./gqy-0.6.0-2.fc44.x86_64.rpm
 ```
 
 [完整更新记录（根据 next-release-note 归档）](https://github.com/SHORiN-KiWATA/miyu-agent/blob/v0.6.0/docs/releases/0.6.0/changelog.md)
@@ -125,12 +125,12 @@ sudo dnf install ./miyu-0.6.0-2.fc44.x86_64.rpm
 <summary>SHA256 校验值（六个安装包）</summary>
 
 ```text
-95989eae52241c6c29929add6b98f7934ceb1e631a67b950cdfedc6d42824eeb  miyu-0.6.0-2-x86_64.pkg.tar.zst
-09bbfc8c01a03fc06e9ded278f79a75cdc11c2bb395442433a52d636d8480fee  miyu-0.6.0-2.fc44.x86_64.rpm
-83434e45c7099d7717569a262fa32e7d1ae8eaf244aade299775b684d24ac343  miyu-voice-0.6.0-2-x86_64.pkg.tar.zst
-8f29451f30a325030264bae12b1a5389556bf530188e4ef0056ef3cb628e82a7  miyu-voice-0.6.0-2.fc44.x86_64.rpm
-a0bf7ef5a704cec949abfab78b59edcc280a09894b964aaa997ef827b08b7de0  miyu-voice_0.6.0-2_amd64.deb
-0699d521ae34a7628c2acd15c661247dfe9d47462388f7db25ca2438179bbe29  miyu_0.6.0-2_amd64.deb
+95989eae52241c6c29929add6b98f7934ceb1e631a67b950cdfedc6d42824eeb  gqy-0.6.0-2-x86_64.pkg.tar.zst
+09bbfc8c01a03fc06e9ded278f79a75cdc11c2bb395442433a52d636d8480fee  gqy-0.6.0-2.fc44.x86_64.rpm
+83434e45c7099d7717569a262fa32e7d1ae8eaf244aade299775b684d24ac343  gqy-voice-0.6.0-2-x86_64.pkg.tar.zst
+8f29451f30a325030264bae12b1a5389556bf530188e4ef0056ef3cb628e82a7  gqy-voice-0.6.0-2.fc44.x86_64.rpm
+a0bf7ef5a704cec949abfab78b59edcc280a09894b964aaa997ef827b08b7de0  gqy-voice_0.6.0-2_amd64.deb
+0699d521ae34a7628c2acd15c661247dfe9d47462388f7db25ca2438179bbe29  gqy_0.6.0-2_amd64.deb
 ```
 
 </details>

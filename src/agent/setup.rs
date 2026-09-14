@@ -29,7 +29,7 @@ fn situational_tool_specs(
 impl Agent {
     pub fn new(
         config: AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         state: StateStore,
         client: OpenAiCompatibleClient,
         tools: ToolRegistry,
@@ -48,7 +48,7 @@ impl Agent {
 
     pub(crate) fn new_for_audience(
         config: AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         state: StateStore,
         client: OpenAiCompatibleClient,
         tools: ToolRegistry,

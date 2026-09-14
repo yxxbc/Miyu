@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """OpenAI 兼容桩 + 隔离 daemon + PTY REPL,复现终端逐 delta 成段。
-用法: MODE=seq|interleave|plain|empty BIN=<miyu> python3 repro_openai.py
+用法: MODE=seq|interleave|plain|empty BIN=<gqy> python3 repro_openai.py
 """
 import fcntl
 import json
@@ -22,13 +22,13 @@ import pyte
 HERE = Path(__file__).resolve().parent
 BIN = Path(os.environ["BIN"])
 MODE = os.environ.get("MODE", "seq")
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-wrap-repro-openai")).expanduser() / MODE
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-wrap-repro-openai")).expanduser() / MODE
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18479"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18498"))
 ROWS, COLS = 40, 120
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME), TERM="xterm-256color", LANG="zh_CN.UTF-8")
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME), TERM="xterm-256color", LANG="zh_CN.UTF-8")
 
 
 def write_config():

@@ -215,7 +215,7 @@ where
                 }
             }
         }
-        // 中转侧闭环执行的工具活动:翻成标准卡片事件。执行不在 Miyu 的
+        // 中转侧闭环执行的工具活动:翻成标准卡片事件。执行不在 顾清影 的
         // 回合循环里,started/finished 都由流侧给,不产生本地执行。
         ChatStreamKind::RemoteToolStarted => {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(&chunk.text) {

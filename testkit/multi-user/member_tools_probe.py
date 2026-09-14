@@ -2,7 +2,7 @@
 """成员工具走查(09-11):隔离 daemon + 会叫工具的桩模型,成员(私有人格,勾了脚本
 e2e_hello)跑一轮,把脚本工具、read、glob、edit、run_command、print_image 全叫一遍,看:
 - 时间线里每个工具的 display_name(用户反馈「显示名没生效」)
-- 沙盒:读/写工作区之外(~/.miyu/config、/etc)必须被拒,工作区内正常
+- 沙盒:读/写工作区之外(~/.gqy/config、/etc)必须被拒,工作区内正常
 - print_image 的图片资源成员自己能取到(用户反馈「图片加载失败」)
 管理员同一套再跑一遍作对照(不套沙盒)。
 
@@ -10,7 +10,7 @@ e2e_hello)跑一轮,把脚本工具、read、glob、edit、run_command、print_i
 读写都锁在根下、环境块带 sandbox 属性;不存在的目录 / 成员会话被拒;解绑后同一会话
 再跑一轮恢复不受限、环境块不再带 sandbox。
 
-    BIN=<miyu> python3 testkit/multi-user/member_tools_probe.py
+    BIN=<gqy> python3 testkit/multi-user/member_tools_probe.py
 """
 import json
 import os
@@ -26,7 +26,7 @@ import e2e  # noqa: E402
 
 PORT = int(os.environ.get("PORT", "18552"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18556"))
-OUT = Path("~/.cache/miyu-member-tools").expanduser()
+OUT = Path("~/.cache/gqy-member-tools").expanduser()
 PNG = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc000000301010018dd8db00000000049454e44ae426082")
 results = []
 
@@ -88,7 +88,7 @@ def run_actor(client, sid, label, home, workspace, sandboxed):
     check(f"{label}: 读工作区文件成功", reads and reads[0]["ok"], reads[0]["output"][:60] if reads else "no call")
     if sandboxed:
         check(f"{label}: 读 config/secret 被拒", len(reads) > 1 and not reads[1]["ok"] and "sandbox" in reads[1]["output"], reads[1]["output"][:80] if len(reads) > 1 else "")
-        # 系统目录(/etc /usr …)只读放行:跑程序离不开;私人的家与 ~/.miyu 才是要挡的
+        # 系统目录(/etc /usr …)只读放行:跑程序离不开;私人的家与 ~/.gqy 才是要挡的
         check(f"{label}: 读 /etc/hostname 放行(系统目录只读)", len(reads) > 2 and reads[2]["ok"], reads[2]["output"][:80] if len(reads) > 2 else "")
         globs = names.get("glob", [])
         check(f"{label}: glob config 目录被拒", globs and not globs[0]["ok"], globs[0]["output"][:80] if globs else "")
@@ -153,8 +153,8 @@ def main():
     e2e.OUT = OUT
     e2e.HOME = OUT / "home"
     e2e.RUNTIME = OUT / "runtime"
-    e2e.ENV = dict(os.environ, MIYU_HOME=str(e2e.HOME), XDG_RUNTIME_DIR=str(e2e.RUNTIME),
-                   MIYU_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), MIYU_ADMIN_USER="admin")
+    e2e.ENV = dict(os.environ, GQY_HOME=str(e2e.HOME), XDG_RUNTIME_DIR=str(e2e.RUNTIME),
+                   GQY_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), GQY_ADMIN_USER="admin")
     HOME = e2e.HOME
     HOME.mkdir(parents=True)
     e2e.RUNTIME.mkdir(parents=True)

@@ -82,7 +82,7 @@ pub(in crate::web) async fn handle_session_command(
                     Ok(json!({}))
                 }
                 ipc::MemoryResetScope::Session => {
-                    // 客户端不指名就用 daemon 的当前指针:`miyu reset-memory`
+                    // 客户端不指名就用 daemon 的当前指针:`gqy reset-memory`
                     // 从终端发过来时,那正是 shellhook 会话。
                     let session_id = match session {
                         Some(target) => resolve_local_session_ref(state, &target)?.session_id,
@@ -97,7 +97,7 @@ pub(in crate::web) async fn handle_session_command(
         }
         IpcCommand::ListSessions { mode } => {
             // dev 列表以 dev REPL 指针为"当前":全局指针指向普通会话,
-            // 用它高亮永远落空。"all" 是管理面(miyu session):普通+dev
+            // 用它高亮永远落空。"all" 是管理面(gqy session):普通+dev
             // 合并按更新时间排,别的人格仍不可见。
             let dev = mode.as_deref() == Some("dev");
             let all = mode.as_deref() == Some("all");
@@ -252,8 +252,8 @@ pub(in crate::web) async fn handle_session_command(
                     "tool error: {:#}. {}",
                     registry.unknown_tool_error(&name),
                     t(
-                        "run `miyu tool-call --list` to see tools callable in this session",
-                        "用 `miyu tool-call --list` 查看本会话可调用的工具"
+                        "run `gqy tool-call --list` to see tools callable in this session",
+                        "用 `gqy tool-call --list` 查看本会话可调用的工具"
                     )
                 ));
             }
@@ -313,7 +313,7 @@ pub(in crate::web) async fn handle_session_command(
         } => {
             // 与 ToolCall 同一条解析链(会话→模式→registry):`--list` 列出的
             // 就是本会话真能调的集合,`--describe` 查的合同也同源。此前
-            // 客户端本地建表(按 MIYU_TURN_MODE 环境变量,run_command 并不
+            // 客户端本地建表(按 GQY_TURN_MODE 环境变量,run_command 并不
             // 注入它),dev 会话里 --list 展示的是普通人格全量目录,实测
             // 逐个调用全报 unknown tool。
             let session_id = match session {
@@ -611,7 +611,7 @@ pub(in crate::web) fn attach_owner_turn_tools(
         // 看图与生图的作用域也要在这条路上装一遍(08-26 用户点名"图我看不了")。
         // 真实回合是在 agent/input.rs 准备输入时注册的,桥另建工具面走不到那
         // 里:于是 claude-code 供应商拿到的工具面里根本没有 vision_analyze,
-        // 群上下文里的图只给了 id 却没有任何手段去看——Miyu 说看不了是实话。
+        // 群上下文里的图只给了 id 却没有任何手段去看——顾清影 说看不了是实话。
         //
         // 顺带堵上同一处的另一个洞:受限底座注册的是**不受限**的
         // generate_image,它的参考图解析器能吃宿主任意路径;
@@ -653,7 +653,7 @@ pub(in crate::web) fn attach_owner_turn_tools(
 /// `is_local_webui_request`,只是 audience 与 profile 改从 `RunInfo` 上读,
 /// 桥没有别的途径知道自己在为谁服务。
 ///
-/// 没有在跑的回合就判否:桥也可能来自 `miyu tool-call` 这类回合外调用,
+/// 没有在跑的回合就判否:桥也可能来自 `gqy tool-call` 这类回合外调用,
 /// 那时宁可少给(与 08-26 收口同一取向)。
 fn session_is_running_local_webui(state: &DaemonState, session_id: &str) -> bool {
     let manager = state.manager.lock().unwrap();

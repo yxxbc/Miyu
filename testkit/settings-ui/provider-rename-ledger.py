@@ -22,12 +22,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-rename/home"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-rename/home"))
 RUNTIME = "/tmp/mx-rn"
-PORT = int(os.environ.get("MIYU_RN_PORT", "18416"))
+PORT = int(os.environ.get("GQY_RN_PORT", "18416"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 LEDGER = HOME / "state" / "usage-history.jsonl"
 
 failures = []

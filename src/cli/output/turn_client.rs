@@ -1,15 +1,15 @@
 //! 程序驱动形态的回合客户端:一条 IPC 连接跑一个回合,把事件翻成对外事件。
 //!
 //! 与 `one_shot.rs`(终端渲染那条)并列而不共用——那条路的循环里揉着
-//! 终端光标、raw mode、footer 转轮;这里只有帧进、JSON 出。`miyu ask
-//! --output-format json|stream-json` 与 `miyu stdio` 都走这里。
+//! 终端光标、raw mode、footer 转轮;这里只有帧进、JSON 出。`gqy ask
+//! --output-format json|stream-json` 与 `gqy stdio` 都走这里。
 //!
 //! daemon 侧是「一连接一回合」:取消、答问都得另开连接发,这里照办。
 
 use crate::cli::output::event::{ErrorKind, PublicEvent};
 use crate::cli::repl::session::send_ipc_command;
 use crate::ipc::{self, Command as IpcCommand, Frame as IpcFrame, Request as IpcRequest};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Result};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -85,7 +85,7 @@ fn image_attachments(images: &[PathBuf]) -> Result<Vec<Option<ipc::ImageAttachme
 /// 跑一个回合。事件按到达顺序交给 `emit`;返回终态。连接层错误(daemon
 /// 没了)走 Err,回合层失败走 `TurnOutcome::Failed`。
 pub async fn run_turn(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     request: TurnRequest,
     policy: QuestionPolicy,
     mut cancel: Option<CancelSignal>,
@@ -108,7 +108,7 @@ pub async fn run_turn(
     )
     .await?;
     let Some(first) = ipc::receive::<IpcFrame>(&mut stream).await? else {
-        bail!("Miyu core closed the connection before accepting the turn");
+        bail!("GQY core closed the connection before accepting the turn");
     };
     let run_id = match first {
         IpcFrame::Accepted { run_id, .. } => run_id,
@@ -120,7 +120,7 @@ pub async fn run_turn(
             };
             return Ok(TurnOutcome::failed(kind, message, request.session_id));
         }
-        other => bail!("Miyu core returned an unexpected response: {other:?}"),
+        other => bail!("GQY core returned an unexpected response: {other:?}"),
     };
 
     let deadline = request.timeout.map(|timeout| started_at + timeout);
@@ -167,7 +167,7 @@ pub async fn run_turn(
         let Some(frame) = frame else {
             return Ok(TurnOutcome::failed(
                 ErrorKind::Disconnected,
-                "Miyu core disconnected during the turn",
+                "GQY core disconnected during the turn",
                 session_id,
             ));
         };
@@ -261,7 +261,7 @@ pub async fn run_turn(
 
 /// 另开连接回答一个问题(stdio 的 `answer`)。
 pub async fn answer_question(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     question_id: String,
     answers: crate::question::QuestionAnswers,
 ) -> Result<()> {

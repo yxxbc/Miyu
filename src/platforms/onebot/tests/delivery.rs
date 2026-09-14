@@ -597,7 +597,7 @@ async fn adapter_smoke_test_sends_replies_images_and_forward_nodes() {
     let forward = OutboundMessage {
         body: OutboundBody::Forward(vec![ForwardNode {
             user_id: "10000".to_string(),
-            display_name: "Miyu".to_string(),
+            display_name: "GQY".to_string(),
             segments: vec![OutboundSegment::Markdown("**long**".to_string())],
         }]),
         response_target: Some(ResponseTarget {
@@ -761,7 +761,7 @@ async fn forward_marker_failure_is_reported_as_partial_delivery() {
     let message = OutboundMessage {
         body: OutboundBody::Forward(vec![ForwardNode {
             user_id: "10000".to_string(),
-            display_name: "Miyu".to_string(),
+            display_name: "GQY".to_string(),
             segments: vec![OutboundSegment::Text("forward".to_string())],
         }]),
         response_target: Some(ResponseTarget {

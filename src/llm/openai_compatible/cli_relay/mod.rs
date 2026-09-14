@@ -1,7 +1,7 @@
 //! 本机 CLI 中转线(claude-code / antigravity / codex)的共用骨架。
 //!
 //! 三条线的传输都是「拉起一个 CLI 子进程,喂一段 stdin,按行读结构化事件」,
-//! 工具循环都在 CLI 侧闭环,Miyu 的工具都经 `miyu mcp-serve` 桥挂进去。各线
+//! 工具循环都在 CLI 侧闭环,顾清影 的工具都经 `gqy mcp-serve` 桥挂进去。各线
 //! 只差三样:命令行怎么拼、stdin 长什么样、事件怎么解析。其余——工具作用域
 //! 裁决、逐消息哈希链续传、载荷转写、子进程泵、清空联动——都在这里。
 //!
@@ -25,7 +25,7 @@ pub(in crate::llm::openai_compatible) fn scope_allows(scope: &str, dev_mode: boo
 #[derive(Clone, Copy, Debug)]
 pub(in crate::llm::openai_compatible) struct ToolScopes {
     pub(in crate::llm::openai_compatible) native_on: bool,
-    pub(in crate::llm::openai_compatible) miyu_on: bool,
+    pub(in crate::llm::openai_compatible) gqy_on: bool,
 }
 
 /// 工具面按双四档作用域装配。subagent 作用域也给:中转不会把工具循环交还
@@ -35,7 +35,7 @@ pub(in crate::llm::openai_compatible) struct ToolScopes {
 pub(in crate::llm::openai_compatible) fn tool_scopes(
     request_scope: &str,
     native_scope: &str,
-    miyu_scope: &str,
+    gqy_scope: &str,
     dev_mode: bool,
 ) -> ToolScopes {
     let tool_capable = matches!(request_scope, "chat" | "subagent");
@@ -44,7 +44,7 @@ pub(in crate::llm::openai_compatible) fn tool_scopes(
     // 继承规则。09-11 用户拍板:关进沙盒,不是关掉工具。
     ToolScopes {
         native_on: tool_capable && scope_allows(native_scope, dev_mode),
-        miyu_on: tool_capable && scope_allows(miyu_scope, dev_mode),
+        gqy_on: tool_capable && scope_allows(gqy_scope, dev_mode),
     }
 }
 
@@ -52,8 +52,8 @@ pub(in crate::llm::openai_compatible) fn tool_scopes(
 /// `attach_owner_turn_tools` → `apply_platform_turn_scope`,取的就是这个活体
 /// 平台上下文的 `host_tools_allowed()`。非平台会话(REPL/WebUI/回合外)没有
 /// 登记,按全量底座记——那些路径本来就只有 owner 一档。
-pub(in crate::llm::openai_compatible) fn host_tools_face(miyu_session: Option<&str>) -> bool {
-    miyu_session
+pub(in crate::llm::openai_compatible) fn host_tools_face(gqy_session: Option<&str>) -> bool {
+    gqy_session
         .and_then(crate::platforms::live_turn_context)
         .map(|context| context.host_tools_allowed())
         .unwrap_or(true)
@@ -107,9 +107,9 @@ pub(in crate::llm::openai_compatible) fn compose_prompt(
     tools_note: &str,
 ) -> String {
     let mut prompt = system_prompt.to_string();
-    if scopes.native_on || scopes.miyu_on {
+    if scopes.native_on || scopes.gqy_on {
         prompt.push_str(environment_note);
-        if scopes.miyu_on {
+        if scopes.gqy_on {
             prompt.push_str(tools_note);
         }
     }
@@ -117,11 +117,11 @@ pub(in crate::llm::openai_compatible) fn compose_prompt(
 }
 
 /// 桥进程要认得 daemon 的 home/runtime 目录,但必须**如实透传**(daemon 自己
-/// 有什么才给什么):runtime 目录推导对「显式设了 MIYU_HOME」与「没设」给出
-/// 不同路径(默认 home 显式设也会变成哈希子目录),无条件塞 MIYU_HOME 会让
+/// 有什么才给什么):runtime 目录推导对「显式设了 GQY_HOME」与「没设」给出
+/// 不同路径(默认 home 显式设也会变成哈希子目录),无条件塞 GQY_HOME 会让
 /// mcp-serve 连不上正常启动的 daemon,静默滑进直连兜底(claude 线第六轮实录)。
 pub(in crate::llm::openai_compatible) fn bridge_env_passthrough() -> Vec<(String, String)> {
-    ["MIYU_HOME", "XDG_RUNTIME_DIR"]
+    ["GQY_HOME", "XDG_RUNTIME_DIR"]
         .into_iter()
         .filter_map(|key| {
             std::env::var_os(key)
@@ -140,7 +140,7 @@ pub(in crate::llm::openai_compatible) struct RelayOutcome {
 pub(in crate::llm::openai_compatible) struct ResumePlan {
     provider_id: String,
     model: String,
-    miyu_session: Option<String>,
+    gqy_session: Option<String>,
     host_tools: bool,
     ephemeral: bool,
     conversation: Vec<ChatMessage>,
@@ -159,7 +159,7 @@ impl ResumePlan {
         prompt_seed: &str,
         conversation: Vec<ChatMessage>,
         request_scope: &str,
-        miyu_session: Option<&str>,
+        gqy_session: Option<&str>,
         host_tools: bool,
     ) -> Self {
         let ephemeral = request_scope != "chat";
@@ -170,7 +170,7 @@ impl ResumePlan {
             match session::find_resumable(
                 provider_id,
                 model,
-                miyu_session,
+                gqy_session,
                 host_tools,
                 &chain,
                 conversation.len(),
@@ -193,7 +193,7 @@ impl ResumePlan {
         Self {
             provider_id: provider_id.to_string(),
             model: model.to_string(),
-            miyu_session: miyu_session.map(str::to_string),
+            gqy_session: gqy_session.map(str::to_string),
             host_tools,
             ephemeral,
             conversation,
@@ -258,7 +258,7 @@ impl ResumePlan {
         session::record_session(
             &self.provider_id,
             &self.model,
-            self.miyu_session.as_deref(),
+            self.gqy_session.as_deref(),
             self.host_tools,
             self.conversation.len() + 1,
             next_hash,
@@ -267,17 +267,17 @@ impl ResumePlan {
     }
 }
 
-/// 清空 Miyu 会话时的联动(三条 CLI 中转线共用):丢弃它名下的续传映射,
+/// 清空 顾清影 会话时的联动(三条 CLI 中转线共用):丢弃它名下的续传映射,
 /// 并尽力删除各家 CLI 侧的会话转录。存储布局是各家 CLI 的内部实现,删不到
 /// 只记日志不报错——映射已丢弃,该会话无论如何不会再被续传。会话 id 都是
 /// 全局唯一,每家都试一遍不会误删。
-pub(crate) fn forget_relay_sessions(miyu_session: &str) {
-    let removed = session::forget_miyu_session(miyu_session);
+pub(crate) fn forget_relay_sessions(gqy_session: &str) {
+    let removed = session::forget_gqy_session(gqy_session);
     if removed.is_empty() {
         return;
     }
     for relay_session in &removed {
-        super::claude_code::remove_transcript(miyu_session, relay_session);
+        super::claude_code::remove_transcript(gqy_session, relay_session);
         super::antigravity::remove_conversation_files(relay_session);
         super::codex::remove_rollout(relay_session);
     }
@@ -290,11 +290,11 @@ mod tests {
     #[test]
     fn scopes_follow_request_scope_and_mode() {
         let scopes = tool_scopes("chat", "all", "dev", false);
-        assert!(scopes.native_on && !scopes.miyu_on);
+        assert!(scopes.native_on && !scopes.gqy_on);
         let scopes = tool_scopes("subagent", "normal", "all", true);
-        assert!(!scopes.native_on && scopes.miyu_on);
+        assert!(!scopes.native_on && scopes.gqy_on);
         let scopes = tool_scopes("compact", "all", "all", false);
-        assert!(!scopes.native_on && !scopes.miyu_on);
+        assert!(!scopes.native_on && !scopes.gqy_on);
     }
 
     #[test]

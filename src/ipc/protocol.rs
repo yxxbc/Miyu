@@ -115,7 +115,7 @@ impl Request {
     }
 }
 
-/// 触发回合的终端身份:tty 设备路径 + 拉起 miyu 的 shell 进程。
+/// 触发回合的终端身份:tty 设备路径 + 拉起 gqy 的 shell 进程。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OriginTty {
     pub path: std::path::PathBuf,
@@ -215,7 +215,7 @@ pub enum Command {
         #[serde(default)]
         session_id: Option<String>,
         /// 仅本回合生效的覆盖(模型/窗口/提示词/记忆/工具面),不落盘。
-        /// 程序驱动的 CLI(`miyu ask --model …`、`miyu stdio`)用;REPL/WebUI
+        /// 程序驱动的 CLI(`gqy ask --model …`、`gqy stdio`)用;REPL/WebUI
         /// 不传。
         #[serde(default, skip_serializing_if = "Option::is_none")]
         overrides: Option<TurnOverrides>,
@@ -276,7 +276,7 @@ pub enum Command {
     SetReplSession {
         target: SessionRef,
     },
-    /// 工具桥(任务#12):`miyu tool-call` 打回 daemon,以指定会话的身份与
+    /// 工具桥(任务#12):`gqy tool-call` 打回 daemon,以指定会话的身份与
     /// 回合来源执行结构化工具——内层调用照走 guard/超时管线。bash 就是
     /// 编排层:中间数据在脚本里流动,不经模型上下文往返。
     ToolCall {
@@ -285,7 +285,7 @@ pub enum Command {
         name: String,
         #[serde(default)]
         arguments: String,
-        /// 序列化的 TurnOrigin(来自 run_command 注入的 MIYU_TURN_ORIGIN)。
+        /// 序列化的 TurnOrigin(来自 run_command 注入的 GQY_TURN_ORIGIN)。
         #[serde(default)]
         origin: Option<String>,
         /// 递归深度(护栏,daemon 侧校验)。
@@ -326,20 +326,20 @@ pub enum Command {
         #[serde(default)]
         models: Vec<crate::config::ActiveProviderModelConfig>,
     },
-    /// `miyu-voice` 进程注册的持久信令连接。应答 Ack 后双向裸交换 Event
+    /// `gqy-voice` 进程注册的持久信令连接。应答 Ack 后双向裸交换 Event
     /// 帧(见 `voice::worker` 模块文档的信令表)。
     VoiceAttach,
-    /// 客户端(REPL `/stt`、`miyu stt`)认领一条听写流:daemon 让语音前端
+    /// 客户端(REPL `/stt`、`gqy stt`)认领一条听写流:daemon 让语音前端
     /// 开听写窗,识别文本以 Event 帧 `voice.dictation {text}` 流回,窗口
     /// 结束发 `voice.dictation_ended`;连接断开即释放。
     StartDictation,
     /// 语音前端状态(二进制是否存在、是否在跑、设备名等)。应答
     /// Event `voice.status`。
     VoiceStatus,
-    /// 让语音前端不用唤醒词直接进入等待指令状态(`miyu listen`,桌面
+    /// 让语音前端不用唤醒词直接进入等待指令状态(`gqy listen`,桌面
     /// 快捷键呼叫)。应答 Ack;语音未启用/前端未就绪/听写中为 Error。
     VoiceListen,
-    /// 合成并播出一段文本(`miyu voice say`、设置页试听)。`tts` 为 Some 时用
+    /// 合成并播出一段文本(`gqy voice say`、设置页试听)。`tts` 为 Some 时用
     /// 这份配置(TUI 里试听尚未保存的音色/语速),否则用 daemon 当前配置。
     /// 应答 Ack(已交给前端播)或 Error。
     VoiceSpeak {
@@ -347,7 +347,7 @@ pub enum Command {
         #[serde(default)]
         tts: Option<crate::config::VoiceTtsConfig>,
     },
-    /// 删除唤醒对话的专属会话,下次唤醒重建(`miyu voice reset`)。应答 Ack。
+    /// 删除唤醒对话的专属会话,下次唤醒重建(`gqy voice reset`)。应答 Ack。
     VoiceReset,
 }
 

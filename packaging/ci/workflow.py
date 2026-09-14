@@ -124,7 +124,7 @@ def verify_packages(args):
         raise ValueError('Live CI acceptance only supports the Linux smoke profile.')
     config = provider_configuration()
     # The dedicated credential never enters the artifact/output tree.
-    with tempfile.TemporaryDirectory(prefix='miyu-ci-provider-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='gqy-ci-provider-') as temporary:
         path = Path(temporary)/'provider.json'
         write_json(path, config)
         path.chmod(0o600)
@@ -203,7 +203,7 @@ def channels(args):
     command = ['--manifest', args.root/'release-input.json', '--release-output', output, '--out', args.out]
     if args.published_url:
         command += ['--published-url', args.published_url]
-    with tempfile.TemporaryDirectory(prefix='miyu-ci-channel-builder-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='gqy-ci-channel-builder-') as temporary:
         iid = Path(temporary)/'image.id'
         subprocess.run(['docker', 'build', '--platform', 'linux/amd64', '--iidfile', str(iid),
             '--build-arg', 'RUST_VERSION='+manifest['toolchain']['rust'], '-f',

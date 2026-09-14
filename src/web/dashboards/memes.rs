@@ -70,7 +70,7 @@ fn default_mode() -> String {
 /// 单张上传硬顶;配置里的 max_image_mb 在 add_meme 里还会再查一次。
 pub(in crate::web) const MEME_UPLOAD_LIMIT: usize = 24 * 1024 * 1024;
 
-/// 成员的表情包库 = 当前私有人格的库(库名就是人格 scope);用共享 Miyu 时
+/// 成员的表情包库 = 当前私有人格的库(库名就是人格 scope);用共享 顾清影 时
 /// 表情包库是共享的,不给成员管。点名别的库一律拒。
 fn library_for(
     state: &DaemonState,

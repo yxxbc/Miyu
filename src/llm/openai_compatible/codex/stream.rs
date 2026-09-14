@@ -327,7 +327,7 @@ where
                 .and_then(Value::as_str)
                 .unwrap_or_default();
             let tool = item.get("tool").and_then(Value::as_str).unwrap_or("tool");
-            let name = if server == "miyu" || server.is_empty() {
+            let name = if server == "gqy" || server.is_empty() {
                 tool.to_string()
             } else {
                 format!("{server}:{tool}")

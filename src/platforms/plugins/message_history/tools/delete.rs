@@ -53,7 +53,7 @@ pub(crate) async fn delete(
     settings: Arc<QqMessageHistoryPluginSettings>,
 ) -> Result<String> {
     if !effective_admin(&context) {
-        bail!("only a configured Miyu platform administrator may delete history");
+        bail!("only a configured GQY platform administrator may delete history");
     }
     live_admin_message(&context)?;
     let scope = history_scope(

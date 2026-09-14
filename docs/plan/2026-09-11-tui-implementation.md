@@ -78,7 +78,7 @@
 
 1. **同步 / 异步分裂（最硬）**：`handle_agent_event` 必须是 `fn`（塞进 `chat_stream_with_control`
    的 `FnMut` 回调），而 IPC 侧的 image / question 必须 `async`。
-2. **`Option<&mut LiveReplTail>` vs `&mut LiveReplTail`**：one_shot 要同时服务「`miyu "问题"` 无活动区」
+2. **`Option<&mut LiveReplTail>` vs `&mut LiveReplTail`**：one_shot 要同时服务「`gqy "问题"` 无活动区」
    和「REPL 内有活动区」，签名带 `Option`，于是没法复用 `handle_live_agent_event`。这是 one_shot 和
    wake 明明做同一件事却各写一份的直接原因。
 3. `live_turn.rs` 必须把 live 和 renderer 各包一层 `RefCell`（回调持有可变借用 + select 分支也要借）。
@@ -252,7 +252,7 @@ cargo test --lib                    # 2193 个用例
 ### 6.2 手动
 
 ```sh
-MIYU_TUI=1 ./target/release/miyu normal
+GQY_TUI=1 ./target/release/gqy normal
 ```
 
 | # | 看什么 | 预期 |
@@ -265,7 +265,7 @@ MIYU_TUI=1 ./target/release/miyu normal
 | 6 | 让它跑个工具 | spinner 原地转，不往下堆行 |
 | 7 | 退出后重开 | 键盘正常，终端没留在奇怪的模式里 |
 
-默认仍是 inline，不设 `MIYU_TUI=1` 什么都不变。
+默认仍是 inline，不设 `GQY_TUI=1` 什么都不变。
 
 ### 6.3 还没做的
 
@@ -338,7 +338,7 @@ queue!(stdout, Print(format!("\x1b]1337;paint={}\x07", self.scroll)))?;
 ```
 
 然后在抓下来的流里按标记切帧，一帧一帧喂 pyte——哪一帧用的哪个 scroll、画出来
-是哪几行，全对得上，一次就定位到「差一行」。这个标记留在代码里了（`MIYU_SCREEN_TRACE`
+是哪几行，全对得上，一次就定位到「差一行」。这个标记留在代码里了（`GQY_SCREEN_TRACE`
 才发），下次再有坐标问题还能用。
 
 顺带查出测具自己也在骗人：`drain(master, 1.0)` 这种**固定时长**的读会切在一帧
@@ -352,7 +352,7 @@ queue!(stdout, Print(format!("\x1b]1337;paint={}\x07", self.scroll)))?;
 用户裁定「要做，改渲染器」。
 
 **展开内容不进字节流。** 命令输出动辄几十行，每块都塞一遍既费带宽又把历史撑大；
-流里只放一个 id（私有 OSC `1337;miyu-block=<id>`），内容留在进程里按 id 取——渲染方
+流里只放一个 id（私有 OSC `1337;gqy-block=<id>`），内容留在进程里按 id 取——渲染方
 和全屏后端本来就在同一个进程，没必要绕终端一圈。inline 下 `blocks::enabled()` 为假，
 `register` 直接返回 `None`，**一个标记字节都不会多出来**。
 
@@ -693,7 +693,7 @@ tool_call 参数里），只按标记认「是不是子对话」会把主线也�
 
 `testkit/tui/live.py` 用真模型（默认 `opencodego / deepseek-v4.1-flash`）跑一组
 **会把版式压出问题**的任务，逐轮抓整屏，还会去点开时间线、点开里面一步。沙箱只从
-真配置里借一个供应商（连 key），会话库、记忆、日志全在 `/tmp` 下另开，不碰 `~/.miyu`。
+真配置里借一个供应商（连 key），会话库、记忆、日志全在 `/tmp` 下另开，不碰 `~/.gqy`。
 
 它当场抓出一个桩模型抓不到的问题：收缩行和正文之间空了**三行**——
 `switch_mode(Content)` 给「思考正文直接铺在屏上」那种排版补了两行间距，而全屏下
@@ -1067,7 +1067,7 @@ if let Some(cell) = line.get_mut(col - 1) {
 3. 回放**整条**抓下来的字节流 → 图和公式都出来了 ⇒ TUI 的输出是对的。
 
 三步之后才发现真相：**我读的是一张旧截图**。后面几次 `kitty_shot` 因为
-`BIN=target/debug/miyu` 是相对路径、而子进程是拿 `cwd=OUT` 起的，daemon 根本没
+`BIN=target/debug/gqy` 是相对路径、而子进程是拿 `cwd=OUT` 起的，daemon 根本没
 起来就抛异常退出了，异常打在 kitty 窗口里、外面看不见，旧 PNG 原地不动。
 
 两条教训都记下来：**脚本跑在别人的窗口里就必须自己写日志文件**；
@@ -1378,7 +1378,7 @@ MDI 的机器人（U+F06A9），并在代码里留了一句"别再改"。
 | U+F0768 | U+F0768 | ✳ | 思考 |
 | U+F0F3 | U+F0F3 | ⚙ | 通知（后台任务完成之类） |
 
-导出脚本在会话记录里；`MIYU_TUI_ASCII=1` 走右边那一列。
+导出脚本在会话记录里；`GQY_TUI_ASCII=1` 走右边那一列。
 
 ### 19.4 验收
 
@@ -1556,7 +1556,7 @@ Esc、勾选没变、非终端只打清单，全是假。
 - **从上往下找会找错行**。正文的时间线上也有一行写着后台任务名（"已后台运行
   xxxx"），`next(...)` 点到的是那一行。状态行永远在最下面，要从下往上找。
 - **端口上蹲着上一轮的 daemon**。它会让这一轮绑不上端口，而客户端照样连得上——
-  连的是上一轮那个，它的 `MIYU_HOME` 刚被这一轮删掉了。满屏莫名其妙的红，跟代码
+  连的是上一轮那个，它的 `GQY_HOME` 刚被这一轮删掉了。满屏莫名其妙的红，跟代码
   一点关系没有。走查开头加了 `kill_stale_daemon()`。
 
 还有一条自查：`item07` 第一版的断言是"展开里有没有 `子代理的命令输出`"，而那串字
@@ -1929,7 +1929,7 @@ SVG-1`——用户截图实录）。子代理那一步不再给窥视。
 
 ## 26 第二十六轮：六条 + shellhook 跟进
 
-用户报了五条全屏的毛病，外加一条：shellhook（单次 `miyu "…"`）还是老的
+用户报了五条全屏的毛病，外加一条：shellhook（单次 `gqy "…"`）还是老的
 `~ 工具×1 ok / ↳ 主题` 卡片，要跟着时间线走。
 
 ### 26.1 diff 靠右
@@ -2016,8 +2016,8 @@ shellhook 走的是 `remote/one_shot.rs` + inline 渲染器（`live = None`）�
 | `testkit/tui/round26.py`（新增，全屏回合中操作） | 13/13：跑着的命令点开有命令 + 流式输出、编辑跑完模型开口前点开即 diff、Ctrl+C 后无 inline 卡片、收缩行里那一步红色「已中断」且详情留着打断前的输出 |
 | `testkit/tui/run.py` 37 项回归 | 用户裁定跳过（省时间） |
 
-本轮部署走 **debug 二进制**（用户拍板不编 release）：`target/debug/miyu` →
-`~/.local/bin/miyu`（cp 到 `.new` 再 mv），daemon 用 systemd-run 轮换。
+本轮部署走 **debug 二进制**（用户拍板不编 release）：`target/debug/gqy` →
+`~/.local/bin/gqy`（cp 到 `.new` 再 mv），daemon 用 systemd-run 轮换。
 
 **测具的两个坑**（都伪装成产品 bug）：
 - 全屏下正文贴着活动区往上长，点开一块之后整块上顶，**点开前算的行号在新一屏
@@ -2050,7 +2050,7 @@ shellhook 走的是 `remote/one_shot.rs` + inline 渲染器（`live = None`）�
   序列补在省略号后面。
 
 **shellhook 吞掉回合错误**：fish 钩子里 `fish_command_not_found` 那两条路是
-`miyu --shell-intercept … 2>/dev/null`，`main.rs` 打到 stderr 的
+`gqy --shell-intercept … 2>/dev/null`，`main.rs` 打到 stderr 的
 「错误: no LLM provider/model endpoint succeeded …」整个被吞。`run_shell_intercept`
 现在自己把错误红字打到 stdout，再带退出码、空正文返回（`main.rs` 见正文为空不复述）。
 
@@ -2192,7 +2192,7 @@ shellhook 走的是 `remote/one_shot.rs` + inline 渲染器（`live = None`）�
 
 测具：`testkit/tui/round26.py` 新增 `scenario_panel_spinner`（开着浮层抓两帧：
 转轮换帧、标题秒数上涨、跑着的行有 logo）；`scratchpad` 里的 stream-json 事件倒
-出法（`miyu --output-format stream-json <prompt>` 对着桩 daemon）是坐实「没发
+出法（`gqy --output-format stream-json <prompt>` 对着桩 daemon）是坐实「没发
 `__subtool_call__`」的手段。
 
 ### 26.15 第九批：命令尾巴六行且保留、全屏链接、shellhook 跟进走时间线、转轮同列、面板正文 markdown
@@ -2208,7 +2208,7 @@ shellhook 走的是 `remote/one_shot.rs` + inline 渲染器（`live = None`）�
   / 关闭序列。点开由我们自己 `xdg-open`（鼠标被全屏捕获）。round26 用假 `xdg-open`
   收网址验证：markdown 链接标题、裸网址各点一次都开对。
 - **shellhook 跟进的渲染**：后台任务完成后 daemon 往发起它的 tty 回写那一轮，原来是
-  `job_wake.rs` 里手搓的 `✦ Miyu 后台任务跟进` / `∴ 标题` / `⚙ 工具 …` 行渲染。现在写线程
+  `job_wake.rs` 里手搓的 `✦ 顾清影 后台任务跟进` / `∴ 标题` / `⚙ 工具 …` 行渲染。现在写线程
   上跑一台和 shellhook 同款的 `StreamRenderer`（静态时间线档），事件原样从 async 侧转过去
   （`TtyWriteOp::Event`，和 IPC 发给终端的 `(kind, data)` 同一份，`decode_ipc_event` +
   `handle_agent_event` 对 crate 开放）。三件配套：daemon 的 stdout 不是终端，宽度按那个
@@ -2280,7 +2280,7 @@ shellhook 走的是 `remote/one_shot.rs` + inline 渲染器（`live = None`）�
   该在的位置；流式期间每隔一个 tick（≈66ms）重画状态行，跟进那一路同改。
 
 **opencode Zen 的 FreeUsageLimitError 不是客户端的事**（09-13 实测）：
-- 本机 opencode 1.18.29 指到本地假端点抓包，头与 Miyu 现发的一致
+- 本机 opencode 1.18.29 指到本地假端点抓包，头与 顾清影 现发的一致
   （`x-opencode-client/project/session/request` + 同款 User-Agent）；
 - 用**一模一样**的头和请求体 curl `deepseek-v4-flash-free` / `big-pickle`（key=public）
   → 429 `FreeUsageLimitError`；

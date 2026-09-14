@@ -1,7 +1,7 @@
 //! opencode Zen 的客户端识别头。
 //!
 //! Zen 的服务端按这几个头分桶。缺了它们的请求落进匿名档,额度比带全了小一大截
-//! ——第三方客户端报的「key 明明有效还是狂吐 429」就是这么来的。Miyu 在此之前
+//! ——第三方客户端报的「key 明明有效还是狂吐 429」就是这么来的。顾清影 在此之前
 //! 一个都不发。
 //!
 //! 头名与取值不是从文档抄的(Zen 没文档化),是本机 opencode 1.18.29 的实测抓包
@@ -46,7 +46,7 @@ const OPENCODE_USER_AGENT: &str = "opencode/1.18.29 ai-sdk/provider-utils/4.0.46
 /// opencode 的 `--client` 默认值(它的 TUI 与 `run` 都是 cli)。
 const OPENCODE_CLIENT: &str = "cli";
 
-/// 不在某个具体项目里时 opencode 报的值。Miyu 不是按目录组织工作的,恒定报它。
+/// 不在某个具体项目里时 opencode 报的值。顾清影 不是按目录组织工作的,恒定报它。
 const OPENCODE_PROJECT: &str = "global";
 
 /// Zen 系端点共同的前缀:`/zen/v1`(Zen)与 `/zen/go/v1`(Console Go)都在它下面。
@@ -83,7 +83,7 @@ pub(in crate::llm::openai_compatible) fn apply(
         .header("x-opencode-request", message_id(request_id))
 }
 
-/// 一次对话对应服务端一个会话:Miyu 的会话 id 确定性地映射成 opencode 形状,
+/// 一次对话对应服务端一个会话:顾清影 的会话 id 确定性地映射成 opencode 形状,
 /// 同一段对话跨 daemon 重启也是同一个。够不到会话的地方(REPL 直连、配置界面
 /// 试连)退回进程级的那个——总比整个 daemon 共用一个、或者每个 HTTP 请求换一
 /// 个(看着像刷会话)强。
@@ -99,7 +99,7 @@ fn process_session_id() -> &'static str {
     SESSION.get_or_init(|| format!("ses_{}", random_suffix()))
 }
 
-/// 把 Miyu 的请求 id(`llm_<毫秒>_<序号>`)换算成 opencode 形状的消息 id。
+/// 把 顾清影 的请求 id(`llm_<毫秒>_<序号>`)换算成 opencode 形状的消息 id。
 ///
 /// 确定性映射:同一次逻辑调用换端点重试时头不变,这与 opencode 那边「一个用户
 /// 回合内恒定」的语义对得上。

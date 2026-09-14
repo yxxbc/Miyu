@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MIYU_IMAGE_TRACE 开/关，Miyu 写给终端的字节一样吗？
+"""GQY_IMAGE_TRACE 开/关，顾清影 写给终端的字节一样吗？
 
 取证模式下 `run_chafa` 把 chafa 的 stdout 收进管道、判完格式再由 Rust 的
 `io::stdout()` 写回；正常模式是 chafa 直接 inherit 写 fd 1。两条路径不同，
@@ -13,8 +13,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from pty_probe import respond  # 会应答 DA1/sixel-geometry/cell-px 的假终端
 
-SB = "/home/shorin/.cache/miyu-chafa-sandbox/miyu-sb"
-IMG = "/home/shorin/.cache/miyu-chafa-sandbox/images/tall.png"
+SB = "/home/shorin/.cache/gqy-chafa-sandbox/gqy-sb"
+IMG = "/home/shorin/.cache/gqy-chafa-sandbox/images/tall.png"
 PROMPT = f"显示 {IMG}"
 
 
@@ -26,9 +26,9 @@ def run(trace: bool, cols=138, rows=67, timeout=70):
     for key in ("KITTY_WINDOW_ID", "KITTY_PID", "KITTY_INSTALLATION_DIR", "TERM_PROGRAM"):
         env.pop(key, None)
     if trace:
-        env["MIYU_IMAGE_TRACE"] = "1"
+        env["GQY_IMAGE_TRACE"] = "1"
     else:
-        env.pop("MIYU_IMAGE_TRACE", None)
+        env.pop("GQY_IMAGE_TRACE", None)
 
     def setup():
         os.setsid()

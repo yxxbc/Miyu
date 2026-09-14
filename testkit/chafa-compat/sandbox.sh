@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
 # 起一个专供「用不同终端手测图片渲染」的沙盒。
 #
-# 与 daemon 隔离的 MIYU_HOME、独立端口，沿用本机的供应商配置（QQ/语音关掉），
+# 与 daemon 隔离的 GQY_HOME、独立端口，沿用本机的供应商配置（QQ/语音关掉），
 # 所以模型可用——直接在 REPL 里让她显示图片，走的就是用户真正会遇到的那条路。
 #
 # 用法：
 #   testkit/chafa-compat/sandbox.sh            # 起沙盒
-#   ~/.cache/miyu-chafa-sandbox/miyu-sb        # 在任意终端里开 REPL
-#   ~/.cache/miyu-chafa-sandbox/with-chafa 1.14.5 ~/.cache/miyu-chafa-sandbox/miyu-sb
+#   ~/.cache/gqy-chafa-sandbox/gqy-sb        # 在任意终端里开 REPL
+#   ~/.cache/gqy-chafa-sandbox/with-chafa 1.14.5 ~/.cache/gqy-chafa-sandbox/gqy-sb
 #                                              # 换用旧版 chafa 再测一遍
 set -euo pipefail
-ROOT=/home/shorin/.cache/miyu-chafa-sandbox
+ROOT=/home/shorin/.cache/gqy-chafa-sandbox
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BIN="$(cd "$HERE/../.." && pwd)/target/release/miyu"
-SCRIPTS=/home/shorin/.local/share/miyu/scripts
+BIN="$(cd "$HERE/../.." && pwd)/target/release/gqy"
+SCRIPTS=/home/shorin/.local/share/gqy/scripts
 PORT=8389
 
 [ -x "$BIN" ] || { echo "二进制还没编译好: $BIN" >&2; exit 1; }
 
-systemctl --user stop miyu-chafa-sandbox.service 2>/dev/null || true
+systemctl --user stop gqy-chafa-sandbox.service 2>/dev/null || true
 rm -rf "$ROOT"
 mkdir -p "$ROOT/home/config" "$ROOT/runtime" "$ROOT/images"
 
 python3 - "$ROOT/home/config/config.jsonc" <<'PY'
 import re, sys
-src = open("/home/shorin/.miyu/config/config.jsonc", encoding="utf-8").read()
+src = open("/home/shorin/.gqy/config/config.jsonc", encoding="utf-8").read()
 for key in ("qq", "voice"):
     src, n = re.subn(r'("%s":\s*\{\s*\n\s*"enabled":\s*)true' % key, r'\1false', src, count=1)
     assert n == 1, key
@@ -59,10 +59,10 @@ png("small.png", 128, 128)
 png("big.png", 1024, 768)
 PY
 
-systemd-run --user --unit=miyu-chafa-sandbox --collect -E LANG=zh_CN.UTF-8 -E LANGUAGE=zh_CN:en \
+systemd-run --user --unit=gqy-chafa-sandbox --collect -E LANG=zh_CN.UTF-8 -E LANGUAGE=zh_CN:en \
   -p WorkingDirectory="$ROOT/home" \
-  --setenv=MIYU_HOME="$ROOT/home" --setenv=XDG_RUNTIME_DIR="$ROOT/runtime" \
-  --setenv=MIYU_SYSTEM_SCRIPTS_DIR="$SCRIPTS" \
+  --setenv=GQY_HOME="$ROOT/home" --setenv=XDG_RUNTIME_DIR="$ROOT/runtime" \
+  --setenv=GQY_SYSTEM_SCRIPTS_DIR="$SCRIPTS" \
   "$BIN" __daemon --port "$PORT"
 
 for _ in $(seq 1 60); do
@@ -70,17 +70,17 @@ for _ in $(seq 1 60); do
   sleep 0.5
 done
 
-# REPL 入口。MIYU_IMAGE_TRACE 打开，每次打图都往
-# ~/.miyu/cache/logs/image-trace.log 追一行（chafa 版本、参数、选中格式、耗时）。
-cat > "$ROOT/miyu-sb" <<EOF
+# REPL 入口。GQY_IMAGE_TRACE 打开，每次打图都往
+# ~/.gqy/cache/logs/image-trace.log 追一行（chafa 版本、参数、选中格式、耗时）。
+cat > "$ROOT/gqy-sb" <<EOF
 #!/usr/bin/env bash
-export MIYU_HOME=$ROOT/home
+export GQY_HOME=$ROOT/home
 export XDG_RUNTIME_DIR=$ROOT/runtime
-export MIYU_SYSTEM_SCRIPTS_DIR=$SCRIPTS
-export MIYU_IMAGE_TRACE=1
+export GQY_SYSTEM_SCRIPTS_DIR=$SCRIPTS
+export GQY_IMAGE_TRACE=1
 exec $BIN "\$@"
 EOF
-chmod +x "$ROOT/miyu-sb"
+chmod +x "$ROOT/gqy-sb"
 
 # 换用历史版本的 chafa 跑同一条命令：with-chafa 1.14.5 <命令...>
 OLD="$HERE/old"
@@ -101,13 +101,13 @@ PATH="\$shim:\$PATH" "\$@"
 EOF
 chmod +x "$ROOT/with-chafa"
 
-: > /home/shorin/.miyu/cache/logs/image-trace.log 2>/dev/null || true
+: > /home/shorin/.gqy/cache/logs/image-trace.log 2>/dev/null || true
 
 echo "沙盒就绪 (端口 $PORT)"
 echo "  二进制   $BIN"
 echo "  测试图   $ROOT/images/{small,wide,tall,big}.png"
-echo "  REPL     $ROOT/miyu-sb"
-echo "  旧 chafa $ROOT/with-chafa 1.14.5 $ROOT/miyu-sb"
-echo "  取证日志 ~/.miyu/cache/logs/image-trace.log"
+echo "  REPL     $ROOT/gqy-sb"
+echo "  旧 chafa $ROOT/with-chafa 1.14.5 $ROOT/gqy-sb"
+echo "  取证日志 ~/.gqy/cache/logs/image-trace.log"
 echo "  health=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/health")"
 echo "  本机 chafa $(chafa --version 2>/dev/null | head -1)"

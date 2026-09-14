@@ -5,18 +5,18 @@ pub mod turn_client;
 
 use crate::cli::args::OutputFormat;
 use crate::cli::exit_code::exit_with;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::Result;
 use event::PublicEvent;
 use std::io::Write;
 use turn_client::{run_turn, QuestionPolicy, TurnOutcome, TurnRequest};
 
-/// `miyu ask --output-format json|stream-json` 的一次性回合:stream-json 逐
+/// `gqy ask --output-format json|stream-json` 的一次性回合:stream-json 逐
 /// 事件一行,json 只打终态一行;两种都只往 stdout 写 JSON,别的一个字节
 /// 不漏。失败按 [`event::ErrorKind`] 映射退出码,错误行也走 stdout(宿主
 /// 只解析一个流)。
 pub async fn run_json_one_shot(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     request: TurnRequest,
     format: OutputFormat,
 ) -> Result<()> {

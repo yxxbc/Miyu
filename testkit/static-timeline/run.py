@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""静态时间线走查：单次 `miyu "…"`（= shellhook 那条路）在真 PTY 里跑一轮。
+"""静态时间线走查：单次 `gqy "…"`（= shellhook 那条路）在真 PTY 里跑一轮。
 
 沙箱 daemon + 桩模型，不花额度。看的是普通终端里（不是全屏）过程怎么排：
 
@@ -15,7 +15,7 @@
 第二轮验 Ctrl+C：命令跑到一半打断，它得收成一步「已中断」，而不是漏出
 inline 的命令卡片。
 
-产物在 ~/.cache/miyu-static-timeline/：raw-*.bin（原始字节）、screen-*.txt
+产物在 ~/.cache/gqy-static-timeline/：raw-*.bin（原始字节）、screen-*.txt
 （pyte 还原的最后一屏）、live-*.txt（跑着时抓的几帧）、report.json。
 """
 
@@ -42,17 +42,17 @@ except ImportError:
     raise SystemExit(2)
 
 ROOT = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", ROOT / "target" / "debug" / "miyu"))
+BIN = Path(os.environ.get("GQY_BIN", ROOT / "target" / "debug" / "gqy"))
 SMOKE = ROOT / "testkit" / "repl-smoke"
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-static-timeline/home"))
-RUNTIME = os.environ.get("MIYU_ST_RUNTIME", "/tmp/mx-st")
-PORT = int(os.environ.get("MIYU_ST_PORT", "18443"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-static-timeline/home"))
+RUNTIME = os.environ.get("GQY_ST_RUNTIME", "/tmp/mx-st")
+PORT = int(os.environ.get("GQY_ST_PORT", "18443"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18497"))
-OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "miyu-static-timeline"))
+OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "gqy-static-timeline"))
 BASE = f"http://127.0.0.1:{PORT}"
 COLS, ROWS = 110, 200
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
-EDIT_FILE = Path("/tmp/miyu-static-timeline/walk.txt")
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+EDIT_FILE = Path("/tmp/gqy-static-timeline/walk.txt")
 PROMPT = "走查一句"
 BRAILLE = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 # 时间线那一行的形状：`<图标> <名字> · …`。图标是 Nerd Font 私有区字形或 `$`/`⌄`。

@@ -31,10 +31,10 @@ pub(in crate::config_tui) fn edit_codex_provider_form(
         .choices(TOOL_SCOPES),
         Field::new(
             t(
-                "Miyu tools via MCP bridge scope",
-                "Miyu 工具挂给 codex 的作用域",
+                "GQY tools via MCP bridge scope",
+                "顾清影 工具挂给 codex 的作用域",
             ),
-            plugin.miyu_tools.clone(),
+            plugin.gqy_tools.clone(),
         )
         .choices(TOOL_SCOPES),
         Field::new(t("Sandbox mode", "沙箱模式"), plugin.sandbox_mode.clone())
@@ -72,7 +72,7 @@ pub(in crate::config_tui) fn edit_codex_provider_form(
         };
         plugin.binary = fields[2].value.trim().to_string();
         plugin.native_tools = normalize_scope(&fields[3].value);
-        plugin.miyu_tools = normalize_scope(&fields[4].value);
+        plugin.gqy_tools = normalize_scope(&fields[4].value);
         let sandbox = fields[5].value.trim().to_string();
         plugin.sandbox_mode = if SANDBOX_MODES.contains(&sandbox.as_str()) {
             sandbox

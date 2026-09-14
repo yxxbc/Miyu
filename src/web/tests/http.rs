@@ -173,11 +173,11 @@ async fn platform_session_reset_is_serialized_per_target_session() {
     let (state, actor_join) = test_daemon_with_actor(temp.path());
     let target = state
         .state_store
-        .create_session("miyu", "qq target", "user", None)
+        .create_session("gqy", "qq target", "user", None)
         .unwrap();
     let other = state
         .state_store
-        .create_session("miyu", "other", "user", None)
+        .create_session("gqy", "other", "user", None)
         .unwrap();
     let target_store = state.state_store.pinned(&target.session_id);
     target_store
@@ -354,7 +354,7 @@ print(pid, slave, flush=True)
 sys.stdin.readline()  # 等 Rust 侧写完
 data = b""
 try:
-    while b"MIYU-E2E-END" not in data:
+    while b"GQY-E2E-END" not in data:
         data += os.read(master, 4096)
 except OSError:
     pass
@@ -427,14 +427,14 @@ sys.stdin.readline()  # 等 Rust 侧完成死后判定
         let writer = std::thread::spawn(move || origin_tty_writer(tty, shell_pid, ops_rx, setup));
         ops_tx
             .send(TtyWriteOp::Write(
-                "\x1b[1m✦ Miyu 后台任务跟进\x1b[0m\r\n".to_string(),
+                "\x1b[1m✦ 顾清影 后台任务跟进\x1b[0m\r\n".to_string(),
             ))
             .unwrap();
         // 正文走事件路：写线程上的渲染器把 markdown 画出来（和 shellhook 同款）。
         ops_tx
             .send(TtyWriteOp::Event {
                 kind: "assistant.delta".to_string(),
-                data: serde_json::json!({"delta": "**粗体** 与 `代码` MIYU-E2E-END\n"}),
+                data: serde_json::json!({"delta": "**粗体** 与 `代码` GQY-E2E-END\n"}),
             })
             .unwrap();
         ops_tx
@@ -456,10 +456,10 @@ sys.stdin.readline()  # 等 Rust 侧完成死后判定
         .collect::<Vec<u8>>();
     let text = String::from_utf8_lossy(&bytes);
     assert!(
-        text.contains("Miyu 后台任务跟进"),
+        text.contains("顾清影 后台任务跟进"),
         "master 端应读到标题,实际: {text:?}"
     );
-    assert!(text.contains("MIYU-E2E-END"), "正文应完整到达");
+    assert!(text.contains("GQY-E2E-END"), "正文应完整到达");
     assert!(text.contains("\u{1b}["), "应带 SGR 样式");
 
     let gone = lines.next().unwrap().unwrap();

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """「做出来她会用吗」——拿真模型跑,不是桩。
 
-    BIN=<miyu 二进制> PROVIDER=bigmodel MODEL=glm-5.3-flash \
+    BIN=<gqy 二进制> PROVIDER=bigmodel MODEL=glm-5.3-flash \
         python3 testkit/webui-artifact/does_she_use_it.py
 
-从你真实的 config.jsonc 里挑一个供应商搬进沙箱 MIYU_HOME(**不碰生产 daemon、
+从你真实的 config.jsonc 里挑一个供应商搬进沙箱 GQY_HOME(**不碰生产 daemon、
 不碰你的会话和记忆**),然后像平常那样跟她说两句话,看她自己会不会想到:
 
   一、数据题:给一串数字,她会画图还是甩一张 markdown 表?
   二、结构题:要一张流程图,她会怎么画?(这题直接决定 Mermaid 那 3.4MB 要不要花)
 
 判的不是图好不好看,是**她想不想得起来用这个能力**——能力再强,她想不起来就等于没有。
-产出:~/.cache/miyu-does-she-use-it/report.json,含她每轮用的工具和写出来的文件全文。
+产出:~/.cache/gqy-does-she-use-it/report.json,含她每轮用的工具和写出来的文件全文。
 """
 import json
 import os
@@ -26,12 +26,12 @@ from pathlib import Path
 BIN = Path(os.environ["BIN"]).expanduser()
 PROVIDER = os.environ.get("PROVIDER", "bigmodel")
 MODEL = os.environ.get("MODEL", "glm-5.3-flash")
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-does-she-use-it")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-does-she-use-it")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18489"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
 
 # 第一轮的「数据题」问法有毛病:说「记一下」把她带去了记账工具,压根没到画图那一步。
 # 第二轮改成明确要图,专门验一件事——ECharts 内置了,她会用吗,还是照样手搓 SVG。
@@ -59,7 +59,7 @@ TASKS = TASK_SETS[os.environ.get("TASK_SET", "1")]
 
 
 def load_provider():
-    for candidate in ("~/.config/miyu/config.jsonc", "~/.miyu/config/config.jsonc"):
+    for candidate in ("~/.config/gqy/config.jsonc", "~/.gqy/config/config.jsonc"):
         path = Path(candidate).expanduser()
         if path.exists():
             raw = re.sub(r"^\s*//.*$", "", path.read_text(encoding="utf-8"), flags=re.M)

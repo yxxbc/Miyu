@@ -1,8 +1,8 @@
 //! 语音功能的 HTTP 面(WebUI 设置页与麦克风按钮的后端):
 //! - `GET /api/voice/status`:二进制是否在、前端是否在跑、采集设备;
-//! - `GET /api/voice/devices`:麦克风列表(问 `miyu-voice devices`);
+//! - `GET /api/voice/devices`:麦克风列表(问 `gqy-voice devices`);
 //! - `GET /api/voice/stream`(WebSocket):流式听写。浏览器把 16kHz 单声道
-//!   PCM16 LE 以二进制帧持续推上来,daemon 转给 `miyu-voice` 做 VAD/分句/
+//!   PCM16 LE 以二进制帧持续推上来,daemon 转给 `gqy-voice` 做 VAD/分句/
 //!   识别,识别出一句就回一条文本帧 `{"type":"dictation","text"}`;静默
 //!   超窗回 `{"type":"ended"}`;浏览器发文本帧 `stop` 或直接断开即结束;
 //! - `POST /api/voice/transcribe`:整段 16k 单声道 PCM WAV → 文本(外部脚本用)。
@@ -28,7 +28,7 @@ pub(in crate::web) async fn voice_devices(
 ) -> std::result::Result<Json<Value>, ApiError> {
     require_admin(&headers, &state)?;
     let Some(binary) = voice_bridge::locate_binary() else {
-        return Ok(json_devices(Vec::new(), Some("miyu-voice not installed")));
+        return Ok(json_devices(Vec::new(), Some("gqy-voice not installed")));
     };
     let output = tokio::time::timeout(
         std::time::Duration::from_secs(10),

@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::AppConfig;
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 
 /// 蒸馏指令。要求两行输出:首行篇幅类型(短|长),次行风格备忘正文。
 /// 正文全部用陈述句,且必须含一条从设定文件推断的整体篇幅陈述
@@ -60,34 +60,34 @@ pub struct DistilledHint {
 
 /// 手写提醒文件:`<prompts_dir>/hints/<scope>.md`。放子目录是有意的——
 /// 人格列表与校验只扫 prompts_dir 下的文件,hints/ 不会被当成人格。
-/// 默认 Miyu 人格的 scope 是 "default",对应 hints/default.md。
-pub fn manual_hint_path(config: &AppConfig, paths: &MiyuPaths, scope: &str) -> PathBuf {
+/// 默认 顾清影 人格的 scope 是 "default",对应 hints/default.md。
+pub fn manual_hint_path(config: &AppConfig, paths: &GqyPaths, scope: &str) -> PathBuf {
     config
         .prompts_dir_path(paths)
         .join("hints")
         .join(format!("{scope}.md"))
 }
 
-/// 默认 Miyu 人格是否生效:未选自定义人格、也没有任何自定义 system
-/// prompt 时,base_system_prompt 落到内置 miyu.md——只有这时内置的
+/// 默认 顾清影 人格是否生效:未选自定义人格、也没有任何自定义 system
+/// prompt 时,base_system_prompt 落到内置 gqy.md——只有这时内置的
 /// 提示/预设对话默认值才有意义。
-fn uses_default_persona(config: &AppConfig, paths: &MiyuPaths) -> bool {
+fn uses_default_persona(config: &AppConfig, paths: &GqyPaths) -> bool {
     config
         .active_persona_prompt(paths)
         .map(|prompt| prompt.trim().is_empty())
         .unwrap_or(false)
 }
 
-/// 读取手写提醒。文件缺失且默认 Miyu 人格生效时回退到内置默认提示;
+/// 读取手写提醒。文件缺失且默认 顾清影 人格生效时回退到内置默认提示;
 /// 文件存在但为空 = 显式停用手写(回到自动蒸馏)。
-pub fn manual_hint(config: &AppConfig, paths: &MiyuPaths, scope: &str) -> Option<String> {
+pub fn manual_hint(config: &AppConfig, paths: &GqyPaths, scope: &str) -> Option<String> {
     match std::fs::read_to_string(manual_hint_path(config, paths, scope)) {
         Ok(text) => {
             let text = text.trim();
             (!text.is_empty()).then(|| text.to_string())
         }
         Err(_) if scope == "default" && uses_default_persona(config, paths) => {
-            let text = crate::prompts::default_miyu_hint();
+            let text = crate::prompts::default_gqy_hint();
             let text = text.trim();
             (!text.is_empty()).then(|| text.to_string())
         }
@@ -100,27 +100,27 @@ pub fn manual_hint(config: &AppConfig, paths: &MiyuPaths, scope: &str) -> Option
 /// 历史之前,永不落库——模型把它们当普通聊天记录,学的是轮次里的语气
 /// 而不是指令(AstrBot begin_dialogs 同机制;A/B 实测示例对是语气打磨
 /// 层,闲聊中位 63→48 字)。常量前缀:只在编辑时断一次缓存。
-pub fn dialogs_path(config: &AppConfig, paths: &MiyuPaths, scope: &str) -> PathBuf {
+pub fn dialogs_path(config: &AppConfig, paths: &GqyPaths, scope: &str) -> PathBuf {
     config
         .prompts_dir_path(paths)
         .join("dialogs")
         .join(format!("{scope}.md"))
 }
 
-/// 预设对话原文(注入与 TUI 表单预填共用)。文件缺失且默认 Miyu 人格
+/// 预设对话原文(注入与 TUI 表单预填共用)。文件缺失且默认 顾清影 人格
 /// 生效时回退到内置默认;文件存在但为空 = 显式停用。
-pub fn dialogs_raw(config: &AppConfig, paths: &MiyuPaths, scope: &str) -> String {
+pub fn dialogs_raw(config: &AppConfig, paths: &GqyPaths, scope: &str) -> String {
     match std::fs::read_to_string(dialogs_path(config, paths, scope)) {
         Ok(text) => text.trim().to_string(),
         Err(_) if scope == "default" && uses_default_persona(config, paths) => {
-            crate::prompts::default_miyu_dialogs().trim().to_string()
+            crate::prompts::default_gqy_dialogs().trim().to_string()
         }
         Err(_) => String::new(),
     }
 }
 
 /// 解析后的预设对话对(注入用)。
-pub fn load_dialogs(config: &AppConfig, paths: &MiyuPaths, scope: &str) -> Vec<(String, String)> {
+pub fn load_dialogs(config: &AppConfig, paths: &GqyPaths, scope: &str) -> Vec<(String, String)> {
     parse_dialogs(&dialogs_raw(config, paths, scope))
 }
 
@@ -189,16 +189,16 @@ fn strip_role_marker<'a>(line: &'a str, role: &str) -> Option<&'a str> {
         .map(str::trim_start)
 }
 
-/// Miyu 表单预填:default scope 的文件现值,缺失时直接给内置默认——
-/// 不看当前激活的是哪个人格,因为表单编辑的就是 Miyu 本体的附属文件。
-pub fn miyu_aux_prefill(config: &AppConfig, paths: &MiyuPaths) -> (String, String) {
+/// 顾清影 表单预填:default scope 的文件现值,缺失时直接给内置默认——
+/// 不看当前激活的是哪个人格,因为表单编辑的就是 顾清影 本体的附属文件。
+pub fn gqy_aux_prefill(config: &AppConfig, paths: &GqyPaths) -> (String, String) {
     let hint = match std::fs::read_to_string(manual_hint_path(config, paths, "default")) {
         Ok(text) => text.trim().to_string(),
-        Err(_) => crate::prompts::default_miyu_hint().trim().to_string(),
+        Err(_) => crate::prompts::default_gqy_hint().trim().to_string(),
     };
     let dialogs = match std::fs::read_to_string(dialogs_path(config, paths, "default")) {
         Ok(text) => text.trim().to_string(),
-        Err(_) => crate::prompts::default_miyu_dialogs().trim().to_string(),
+        Err(_) => crate::prompts::default_gqy_dialogs().trim().to_string(),
     };
     (hint, dialogs)
 }
@@ -213,7 +213,7 @@ pub fn reminder_message(reminder: &str) -> ChatMessage {
     )
 }
 
-fn auto_cache_dir(paths: &MiyuPaths) -> PathBuf {
+fn auto_cache_dir(paths: &GqyPaths) -> PathBuf {
     paths.state_dir.join("persona-hints")
 }
 
@@ -281,7 +281,7 @@ fn parse_distill_output(raw: &str) -> Option<DistilledHint> {
 /// 顺手清掉。
 pub async fn resolve(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     client: &OpenAiCompatibleClient,
 ) -> Result<Option<String>> {
     let scope = config.active_persona_scope();
@@ -417,8 +417,8 @@ mod tests {
         assert!(parse_cache_file("  \n").is_none());
     }
 
-    fn test_paths(root: &std::path::Path) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(root: &std::path::Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -427,7 +427,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/miyu.fish"),
+            fish_hook_file: root.join("fish/gqy.fish"),
             bash_hook_file: root.join("shell/bash-hook.sh"),
             zsh_hook_file: root.join("shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -443,7 +443,7 @@ mod tests {
         // 默认人格 + 无文件 → 内置默认提示。
         assert_eq!(
             manual_hint(&config, &paths, "default").as_deref(),
-            Some(crate::prompts::default_miyu_hint().trim())
+            Some(crate::prompts::default_gqy_hint().trim())
         );
         // 自定义 scope 不回退内置。
         assert!(manual_hint(&config, &paths, "custom").is_none());
@@ -464,8 +464,8 @@ mod tests {
     /// 内置对话示范可完整解析:条数不写死(内容会被编辑),只保证全部成对
     /// 非空。顾清影作为默认人格时没有预设对话(09-14),内置文件为空也要成立。
     #[test]
-    fn embedded_miyu_dialogs_parse_into_pairs() {
-        let raw = crate::prompts::default_miyu_dialogs();
+    fn embedded_gqy_dialogs_parse_into_pairs() {
+        let raw = crate::prompts::default_gqy_dialogs();
         let pairs = parse_dialogs(&raw);
         if raw.trim().is_empty() {
             assert!(pairs.is_empty());
@@ -482,7 +482,7 @@ mod tests {
         let config = AppConfig::default();
         assert_eq!(
             load_dialogs(&config, &paths, "default").len(),
-            parse_dialogs(&crate::prompts::default_miyu_dialogs()).len()
+            parse_dialogs(&crate::prompts::default_gqy_dialogs()).len()
         );
         assert!(load_dialogs(&config, &paths, "custom").is_empty());
         // 空文件 = 显式停用。

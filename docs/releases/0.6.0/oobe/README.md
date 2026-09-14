@@ -1,11 +1,11 @@
-# Miyu 0.6.0 OOBE 实际画面
+# 顾清影 0.6.0 OOBE 实际画面
 
-这四张图来自真实 `miyu 0.6.0` 二进制的交互式终端输出。捕获脚本通过 PTY 驱动引导，使用 pyte 解析 ANSI 字符、颜色与光标位置，再由 Pillow 渲染终端单元格。画面内容、选项和进度均来自程序实际输出；额外添加的只有窗口边距和顶部标题栏。
+这四张图来自真实 `gqy 0.6.0` 二进制的交互式终端输出。捕获脚本通过 PTY 驱动引导，使用 pyte 解析 ANSI 字符、颜色与光标位置，再由 Pillow 渲染终端单元格。画面内容、选项和进度均来自程序实际输出；额外添加的只有窗口边距和顶部标题栏。
 
 | 画面 | 文件 | 实际操作 |
 |---|---|---|
 | 欢迎 | [01-welcome.png](01-welcome.png) | 等待欢迎提示和动画完整帧 |
-| 人格 | [02-persona.png](02-persona.png) | 回车进入人格选择，保留内置 Miyu |
+| 人格 | [02-persona.png](02-persona.png) | 回车进入人格选择，保留内置 顾清影 |
 | 功能 | [03-features.png](03-features.png) | 接受内置人格，显示默认功能选项 |
 | 接模型 | [04-provider.png](04-provider.png) | 跳过自述，终端集成选择“不装”，停在供应商选择页 |
 
@@ -17,7 +17,7 @@
 
 详细的二进制版本、字体及图片哈希、终端帧编号和原始输出位置保存在 [capture-provenance.json](capture-provenance.json)。字符使用仓库中的 JetBrains Mono、Noto Sans CJK；缺少的星形符号使用 DejaVu Sans 字体回退。星空和扫光是程序动画，重新捕获时所处帧可能不同。
 
-整个产品进程运行在独立的 Linux 用户和网络命名空间里，无法连接外部服务或宿主机回环地址。HOME、MIYU_HOME、XDG 目录均为带归属标记的临时目录；关闭了输入法探测，没有安装 shell hook，也没有提交供应商凭据或请求真实模型。捕获后 PTY 进程和临时目录均已回收。
+整个产品进程运行在独立的 Linux 用户和网络命名空间里，无法连接外部服务或宿主机回环地址。HOME、GQY_HOME、XDG 目录均为带归属标记的临时目录；关闭了输入法探测，没有安装 shell hook，也没有提交供应商凭据或请求真实模型。捕获后 PTY 进程和临时目录均已回收。
 
 这些图片展示 OOBE 界面。功能选中、供应商列出不代表相应模型、语音硬件或安装包已通过运行验收；发布验收由独立报告证明。本次来源是本地 0.6.0 debug 二进制。
 
@@ -27,7 +27,7 @@
 
 ```bash
 python3 packaging/ci/probes/capture_oobe.py \
-  --binary "$(pwd)/target/debug/miyu" \
+  --binary "$(pwd)/target/debug/gqy" \
   --out out/distribution/oobe-recapture/png \
   --evidence out/distribution/oobe-recapture/evidence
 ```

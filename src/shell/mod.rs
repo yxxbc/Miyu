@@ -10,10 +10,10 @@ use std::io::Write;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
-const BASH_BEGIN_MARKER: &str = "# >>> miyu bash hook >>>";
-const BASH_END_MARKER: &str = "# <<< miyu bash hook <<<";
-const ZSH_BEGIN_MARKER: &str = "# >>> miyu zsh hook >>>";
-const ZSH_END_MARKER: &str = "# <<< miyu zsh hook <<<";
+const BASH_BEGIN_MARKER: &str = "# >>> gqy bash hook >>>";
+const BASH_END_MARKER: &str = "# <<< gqy bash hook <<<";
+const ZSH_BEGIN_MARKER: &str = "# >>> gqy zsh hook >>>";
+const ZSH_END_MARKER: &str = "# <<< gqy zsh hook <<<";
 
 /// 原子写用户 shell 启动文件:写回瞬间崩溃不能把 .bashrc/.zshrc 留成
 /// 截断的半个文件。保留原文件权限。
@@ -61,7 +61,7 @@ pub(super) fn upsert_source_block(
     Ok(())
 }
 
-/// Refreshes only hook blocks installed by an older Miyu layout. It never
+/// Refreshes only hook blocks installed by an older GQY layout. It never
 /// enables shell integration for a user who did not already have it enabled.
 pub(crate) fn refresh_migrated_hook_sources(
     home: &Path,
@@ -117,7 +117,7 @@ fn write_text_atomically(path: &Path, contents: &str) -> Result<()> {
         .map(|metadata| metadata.permissions().mode() & 0o7777)
         .unwrap_or(0o600);
     let temporary = parent.join(format!(
-        ".miyu-hook-{}-{}",
+        ".gqy-hook-{}-{}",
         std::process::id(),
         rand::random::<u64>()
     ));
@@ -161,12 +161,12 @@ fn replace_marked_block(
 ) -> Result<Option<String>> {
     let Some(begin_index) = existing.find(begin) else {
         if existing.contains(end) {
-            bail!("shell startup file contains a Miyu end marker without its begin marker");
+            bail!("shell startup file contains a GQY end marker without its begin marker");
         }
         return Ok(None);
     };
     let Some(end_relative) = existing[begin_index..].find(end) else {
-        bail!("shell startup file contains an incomplete Miyu hook block");
+        bail!("shell startup file contains an incomplete GQY hook block");
     };
     let mut end_index = begin_index + end_relative + end.len();
     if existing.as_bytes().get(end_index) == Some(&b'\r') {
@@ -458,10 +458,10 @@ fn is_shell_keyword_or_builtin(command: &str, shell_name: &str) -> bool {
 /// 严格、显式路径反而照单全收,这个不对称正是病灶:把
 /// `/home/shorin/Downloads/1.png` 粘在多行输入的头一行,整段就被判成 shell
 /// 命令交给 fish 逐行执行,图片路径各报一次"存在,但不是一个可执行文件",
-/// 只有末尾那句中文漏进 Miyu,图全丢了(08-26 用户实测)。
+/// 只有末尾那句中文漏进 顾清影,图全丢了(08-26 用户实测)。
 ///
 /// 这条判定只在**多行**缓冲区上被问到(单行走 fish 自己的
-/// `fish_command_not_found`),所以路径不存在时判成"给 Miyu"是安全的:多行且
+/// `fish_command_not_found`),所以路径不存在时判成"给 顾清影"是安全的:多行且
 /// 首个 token 是个不可执行的路径,基本只可能是粘进来的内容。
 fn is_explicit_command_path(command: &str) -> bool {
     let shaped = command.starts_with('/')
@@ -517,7 +517,7 @@ mod tests {
             "这样写可以吗？假设我们输入一个字母`x`"
         ));
         assert!(looks_like_natural_language(
-            "我好像在输入里加一个左斜杠就会导致输入不被传给miyu/对吗？"
+            "我好像在输入里加一个左斜杠就会导致输入不被传给gqy/对吗？"
         ));
         assert!(looks_like_natural_language(
             "软件需要适配 Wayland 的 `text-input` 协议，输入法要支持 $GTK_IM_MODULE 吗？"
@@ -526,7 +526,7 @@ mod tests {
             "GTK_IM_MODULE=fcitx 是什么意思？"
         ));
         assert!(looks_like_natural_language(
-            "./target/release/miyu 查询为什么失败？"
+            "./target/release/gqy 查询为什么失败？"
         ));
     }
 
@@ -543,7 +543,7 @@ mod tests {
         assert!(is_shell_command("cd /tmp", "fish"));
         assert!(is_shell_command("FOO=bar cargo check", "fish"));
         assert!(is_shell_command("# comment\nls", "fish"));
-        // 真实存在且可执行的显式路径。原来写的是 ./target/release/miyu,
+        // 真实存在且可执行的显式路径。原来写的是 ./target/release/gqy,
         // 依赖本机有没有 release 产物,换成必然存在的系统命令。
         assert!(is_shell_command("/bin/sh -c true", "fish"));
         assert!(is_shell_command("for item in a b", "fish"));
@@ -555,7 +555,7 @@ mod tests {
     }
 
     #[test]
-    fn classifies_messages_as_miyu() {
+    fn classifies_messages_as_gqy() {
         assert!(!is_shell_command("你觉得 a;b 是什么意思", "fish"));
         assert!(!is_shell_command("解释 <tag> 是什么", "fish"));
         assert!(!is_shell_command("第一行\n第二行", "fish"));
@@ -572,7 +572,7 @@ mod tests {
         assert!(!is_shell_command(r"A\=是真的\这个短语", "fish"));
     }
 
-    /// 多行粘贴里首个 token 是不可执行的路径时必须交给 Miyu(08-26 实测:
+    /// 多行粘贴里首个 token 是不可执行的路径时必须交给 顾清影(08-26 实测:
     /// 粘两张图路径加一句中文,整段被 fish 逐行执行,图全丢了)。
     /// 红检:把可执行判定停用改成恒真,这条立刻报红。
     #[test]
@@ -598,7 +598,7 @@ mod tests {
             &format!("{} --flag\nsecond line", script.display()),
             "fish"
         ));
-        // 路径根本不存在时同样交给 Miyu。
+        // 路径根本不存在时同样交给 顾清影。
         assert!(!is_shell_command(
             &format!("{}/nope --flag\nsecond line", temp.path().display()),
             "fish"

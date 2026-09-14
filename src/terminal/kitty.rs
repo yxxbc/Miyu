@@ -77,7 +77,7 @@ pub fn print(path: &Path, requested_size: Option<&str>) -> Result<()> {
         .with_context(|| format!("failed to decode image {}", path.display()))?;
     let (terminal_cols, terminal_rows) = display_bounds();
     let (max_cols, max_rows) = parse_size(requested_size, terminal_cols, terminal_rows)?;
-    if std::env::var_os("MIYU_IMAGE_TRACE").is_some() {
+    if std::env::var_os("GQY_IMAGE_TRACE").is_some() {
         let (cell_w, cell_h) = cell_pixel_size();
         let (cols, rows) = fit_cells(
             image.width(),
@@ -102,7 +102,7 @@ pub fn print(path: &Path, requested_size: Option<&str>) -> Result<()> {
         );
         // 落文件而不是 stderr:live REPL 里 stderr 会直接糊在画面上。
         let path = std::path::Path::new(&std::env::var("HOME").unwrap_or_default())
-            .join(".miyu/cache/logs/image-trace.log");
+            .join(".gqy/cache/logs/image-trace.log");
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }

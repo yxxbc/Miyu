@@ -14,7 +14,7 @@ use crate::web::*;
 /// 没有推理元数据的模型 `variants` 是空的，前端据此不画档位小片。
 pub(in crate::web) fn active_thinking_variant_options(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Vec<ThinkingVariantOptions>> {
     crate::models_cache::ensure_active_metadata(paths, config);
     let preferences = ThinkingVariantPreferences::load(paths);
@@ -35,7 +35,7 @@ pub(in crate::web) fn active_thinking_variant_options(
 pub(in crate::web) fn apply_thinking_variant_updates(
     agent: &mut Option<Agent>,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     updates: &[ThinkingVariantUpdate],
 ) -> std::result::Result<(), AdminFailure> {
     let options = active_thinking_variant_options(config, paths)
@@ -100,7 +100,7 @@ pub(in crate::web) fn apply_thinking_variant_updates(
 /// agent——成员的每回合 client 现造时会从这份偏好回填(见 turns::task)。
 pub(in crate::web) fn persist_member_thinking_variants(
     config: &AppConfig,
-    member_paths: &MiyuPaths,
+    member_paths: &GqyPaths,
     updates: &[ThinkingVariantUpdate],
 ) -> std::result::Result<(), AdminFailure> {
     let options = active_thinking_variant_options(config, member_paths)
@@ -138,7 +138,7 @@ pub(in crate::web) fn persist_member_thinking_variants(
 pub(in crate::web) fn rebuild_for_models(
     agent: &mut Option<Agent>,
     config: &mut AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state_store: &StateStore,
     manager: &Arc<Mutex<ManagerState>>,
     models: &[ActiveProviderModelConfig],

@@ -622,7 +622,7 @@ async fn download_avatar(arguments: Value, context: Arc<PlatformTurnContext>) ->
 mod tests {
     use super::*;
     use crate::config::AppConfig;
-    use crate::paths::MiyuPaths;
+    use crate::paths::GqyPaths;
     use crate::platforms::plugins::PlatformPluginRegistry;
     use crate::platforms::{OutboundMessage, PlatformAdapter, PlatformConversation, SendReceipt};
     use crate::state::StateStore;
@@ -637,12 +637,12 @@ mod tests {
         }
 
         fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-            Box::pin(async { Ok("Miyu".to_string()) })
+            Box::pin(async { Ok("GQY".to_string()) })
         }
     }
 
-    fn test_paths(root: &std::path::Path) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(root: &std::path::Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),

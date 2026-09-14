@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""`miyu pm` 端到端(真二进制,隔离 MIYU_HOME,离线:只用本地路径来源)。
+"""`gqy pm` 端到端(真二进制,隔离 GQY_HOME,离线:只用本地路径来源)。
 
-BIN=<miyu> python3 testkit/pm/pm_e2e.py
+BIN=<gqy> python3 testkit/pm/pm_e2e.py
 
   1. 装扩展包(脚本 + 技能)→ extensions/ 里有文件、锁文件有记录、`tool-call --list` 能列出脚本
   2. 再装同一包 → 已是最新;改脚本内容后 upgrade → 文件更新
   3. 装人格包 → data/prompts/<name>.md、personas/<scope>/persona.toml、头像、人格专属脚本
-  4. `miyupm list`(符号链接 shim)与 `miyu pm list` 一致
+  4. `gqypm list`(符号链接 shim)与 `gqy pm list` 一致
   5. 冲突:另一个包装同名脚本被拒
   6. 卸载:文件与锁记录都没了;tap list 至少有官方 tap
 """
@@ -20,11 +20,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 BIN = Path(os.environ["BIN"]).expanduser()
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-pm")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-pm")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME),
-           MIYU_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), MIYU_ADMIN_USER="admin")
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME),
+           GQY_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), GQY_ADMIN_USER="admin")
 
 results = []
 
@@ -66,7 +66,7 @@ def main():
     check("同内容 upgrade 报已是最新", code == 0 and ("最新" in out or "up to date" in out), out[-120:])
     script = work / "sample-ext/scripts/pm_hello.py"
     script.write_text(script.read_text().replace("(from sample-ext)", "(from sample-ext v2)"))
-    (work / "sample-ext/miyu-package.toml").write_text((work / "sample-ext/miyu-package.toml").read_text().replace('version = "1.0.0"', 'version = "1.1.0"'))
+    (work / "sample-ext/gqy-package.toml").write_text((work / "sample-ext/gqy-package.toml").read_text().replace('version = "1.0.0"', 'version = "1.1.0"'))
     code, out = run("pm", "upgrade", "sample-ext", "-y")
     check("内容变了 upgrade 重装", code == 0 and "1.1.0" in out, out[-160:])
     check("升级后脚本是新内容", "v2" in (HOME / "extensions/scripts/pm_hello.py").read_text())
@@ -81,15 +81,15 @@ def main():
           (HOME / "extensions/scripts/personas/sample-persona-md/sample_mood.py").is_file())
 
     # 4. shim
-    shim = OUT / "miyupm"
+    shim = OUT / "gqypm"
     shim.symlink_to(BIN)
     code, out = run("list", binary=shim)
     code2, out2 = run("pm", "list")
-    check("miyupm 与 miyu pm 输出一致", code == 0 and code2 == 0 and out == out2 and "sample-ext" in out and "sample-persona" in out, out[:200])
+    check("gqypm 与 gqy pm 输出一致", code == 0 and code2 == 0 and out == out2 and "sample-ext" in out and "sample-persona" in out, out[:200])
 
     # 5. 冲突
     shutil.copytree(work / "sample-ext", work / "clash")
-    (work / "clash/miyu-package.toml").write_text('[package]\nname = "clash"\n')
+    (work / "clash/gqy-package.toml").write_text('[package]\nname = "clash"\n')
     code, out = run("pm", "install", str(work / "clash"), "-y")
     check("同名脚本被别的包占着 → 拒装", code != 0 and "sample-ext" in out, out[-160:])
 
@@ -104,7 +104,7 @@ def main():
     code, out = run("pm", "list")
     check("全卸后 list 为空", code == 0 and ("还没装" in out or "Nothing installed" in out), out)
     code, out = run("pm", "tap", "list")
-    check("tap list 含官方 tap", code == 0 and "SHORiN-KiWATA/miyu-packages" in out, out)
+    check("tap list 含官方 tap", code == 0 and "SHORiN-KiWATA/gqy-packages" in out, out)
     code, out = run("pm", "remove", "nope")
     check("卸不存在的包报错", code != 0)
 

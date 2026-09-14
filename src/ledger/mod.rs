@@ -24,7 +24,7 @@ pub(crate) mod types;
 #[cfg(test)]
 mod tests;
 
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{Context, Result};
 use chrono::{Local, Utc};
 use rusqlite::Connection;
@@ -54,20 +54,20 @@ impl std::fmt::Debug for LedgerDb {
 static CHECKED: OnceLock<Mutex<HashSet<PathBuf>>> = OnceLock::new();
 
 impl LedgerDb {
-    pub fn open(paths: &MiyuPaths) -> Result<Self> {
+    pub fn open(paths: &GqyPaths) -> Result<Self> {
         Self::open_at(&Self::db_path(paths))
     }
 
     /// 按配置分家:成员的账本在自己家目录里,管理员/终端用根布局那份。
-    pub fn open_for(config: &crate::config::AppConfig, paths: &MiyuPaths) -> Result<Self> {
+    pub fn open_for(config: &crate::config::AppConfig, paths: &GqyPaths) -> Result<Self> {
         Self::open_at(&Self::db_path_for(config, paths))
     }
 
-    pub fn db_path(paths: &MiyuPaths) -> PathBuf {
+    pub fn db_path(paths: &GqyPaths) -> PathBuf {
         paths.ledger_dir().join("ledger.db")
     }
 
-    pub fn db_path_for(config: &crate::config::AppConfig, paths: &MiyuPaths) -> PathBuf {
+    pub fn db_path_for(config: &crate::config::AppConfig, paths: &GqyPaths) -> PathBuf {
         match config.member_home_dir() {
             Some(home) => home.join("ledger").join("ledger.db"),
             None => Self::db_path(paths),

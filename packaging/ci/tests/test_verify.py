@@ -48,10 +48,10 @@ class CleanupTests(unittest.TestCase):
 class InstallationRecipeTests(unittest.TestCase):
     def test_rpm_does_not_own_filesystem_roots(self):
         entries=[{'path':name,'type':'directory'} for name in
-            ('bin','lib','share','share/licenses','lib/miyu','share/miyu')]
-        entries.append({'path':'bin/miyu','type':'file'})
+            ('bin','lib','share','share/licenses','lib/gqy','share/gqy')]
+        entries.append({'path':'bin/gqy','type':'file'})
         self.assertEqual([entry['path'] for entry in package_inventory({'format':'rpm'},entries)],
-                         ['lib/miyu','share/miyu','bin/miyu'])
+                         ['lib/gqy','share/gqy','bin/gqy'])
         self.assertEqual(package_inventory({'format':'deb'},entries),entries)
 
     def test_ubuntu_uses_image_sources_without_guessing_archive_migration(self):

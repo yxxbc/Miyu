@@ -43,7 +43,7 @@ pub(in crate::web) fn into_pasted_images(
 #[allow(clippy::too_many_arguments)]
 pub(in crate::web) async fn run_turn_task(
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     store: StateStore,
     base_store: StateStore,
     manager: Arc<Mutex<ManagerState>>,
@@ -96,7 +96,7 @@ pub(in crate::web) async fn run_turn_task(
 
 async fn run_turn_task_inner(
     mut config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     store: StateStore,
     base_store: StateStore,
     manager: Arc<Mutex<ManagerState>>,
@@ -220,7 +220,7 @@ async fn run_turn_task_inner(
             .map(|record| record.persona)
             .unwrap_or_default();
         if let Some(account) = base_store.account_by_id(&owner).ok().flatten() {
-            // 家目录先进配置:知识库、账本按人分家,用共享 Miyu 也一样。
+            // 家目录先进配置:知识库、账本按人分家,用共享 顾清影 也一样。
             config.accounts.home_dir =
                 Some(paths.user_home_dir(&account.username).display().to_string());
             if let Some(persona) =
@@ -369,11 +369,11 @@ async fn run_turn_task_inner(
             // it rides the turn tail; only the static policy stays in the
             // system prompt.
             turn_system_context.push(format!(
-                "<artifact-workspace>\n{manifest}\nUse read_artifact and apply_artifact_patch with bare artifact file names to work on existing artifacts; do not glob the managed directory or guess ~/.miyu paths.\n</artifact-workspace>"
+                "<artifact-workspace>\n{manifest}\nUse read_artifact and apply_artifact_patch with bare artifact file names to work on existing artifacts; do not glob the managed directory or guess ~/.gqy paths.\n</artifact-workspace>"
             ));
             runtime_system_context.push(
                 "<artifact-policy>\n\
-                You are working in the Miyu WebUI and have artifact presentation tools.\n\
+                You are working in the GQY WebUI and have artifact presentation tools.\n\
                 - When the user explicitly asks for a report, document, web page, table, data file, standalone code file, or another downloadable deliverable, you must create or present an artifact.\n\
                 - For text deliverables you write yourself, prefer create_artifact; filename must carry the correct extension.\n\
                 - For files already produced by commands or other tools, call present_artifact.\n\
@@ -760,7 +760,7 @@ async fn run_turn_task_inner(
 /// session-scoped operations hit the turn's own session.
 pub(in crate::web) fn finish_turn_task(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     store: &StateStore,
     title_seed: &str,
     events: &EventHub,

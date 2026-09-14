@@ -21,7 +21,7 @@ python3 testkit/webui-links/run.py
 ```
 
 它会：起一个桩模型（不花额度）→ 起一个隔离 daemon（端口 18411）→ 发一轮对话 →
-用 Chromium 逐项断言 + 截图到 `~/.cache/miyu-webui-links/`。
+用 Chromium 逐项断言 + 截图到 `~/.cache/gqy-webui-links/`。
 
 **期望输出结尾是「全过」。** 截图：
 
@@ -61,34 +61,34 @@ cargo test --lib -- memes::tests
 
 | 命令 | 作用 |
 |---|---|
-| `/reset-memory`、`miyu reset-memory` | 只清**本次会话**记下的记忆，并告诉你清了几条 |
-| `/reset-all-memory`、`miyu reset-all-memory` | 清当前人格的全部长期记忆 |
-| `miyu memory reset --session <ID>` | 指定会话 |
+| `/reset-memory`、`gqy reset-memory` | 只清**本次会话**记下的记忆，并告诉你清了几条 |
+| `/reset-all-memory`、`gqy reset-all-memory` | 清当前人格的全部长期记忆 |
+| `gqy memory reset --session <ID>` | 指定会话 |
 
 QQ、终端、REPL、WebUI 四个入口都有。
 
 **怎么验**（沙箱）：
 ```sh
-H=/tmp/miyu-rm; rm -rf $H; mkdir -p $H
-MIYU_HOME=$H target/debug/miyu memory remember "这条没有会话标记"
-MIYU_HOME=$H target/debug/miyu reset-memory      # 应说「本次会话还没有记下什么」
-MIYU_HOME=$H target/debug/miyu memory stats      # 那条还在
-MIYU_HOME=$H target/debug/miyu reset-all-memory  # 这条才清得掉
+H=/tmp/gqy-rm; rm -rf $H; mkdir -p $H
+GQY_HOME=$H target/debug/gqy memory remember "这条没有会话标记"
+GQY_HOME=$H target/debug/gqy reset-memory      # 应说「本次会话还没有记下什么」
+GQY_HOME=$H target/debug/gqy memory stats      # 那条还在
+GQY_HOME=$H target/debug/gqy reset-all-memory  # 这条才清得掉
 ```
 **注意**：这次改动之前存下的旧记忆没有会话标记，`reset-memory` 碰不到它们，只能用
 `reset-all-memory`。
 
 ### 第三项 · /wipe 不再删技能
 **核实结果**：scripts 从来就不删（全链路追过）；skill **确实**会删——`reset_all(true)`
-会清掉带 `generated_by: miyu` 标记的自动技能目录。现在改成不删，确认文案同步改了。
+会清掉带 `generated_by: gqy` 标记的自动技能目录。现在改成不删，确认文案同步改了。
 
 **怎么验**：
 
 ```sh
 cargo test --lib -- reset_command_uses_configured_admins
 ```
-或沙箱里造一个 `SKILL.md`（frontmatter 写 `generated_by: miyu`）放进
-`<data>/skills/personas/<人格>/x/`，跑 `miyu wipe --yes`，文件应还在。
+或沙箱里造一个 `SKILL.md`（frontmatter 写 `generated_by: gqy`）放进
+`<data>/skills/personas/<人格>/x/`，跑 `gqy wipe --yes`，文件应还在。
 
 ### 第四项 · 裸链接可点 ✅ 已自动走查
 额外说明：实测抓到一个 bug 并已修——`https://wiki.archlinux.org、AUR` 里的顿号会被
@@ -169,8 +169,8 @@ cargo test --lib -- usage_tests
 
 **改了什么**：`reject_non_kb_upload` 原先拿 `skill`/`memory`/`config`/`记忆`/`配置`
 去扫**整篇正文**——一篇讲内存管理的文档、任何出现过 config 的教程都进不来。现在只认两
-样不会误伤的证据：落点路径是不是 Miyu 自己的资产目录（`SKILL.md`/`skills/`/`personas/`
-/`config.toml`/`memory.db`…），以及正文是不是一份带 `generated_by: miyu` 标记的技能文件。
+样不会误伤的证据：落点路径是不是 顾清影 自己的资产目录（`SKILL.md`/`skills/`/`personas/`
+/`config.toml`/`memory.db`…），以及正文是不是一份带 `generated_by: gqy` 标记的技能文件。
 
 顺带修了一个 macOS 隐患：`safe_file_path` 在库目录还不存在时先取真实路径、失败后退回
 未解析路径，再和已解析的父目录比——路径里有一层符号链接就对不上（macOS 的
@@ -201,7 +201,7 @@ cargo test --lib -- knowledge_base
 ```sh
 cargo test --lib -- sponsor        # 22 项
 ```
-面板截图在 `~/.cache/miyu-sponsor-shots/`（13 张，含桌面/手机/空库/单条/各种抽屉）。
+面板截图在 `~/.cache/gqy-sponsor-shots/`（13 张，含桌面/手机/空库/单条/各种抽屉）。
 **真机**：在 QQ 里以管理员身份说「记一笔赞助，10001 给了 30 块，备注买咖啡」，然后
 「赞助榜」；再用非管理员账号试记一笔，应该收到一句说明而不是报错。
 
@@ -242,7 +242,7 @@ goal，只吃到 +50。
 
 1. **缓存契约的两轮手测**（AGENTS §1.6）。改了工具描述＝一次计划内冷启动；但「第二轮
    `cache_read` 不异常下降」这条得用真供应商测，桩模型不报缓存。建议换上二进制后随便
-   聊两轮，看 `~/.miyu/cache/logs/cache-usage.*.jsonl` 第二条的 `cache_read`。
+   聊两轮，看 `~/.gqy/cache/logs/cache-usage.*.jsonl` 第二条的 `cache_read`。
 2. **链接卡片的开关**目前跟随 `plugins.web.enabled`，没有独立配置项。要独立开关我再加。
 3. **`fx_source: "manual"`**：面板手填 `cny_minor` 时记这个值，不在工具侧文档的取值集里。
    要不要统一成别的值由你定。

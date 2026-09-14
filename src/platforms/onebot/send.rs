@@ -260,7 +260,7 @@ impl OneBotAdapter {
         segments: Vec<Value>,
     ) -> Result<Value> {
         let timeout = send_timeout_for(&segments);
-        // 带引用的出站留痕(08-26)。历史库能证明 Miyu 决定了引用,但发到对端的
+        // 带引用的出站留痕(08-26)。历史库能证明 顾清影 决定了引用,但发到对端的
         // 到底长什么样、对端认不认,原先整条链路没有任何 payload 级记录,查
         // "引用没渲染"时无从下手。只在含 reply 段时记一行,不记正文。
         let quoted = segments
@@ -297,7 +297,7 @@ impl OneBotAdapter {
             .await;
         if let Some(quoted) = quoted {
             tracing::info!(
-                target: "miyu::qq",
+                target: "gqy::qq",
                 conversation_id = self.target.conversation_id(),
                 // id 的 JSON 类型是重点嫌疑:group_id 发的是数字,引用段的 id
                 // 发的是字符串,部分实现对此挑剔。

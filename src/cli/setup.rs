@@ -13,15 +13,15 @@ pub(in crate::cli) enum InitKind {
     Quiet,
 }
 
-pub(in crate::cli) fn run_init(paths: &MiyuPaths, kind: InitKind) -> Result<()> {
+pub(in crate::cli) fn run_init(paths: &GqyPaths, kind: InitKind) -> Result<()> {
     let quiet = matches!(kind, InitKind::Quiet);
     let interactive = !quiet && io::stdin().is_terminal() && io::stdout().is_terminal();
     if interactive {
         println!(
             "{}\n",
             match kind {
-                InitKind::FirstRun | InitKind::Quiet => t("Miyu first start", "Miyu 首次启动"),
-                InitKind::Explicit => t("Miyu initialization", "Miyu 初始化"),
+                InitKind::FirstRun | InitKind::Quiet => t("GQY first start", "顾清影 首次启动"),
+                InitKind::Explicit => t("GQY initialization", "顾清影 初始化"),
             }
         );
     }
@@ -71,7 +71,7 @@ pub(in crate::cli) fn run_init(paths: &MiyuPaths, kind: InitKind) -> Result<()> 
     } else if !quiet {
         println!(
             "{} {}",
-            t("initialized Miyu at", "Miyu 已初始化于"),
+            t("initialized GQY at", "顾清影 已初始化于"),
             paths.config_dir.display()
         );
     }
@@ -100,7 +100,7 @@ pub(in crate::cli) const DEFAULT_PERSONA_LABEL_ZH: &str = "顾清影（内置默
 pub(in crate::cli) const DEFAULT_PERSONA_LABEL_EN: &str = "GQY (built-in default)";
 
 pub(in crate::cli) fn list_persona_files(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
 ) -> Result<Vec<String>> {
     let dir = config.prompts_dir_path(paths);
@@ -122,14 +122,14 @@ pub(in crate::cli) fn list_persona_files(
 
 /// Interactive persona picker (single-select). Returns true when the active
 /// persona changed and the config was saved.
-pub(in crate::cli) fn run_persona_picker(paths: &MiyuPaths, argument: &str) -> Result<bool> {
+pub(in crate::cli) fn run_persona_picker(paths: &GqyPaths, argument: &str) -> Result<bool> {
     let mut config = AppConfig::load(paths)?;
     let personas = list_persona_files(paths, &config)?;
     let current = config.prompt.active_persona.trim().to_string();
     let argument = argument.trim();
     let chosen: Option<String> = if !argument.is_empty() {
         if argument.eq_ignore_ascii_case("default")
-            || argument.eq_ignore_ascii_case("miyu")
+            || argument.eq_ignore_ascii_case("gqy")
             || argument == "内置"
         {
             Some(String::new())
@@ -208,7 +208,7 @@ pub(in crate::cli) fn run_persona_picker(paths: &MiyuPaths, argument: &str) -> R
     Ok(true)
 }
 
-pub(in crate::cli) async fn run_config(paths: &MiyuPaths, args: ConfigArgs) -> Result<bool> {
+pub(in crate::cli) async fn run_config(paths: &GqyPaths, args: ConfigArgs) -> Result<bool> {
     match args.command {
         Some(ConfigCommand::Validate) => {
             AppConfig::load(paths)?;

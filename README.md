@@ -1,23 +1,23 @@
 <p align="center">
-  <img src="pics/miyu-logo.png" alt="Miyu" width="180">
+  <img src="pics/gqy-logo.png" alt="GQY" width="180">
 </p>
 
-# Miyu
+# GQY
 
 一个活在终端里的二次元少女。开箱即用的开源 AI 助手，支持接入通讯平台。
-- 默认人格是GQY，miyu的命令是基于[shorin/miyu-agent](https://github.com/SHORiN-KiWATA/miyu-agent)二改而来。
+- 默认人格是GQY，gqy的命令是基于[shorin/miyu-agent](https://github.com/SHORiN-KiWATA/miyu-agent)二改而来。
 
 >暂时
 
-## 谁是 Miyu？
+## 谁是 顾清影？
 
-Miyu 是从我曾经很喜欢的动画中的角色身上汲取灵感制作的虚构角色。
+顾清影 是从我曾经很喜欢的动画中的角色身上汲取灵感制作的虚构角色。
 
 ## 有什么功能？
 
-`miyu` 由大模型驱动，默认接入了 [opencode](https://github.com/anomalyco/opencode) 的公共模型服务，你也可以配置自己的大模型服务。
+`gqy` 由大模型驱动，默认接入了 [opencode](https://github.com/anomalyco/opencode) 的公共模型服务，你也可以配置自己的大模型服务。
 
-`miyu` 拥有两个模式
+`gqy` 拥有两个模式
 
 - Normal 普通模式
   
@@ -27,7 +27,7 @@ Miyu 是从我曾经很喜欢的动画中的角色身上汲取灵感制作的虚
 
   和普通模式隔离，移除所有和开发无关的功能和工具，通过极简设计最大限度发挥模型自身的能力。
 
-`miyu` 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
+`gqy` 可以与 `fish`、`zsh`、`bash` 集成，终端打字直接无缝对话！
 
 ![](./pics/shell-init.png)
 
@@ -38,7 +38,7 @@ Miyu 是从我曾经很喜欢的动画中的角色身上汲取灵感制作的虚
 自带了 TUI 方便修改配置。
 
 ```
-miyu config
+gqy config
 ```
 
 ![](./pics/tui.png)
@@ -57,90 +57,90 @@ miyu config
 - Arch Linux
 
   ```
-  yay -S miyu
+  yay -S gqy
   ```
 
-  语音唤醒和本地语音识别是可选组件，单独打成 `miyu-voice` 包（依赖 `miyu`，大约 30MB，不装不影响其他功能）：
+  语音唤醒和本地语音识别是可选组件，单独打成 `gqy-voice` 包（依赖 `gqy`，大约 30MB，不装不影响其他功能）：
 
   ```
-  yay -S miyu-voice
+  yay -S gqy-voice
   ```
 
-  装好后运行 `miyu config`，在「全局设置」里开启「语音功能」，daemon 会自动拉起 `miyu-voice` 进程。
+  装好后运行 `gqy config`，在「全局设置」里开启「语音功能」，daemon 会自动拉起 `gqy-voice` 进程。
 
 - 从源码构建
 
   ```
   git clone https://github.com/SHORiN-KiWATA/miyu-agent.git
-  cd Miyu
-  cargo build --release                    # 只出 miyu
-  cargo build --release --features voice   # 再出 miyu-voice(可选,链接 sherpa-onnx)
+  cd miyu-agent
+  cargo build --release                    # 只出 gqy
+  cargo build --release --features voice   # 再出 gqy-voice(可选,链接 sherpa-onnx)
   ```
 
-  源码构建时把 `target/release/miyu`（以及可选的 `miyu-voice`）放到同一个 `PATH` 目录里即可，daemon 在主程序同目录寻找 `miyu-voice`。
+  源码构建时把 `target/release/gqy`（以及可选的 `gqy-voice`）放到同一个 `PATH` 目录里即可，daemon 在主程序同目录寻找 `gqy-voice`。
 
-安装完成后可以运行 `miyu init` 初始化配置和状态文件；也可以直接运行 `miyu daemon start`，首次启动会自动初始化。查看完整帮助信息可以运行 `miyu -h`。
+安装完成后可以运行 `gqy init` 初始化配置和状态文件；也可以直接运行 `gqy daemon start`，首次启动会自动初始化。查看完整帮助信息可以运行 `gqy -h`。
 
 ## 三种触发
 
-> 与 `miyu` 运行最适配的是 `kitty`终端
+> 与 `gqy` 运行最适配的是 `kitty`终端
 
 - REPL TUI
 
-  裸 `miyu` 进入普通模式的 REPL； `miyu dev` 进入开发预设的 REPL。
+  裸 `gqy` 进入普通模式的 REPL； `gqy dev` 进入开发预设的 REPL。
 
 - webui 局域网网页
 
   ```
-  miyu web
+  gqy web
   ```
-  第一次进入会提示登录内置账号后创建管理员账户，内置账户的用户名和密码都是 miyu，创建管理员账户后内置账户自动删除。
+  第一次进入会提示登录内置账号后创建管理员账户，内置账户的用户名和密码都是 gqy，创建管理员账户后内置账户自动删除。
 
 - shell hook 终端集成
 
   最好的集成效果要求使用 `fish`，`zsh` 和`bash` 只能做到单行对话，`fish` 可以完整无缝集成。
   
   ```
-  miyu fish-init
+  gqy fish-init
   ```
   初始化后可以直接在终端打字对话。
 
-- 语音唤醒(可选,需装 `miyu-voice`)
+- 语音唤醒(可选,需装 `gqy-voice`)
 
-  设置里开启「语音功能」后 daemon 会拉起独立的 `miyu-voice` 进程常开麦克风:
-  喊唤醒词(默认「未有未有 / 密友密友 / miyumiyu / みゆみゆ」)→ 提示音 + 桌面通知「在听」→ 说指令 → 执行完
+  设置里开启「语音功能」后 daemon 会拉起独立的 `gqy-voice` 进程常开麦克风:
+  喊唤醒词(默认「未有未有 / 密友密友 / gqygqy / みゆみゆ」)→ 提示音 + 桌面通知「在听」→ 说指令 → 执行完
   提示音 + 通知回复摘要。识别全在本机(SenseVoice,不联网);不开语音时零占用。
-  REPL 里 `/stt`、终端 `miyu stt`、WebUI 麦克风按钮可用同一套识别做听写。
-  可选回复播报(MiniMax / 小米 MiMo 语音合成);`miyu listen` 绑快捷键一键收听(再按一次关闭)。
+  REPL 里 `/stt`、终端 `gqy stt`、WebUI 麦克风按钮可用同一套识别做听写。
+  可选回复播报(MiniMax / 小米 MiMo 语音合成);`gqy listen` 绑快捷键一键收听(再按一次关闭)。
   详见 `docs/voice.md`。
 
 ## 重要配置调整
 
-运行 `miyu config` 命令打开配置 TUI。
+运行 `gqy config` 命令打开配置 TUI。
 
 - 供应商和模型
 
-  `miyu` 默认使用 opencode 的公共 API，推荐配置自己的 API。
+  `gqy` 默认使用 opencode 的公共 API，推荐配置自己的 API。
 
 - 自定义提示词
 
-  `miyu`的默认提示词是无法修改的。你可以在`自定义提示词`中新建属于自己的 AI 人格，还可以配置 `用户身份` 让对话更加沉浸。 
+  `gqy`的默认提示词是无法修改的。你可以在`自定义提示词`中新建属于自己的 AI 人格，还可以配置 `用户身份` 让对话更加沉浸。 
 
 ## 搬到另一台机器
 
-`miyu export` 把当前安装打成一个 `.tar.gz`（权限 0600），`miyu import` 在新机器上还原：
+`gqy export` 把当前安装打成一个 `.tar.gz`（权限 0600），`gqy import` 在新机器上还原：
 
 ```bash
-miyu export                      # 配置、会话历史、记忆、知识库原文、用户资源
-miyu export --index --platforms  # 额外带上向量索引与平台聊天历史
-miyu export --no-secrets         # 清空 API key 与令牌，导入后自行补填
-miyu export --dry-run            # 只看清单与体积，不写文件
+gqy export                      # 配置、会话历史、记忆、知识库原文、用户资源
+gqy export --index --platforms  # 额外带上向量索引与平台聊天历史
+gqy export --no-secrets         # 清空 API key 与令牌，导入后自行补填
+gqy export --dry-run            # 只看清单与体积，不写文件
 
-miyu daemon stop                 # daemon 占着数据库，导入前必须停
-miyu import miyu-export-*.tar.gz
+gqy daemon stop                 # daemon 占着数据库，导入前必须停
+gqy import gqy-export-*.tar.gz
 ```
 
-默认**不含**知识库向量索引（很大，且 `miyu kb embed` 可重建）、缓存、日志和其他一次性的本机状态。密钥默认带上并在导出时警告——归档是明文的，别随手发出去。
+默认**不含**知识库向量索引（很大，且 `gqy kb embed` 可重建）、缓存、日志和其他一次性的本机状态。密钥默认带上并在导出时警告——归档是明文的，别随手发出去。
 
 ## 内置插件
 
@@ -149,17 +149,17 @@ miyu import miyu-export-*.tar.gz
 
 - 表情包
   
-  表情包毫无疑问是聊天时最重要的部分，在对话时，Miyu 会根据情景自主发送符合情境的表情包。除了自主发送，设置里还可以设置概率、置信度和冷却时间。
+  表情包毫无疑问是聊天时最重要的部分，在对话时，顾清影 会根据情景自主发送符合情境的表情包。除了自主发送，设置里还可以设置概率、置信度和冷却时间。
 
   ![](./pics/nvidiafuckyou.png)
 
-  Miyu 自带了一些表情，存放在`/usr/share/miyu`，对应的用户空间目录位于`~/.miyu/data`。表情库是跟随人格的，如果你在设置里新建了自己的人格，那么就无法使用 Miyu 的默认表情。你可以准备一些图片，把路径给 Ai，让其保存到表情库。届时会自动调用识图模型对图片进行分析并保存。Miyu 默认使用 opencode 公共模型服务中的多模态模型进行识图，所以即使不配置自己的多模态模型也可以看图片。
+  顾清影 自带了一些表情，存放在`/usr/share/gqy`，对应的用户空间目录位于`~/.gqy/data`。表情库是跟随人格的，如果你在设置里新建了自己的人格，那么就无法使用 顾清影 的默认表情。你可以准备一些图片，把路径给 Ai，让其保存到表情库。届时会自动调用识图模型对图片进行分析并保存。顾清影 默认使用 opencode 公共模型服务中的多模态模型进行识图，所以即使不配置自己的多模态模型也可以看图片。
 
 - 玄学算命
 
   >心理学。
   
-  算命就像看天气预报一般稀松平常。Miyu 自带了周易六十四卦、吉凶占、塔罗牌抽取等玄学功能。
+  算命就像看天气预报一般稀松平常。顾清影 自带了周易六十四卦、吉凶占、塔罗牌抽取等玄学功能。
 
   ![](./pics/玄学.png)
 
@@ -177,15 +177,15 @@ miyu import miyu-export-*.tar.gz
 
   >要我说，这比GNOME时钟的闹钟好用多了
   
-  Miyu 自带了闹钟，日常泡泡面、番茄钟学习、计时任务什么的都很实用。内置了闹钟音频，你还可以通过路径传入你想要在到点后播放的“闹钟”。
+  顾清影 自带了闹钟，日常泡泡面、番茄钟学习、计时任务什么的都很实用。内置了闹钟音频，你还可以通过路径传入你想要在到点后播放的“闹钟”。
 
   ![](./pics/set_alarm.png)
 
 - 知识库
 
-  Miyu 自带了 [ShorinWiki](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide) 中的内容和一些日用 Linux 会遇到的问题作为默认知识库。
+  顾清影 自带了 [ShorinWiki](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide) 中的内容和一些日用 Linux 会遇到的问题作为默认知识库。
 
-  当然，你也可以通过 `miyu kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
+  当然，你也可以通过 `gqy kb` 命令，或者通过跟 AI 的自然语言交互管理属于你自己的知识库。
 
   ![](./pics/kb.png)
 
@@ -197,19 +197,19 @@ miyu import miyu-export-*.tar.gz
 
   >这个游戏 Linux 能玩吗？
 
-  这是桌面端使用 Linux 的日经问题，Miyu 会去 [ProtonDB](https://www.protondb.com/)、[Are We Anti-Cheat Yet?](https://areweanticheatyet.com/)、[Can I Play On Linux](https://caniplayonlinux.com/)等 Linux游戏兼容性资讯网站获取主要信息，辅以社区玩家的声音，综合判断一款游戏的兼容性并提出建议和注意事项。
+  这是桌面端使用 Linux 的日经问题，顾清影 会去 [ProtonDB](https://www.protondb.com/)、[Are We Anti-Cheat Yet?](https://areweanticheatyet.com/)、[Can I Play On Linux](https://caniplayonlinux.com/)等 Linux游戏兼容性资讯网站获取主要信息，辅以社区玩家的声音，综合判断一款游戏的兼容性并提出建议和注意事项。
 
   ![](./pics/gaming.png)
 
 - 网络搜索
 
-  即使不配置网络搜索 API，Miyu 也仍然拥有基础的网络搜索和网页读取能力：未配置任何搜索服务时会优先使用 Exa 的免 key 公共额度（每日限量，报错或超额后自动冷却并回退到内置爬虫搜索）。可以在插件配置中设置 Tavily、Firecrawl 、AnySearch、Exa、SearXNG 等网络搜索 API 以获得更佳的搜索效果。
+  即使不配置网络搜索 API，顾清影 也仍然拥有基础的网络搜索和网页读取能力：未配置任何搜索服务时会优先使用 Exa 的免 key 公共额度（每日限量，报错或超额后自动冷却并回退到内置爬虫搜索）。可以在插件配置中设置 Tavily、Firecrawl 、AnySearch、Exa、SearXNG 等网络搜索 API 以获得更佳的搜索效果。
 
   ![](./pics/web-search-config.png)
 
 - 搜图
 
-  Miyu 还能帮你找图片喔！搜图会根据网络环境并行使用多个来源，并通过视觉模型筛选相关且安全的结果。图片会默认保存至`~/.miyu/data/pictures/web-images`。
+  顾清影 还能帮你找图片喔！搜图会根据网络环境并行使用多个来源，并通过视觉模型筛选相关且安全的结果。图片会默认保存至`~/.gqy/data/pictures/web-images`。
 
   >NSFW 禁止！
 
@@ -217,7 +217,7 @@ miyu import miyu-export-*.tar.gz
 
 - 生图
 
-  支持 OpenAI 的画图服务喔。图片会默认保存至`~/.miyu/data/pictures/generated-images`。
+  支持 OpenAI 的画图服务喔。图片会默认保存至`~/.gqy/data/pictures/generated-images`。
 
   >这个功能默认用不了，要自己在插件设置里开启并配置 API
 
@@ -245,7 +245,7 @@ miyu import miyu-export-*.tar.gz
 
 - Arch Linux相关
 
-  Arch Linux 是桌面 Linux 的热门之选，Miyu 有一系列插件可以帮助提高 Arch Linux 的日用体验。
+  Arch Linux 是桌面 Linux 的热门之选，顾清影 有一系列插件可以帮助提高 Arch Linux 的日用体验。
 
   - AUR 状态查询
 
@@ -267,7 +267,7 @@ miyu import miyu-export-*.tar.gz
 
   - PKGBUILD 审查（Arch Linux 插件的一部分）
 
-    AUR 投毒的事件搞得人心惶惶，但现在，Miyu 可以帮忙审查 PKGBUILD 啦！审查通过且你确认后才会安装。
+    AUR 投毒的事件搞得人心惶惶，但现在，顾清影 可以帮忙审查 PKGBUILD 啦！审查通过且你确认后才会安装。
 
     ![](./pics/pkgbuild审核.png)
 
@@ -275,17 +275,17 @@ miyu import miyu-export-*.tar.gz
 
   >自不必说。
 
-  Miyu 支持读写文件、搜索内容、查找文件、删除文件等。
+  顾清影 支持读写文件、搜索内容、查找文件、删除文件等。
 
 - 计算器和哈希编解码
 
-  为了计算结果的准确性，Miyu 自带了科学计算器和哈希编解码的能力。
+  为了计算结果的准确性，顾清影 自带了科学计算器和哈希编解码的能力。
 
   ![](./pics/hash.png)
 
 - 记忆系统
 
-  Miyu 的记忆分为短期日记、长期日记和知识点。每个成功完成的对话轮次会立即写入短期日记；同一人格累计 14 条未整理日记后，由独立后台线程并行提炼长期知识点和有回溯价值的长期经历，不会阻塞正常回复。成功整理的短期日记默认保留 14 天，每次有效联想会刷新保留时间；召回达到 3 次时会立即进入长期化整理。尚未成功整理的原文超期后会退出自动联想但不会丢失，后台仍可继续整理；整理成功后再物理清理。已经长期化的日记不再刷新短期原文的清理时间。
+  顾清影 的记忆分为短期日记、长期日记和知识点。每个成功完成的对话轮次会立即写入短期日记；同一人格累计 14 条未整理日记后，由独立后台线程并行提炼长期知识点和有回溯价值的长期经历，不会阻塞正常回复。成功整理的短期日记默认保留 14 天，每次有效联想会刷新保留时间；召回达到 3 次时会立即进入长期化整理。尚未成功整理的原文超期后会退出自动联想但不会丢失，后台仍可继续整理；整理成功后再物理清理。已经长期化的日记不再刷新短期原文的清理时间。
 
   联想会同时检索三类记忆，并使用 `jieba-rs` 中文分词进行低成本匹配。Embedding 后续可以作为可选辅助接入，但不是记忆系统运行的前提。长期知识点和长期日记会随时间衰减为“已遗忘”，不物理删除；显式搜索仍可找回。
 
@@ -322,4 +322,4 @@ miyu import miyu-export-*.tar.gz
 
 ## 许可
 
-Miyu 使用 MIT License 发布，见 `LICENSE`。
+顾清影 使用 MIT License 发布，见 `LICENSE`。

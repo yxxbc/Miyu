@@ -1,7 +1,7 @@
-//! `miyu mcp-serve`:把本会话的工具注册表以 MCP stdio server 形态挂给外部
+//! `gqy mcp-serve`:把本会话的工具注册表以 MCP stdio server 形态挂给外部
 //! agent(claude-code 供应商中转的工具桥,由 claude 作为子进程拉起)。
 //!
-//! 与 `miyu tool-call` 同源:daemon 存活时经 IPC 以 MIYU_SESSION 的会话身份
+//! 与 `gqy tool-call` 同源:daemon 存活时经 IPC 以 GQY_SESSION 的会话身份
 //! 解析目录并执行(guard/超时管线齐备);daemon 不在(直连调试形态)则本地
 //! 建 registry 兜底。传输是 MCP stdio(JSON-RPC 2.0 行分隔),只实现 tools
 //! 能力;工具失败按 MCP 语义回 `isError` 结果而不是 JSON-RPC error,让上游
@@ -9,29 +9,29 @@
 
 use crate::cli::*;
 
-pub(in crate::cli) async fn run_mcp_serve(paths: &MiyuPaths) -> Result<()> {
-    let session = std::env::var("MIYU_SESSION").ok().filter(|s| !s.is_empty());
+pub(in crate::cli) async fn run_mcp_serve(paths: &GqyPaths) -> Result<()> {
+    let session = std::env::var("GQY_SESSION").ok().filter(|s| !s.is_empty());
     // antigravity 线的全局 MCP 注册对用户自己交互式开的 agy 同样生效——那时
     // 没有会话身份;守卫在场就只应答空工具表,不降级成无作用域直连。
-    let require_session = std::env::var("MIYU_MCP_REQUIRE_SESSION")
+    let require_session = std::env::var("GQY_MCP_REQUIRE_SESSION")
         .map(|value| value == "1")
         .unwrap_or(false);
     let guarded = require_session && session.is_none();
     // 上游模型方言:antigravity 中转点名 gemini,桥吐的 schema 按它整形。
-    let dialect = std::env::var("MIYU_MCP_SCHEMA_DIALECT").unwrap_or_default();
+    let dialect = std::env::var("GQY_MCP_SCHEMA_DIALECT").unwrap_or_default();
     // 与 claude 原生重复的工具由拉起方经 env 点名剔除(原生优先):目录里
     // 不出现、调用被拒,两边同源。
-    let excluded: std::collections::HashSet<String> = std::env::var("MIYU_MCP_EXCLUDE")
+    let excluded: std::collections::HashSet<String> = std::env::var("GQY_MCP_EXCLUDE")
         .unwrap_or_default()
         .split(',')
         .map(str::trim)
         .filter(|name| !name.is_empty())
         .map(str::to_string)
         .collect();
-    let origin = std::env::var("MIYU_TURN_ORIGIN")
+    let origin = std::env::var("GQY_TURN_ORIGIN")
         .ok()
         .filter(|s| !s.is_empty());
-    let depth: u32 = std::env::var("MIYU_BRIDGE_DEPTH")
+    let depth: u32 = std::env::var("GQY_BRIDGE_DEPTH")
         .ok()
         .and_then(|raw| raw.parse().ok())
         .unwrap_or(0);
@@ -68,7 +68,7 @@ pub(in crate::cli) async fn run_mcp_serve(paths: &MiyuPaths) -> Result<()> {
                 "result": {
                     "content": [{
                         "type": "text",
-                        "text": "no Miyu session is attached to this MCP server (started outside a Miyu relay turn)"
+                        "text": "no GQY session is attached to this MCP server (started outside a GQY relay turn)"
                     }],
                     "isError": true
                 }
@@ -113,7 +113,7 @@ fn write_line(value: &serde_json::Value) -> Result<()> {
 
 #[allow(clippy::too_many_arguments)]
 async fn handle_request(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session: &Option<String>,
     origin: &Option<String>,
     depth: u32,
@@ -132,7 +132,7 @@ async fn handle_request(
             Ok(serde_json::json!({
                 "protocolVersion": version,
                 "capabilities": { "tools": {} },
-                "serverInfo": { "name": "miyu", "version": env!("CARGO_PKG_VERSION") },
+                "serverInfo": { "name": "gqy", "version": env!("CARGO_PKG_VERSION") },
             }))
         }
         "ping" => Ok(serde_json::json!({})),
@@ -186,7 +186,7 @@ async fn handle_request(
 }
 
 async fn list_tools(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session: &Option<String>,
     dialect: &str,
 ) -> Result<serde_json::Value> {
@@ -232,9 +232,9 @@ async fn list_tools(
             .collect::<Vec<_>>();
         return Ok(serde_json::json!({ "tools": tools }));
     }
-    // 直连回退:与 tool-call 的回退同一构建方式(模式取 MIYU_TURN_MODE)。
+    // 直连回退:与 tool-call 的回退同一构建方式(模式取 GQY_TURN_MODE)。
     let config = AppConfig::load_or_default(paths)?;
-    let mode = if std::env::var("MIYU_TURN_MODE").unwrap_or_default() == "dev" {
+    let mode = if std::env::var("GQY_TURN_MODE").unwrap_or_default() == "dev" {
         AgentMode::Dev
     } else {
         AgentMode::Normal
@@ -257,7 +257,7 @@ async fn list_tools(
 }
 
 async fn call_tool(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session: &Option<String>,
     origin: &Option<String>,
     depth: u32,
@@ -286,7 +286,7 @@ async fn call_tool(
         bail!("tool bridge recursion limit reached (depth {depth})");
     }
     let config = AppConfig::load_or_default(paths)?;
-    let mode = if std::env::var("MIYU_TURN_MODE").unwrap_or_default() == "dev" {
+    let mode = if std::env::var("GQY_TURN_MODE").unwrap_or_default() == "dev" {
         AgentMode::Dev
     } else {
         AgentMode::Normal

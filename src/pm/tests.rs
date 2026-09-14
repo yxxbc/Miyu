@@ -3,8 +3,8 @@
 use super::*;
 use crate::config::AppConfig;
 
-fn test_paths(root: &Path) -> MiyuPaths {
-    MiyuPaths {
+fn test_paths(root: &Path) -> GqyPaths {
+    GqyPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -13,7 +13,7 @@ fn test_paths(root: &Path) -> MiyuPaths {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("home/shorin/pictures"),
-        fish_hook_file: root.join("fish/miyu.fish"),
+        fish_hook_file: root.join("fish/gqy.fish"),
         bash_hook_file: root.join("config/shell/bash-hook.sh"),
         zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
         scripts_dir: root.join("extensions/scripts"),
@@ -47,7 +47,7 @@ fn extension_package(root: &Path, name: &str, version: &str) -> PathBuf {
 #[test]
 fn manifest_parses_and_validates_names_and_requirements() {
     let manifest = PackageManifest::parse(
-        "[package]\nname = \"bangumi-tools\"\nversion = \"1.2.0\"\nrequires-miyu = \">=0.1.0\"\n",
+        "[package]\nname = \"bangumi-tools\"\nversion = \"1.2.0\"\nrequires-gqy = \">=0.1.0\"\n",
     )
     .unwrap();
     assert_eq!(manifest.package.name, "bangumi-tools");
@@ -56,10 +56,10 @@ fn manifest_parses_and_validates_names_and_requirements() {
 
     assert!(PackageManifest::parse("[package]\nname = \"Bad Name\"\n").is_err());
     assert!(
-        PackageManifest::parse("[package]\nname = \"ok\"\nrequires-miyu = \"banana\"\n").is_err()
+        PackageManifest::parse("[package]\nname = \"ok\"\nrequires-gqy = \"banana\"\n").is_err()
     );
     let future =
-        PackageManifest::parse("[package]\nname = \"ok\"\nrequires-miyu = \">=999.0.0\"\n")
+        PackageManifest::parse("[package]\nname = \"ok\"\nrequires-gqy = \">=999.0.0\"\n")
             .unwrap();
     assert!(future.check_requirement().is_err());
     assert!(PackageManifest::parse("[package]\nname = \"ok\"\nbogus = 1\n").is_err());
@@ -82,7 +82,7 @@ fn package_specs_resolve_local_github_and_slug_forms() {
             .unwrap(),
         PackageSource::GitHub {
             owner: "shorin".into(),
-            repo: "miyu-bangumi".into(),
+            repo: "gqy-bangumi".into(),
             reference: Some("v1".into())
         }
     );
@@ -92,7 +92,7 @@ fn package_specs_resolve_local_github_and_slug_forms() {
             .unwrap(),
         PackageSource::GitHub {
             owner: "shorin".into(),
-            repo: "miyu-bangumi".into(),
+            repo: "gqy-bangumi".into(),
             reference: Some("main".into())
         }
     );
@@ -107,7 +107,7 @@ fn package_specs_resolve_local_github_and_slug_forms() {
 #[test]
 fn extension_package_installs_removes_and_upgrades() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".miyu");
+    let root = temp.path().join(".gqy");
     let paths = test_paths(&root);
     fs::create_dir_all(&root).unwrap();
     let config = AppConfig::default();
@@ -155,7 +155,7 @@ fn extension_package_installs_removes_and_upgrades() {
 #[test]
 fn install_refuses_files_owned_by_others_unless_forced() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".miyu");
+    let root = temp.path().join(".gqy");
     let paths = test_paths(&root);
     fs::create_dir_all(&root).unwrap();
     let config = AppConfig::default();
@@ -197,7 +197,7 @@ fn install_refuses_files_owned_by_others_unless_forced() {
 #[test]
 fn persona_package_lands_prompt_manifest_assets_and_scoped_extensions() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".miyu");
+    let root = temp.path().join(".gqy");
     let paths = test_paths(&root);
     fs::create_dir_all(&root).unwrap();
     fs::write(root.join(".home-layout-v1"), "shorin\n").unwrap();
@@ -244,7 +244,7 @@ fn persona_package_lands_prompt_manifest_assets_and_scoped_extensions() {
 #[test]
 fn invalid_packages_are_rejected_before_any_write() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".miyu");
+    let root = temp.path().join(".gqy");
     let paths = test_paths(&root);
     fs::create_dir_all(&root).unwrap();
     let config = AppConfig::default();
@@ -279,7 +279,7 @@ fn tarballs_that_escape_the_package_are_rejected() {
         header.set_mode(0o644);
         header.set_cksum();
         builder
-            .append_data(&mut header, "repo-main/miyu-package.toml", &data[..])
+            .append_data(&mut header, "repo-main/gqy-package.toml", &data[..])
             .unwrap();
         // tar crate 自己不肯写 `..` 路径,直接填 header 的 name 字段绕过它——
         // 恶意归档就是这么来的。
@@ -302,7 +302,7 @@ fn tarballs_that_escape_the_package_are_rejected() {
 #[test]
 fn taps_always_include_the_official_one() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".miyu");
+    let root = temp.path().join(".gqy");
     let paths = test_paths(&root);
     fs::create_dir_all(&root).unwrap();
     assert_eq!(load_taps(&paths).unwrap(), vec![OFFICIAL_TAP.to_string()]);

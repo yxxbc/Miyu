@@ -13,7 +13,7 @@ pub(crate) struct DashboardLibrary {
 }
 
 /// 磁盘上的用户库 ∪ 内置库 ∪ 当前人格映射到的库。
-pub(crate) fn dashboard_libraries(config: &AppConfig, paths: &MiyuPaths) -> Result<Value> {
+pub(crate) fn dashboard_libraries(config: &AppConfig, paths: &GqyPaths) -> Result<Value> {
     let active = current_persona_library(config);
     let mut names: std::collections::BTreeMap<String, DashboardLibrary> =
         std::collections::BTreeMap::new();
@@ -96,7 +96,7 @@ fn item_json(
 
 /// 全量列表:用户项在前,内置项在后;被用户影子盖住的内置项不列(与模型看到的
 /// 一致,影子本身标 shadowed),禁用项照列并标 disabled。
-pub(crate) fn dashboard_list(paths: &MiyuPaths, library: &str) -> Result<Value> {
+pub(crate) fn dashboard_list(paths: &GqyPaths, library: &str) -> Result<Value> {
     let library = sanitize_library(library);
     let builtin_dir = builtin_library_dir(&library);
     let user_dir = user_library_dir(paths, &library);
@@ -180,7 +180,7 @@ pub(crate) fn dashboard_list(paths: &MiyuPaths, library: &str) -> Result<Value> 
 
 /// 缩略图 / 原图路由用:按 (库, id) 解析到磁盘路径,禁用项也能看。
 pub(crate) fn dashboard_image(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     id: &str,
 ) -> Result<Option<(PathBuf, String)>> {
@@ -204,7 +204,7 @@ pub(crate) struct DashboardUpload {
 /// 浏览器上传:字节落临时文件,走 `add_meme` 同一条路(校验、去重、分类、落盘)。
 pub(crate) async fn dashboard_add(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     upload: DashboardUpload,
     bytes: &[u8],
 ) -> Result<Value> {
@@ -242,7 +242,7 @@ pub(crate) struct DashboardPatch {
 
 pub(crate) async fn dashboard_update(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     id: &str,
     patch: DashboardPatch,
@@ -293,7 +293,7 @@ pub(crate) async fn dashboard_update(
 
 pub(crate) async fn dashboard_delete(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     id: &str,
     hard: bool,
@@ -310,7 +310,7 @@ pub(crate) async fn dashboard_delete(
 /// 让视觉模型重新看一遍,只返回建议,不落盘——由前端决定采不采纳。
 pub(crate) async fn dashboard_classify(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     id: &str,
 ) -> Result<Value> {
@@ -332,8 +332,8 @@ pub(crate) async fn dashboard_classify(
 mod tests {
     use super::*;
 
-    fn paths(temp: &tempfile::TempDir) -> MiyuPaths {
-        MiyuPaths {
+    fn paths(temp: &tempfile::TempDir) -> GqyPaths {
+        GqyPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),
@@ -342,7 +342,7 @@ mod tests {
             cache_dir: temp.path().join("cache"),
             state_dir: temp.path().join("state"),
             pictures_dir: temp.path().join("pictures"),
-            fish_hook_file: temp.path().join("fish/miyu.fish"),
+            fish_hook_file: temp.path().join("fish/gqy.fish"),
             bash_hook_file: temp.path().join("shell/bash-hook.sh"),
             zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
             scripts_dir: temp.path().join("config/scripts"),

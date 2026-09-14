@@ -11,7 +11,7 @@ use crate::cli::*;
 /// Which session a one-shot CLI turn lands in.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(in crate::cli) enum TurnSession {
-    /// The terminal session — what shell-hook and `miyu new`/`session` drive.
+    /// The terminal session — what shell-hook and `gqy new`/`session` drive.
     Current,
     /// An explicit `--session` target, resolved to a session id.
     Explicit(String),
@@ -20,16 +20,16 @@ pub(in crate::cli) enum TurnSession {
     Ephemeral,
 }
 
-/// Picks the session for `miyu ask` / a bare `miyu '<message>'`. Both default
+/// Picks the session for `gqy ask` / a bare `gqy '<message>'`. Both default
 /// to a throwaway session; `--session` and `--continue` opt back into a real
 /// one (clap already rejects passing both).
 pub(in crate::cli) async fn one_shot_session(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session_arg: Option<&str>,
     continue_session: bool,
 ) -> Result<TurnSession> {
     if let Some(arg) = session_arg {
-        // 与 `miyu session list` 同一份列表、同一套编号,找不到退出码 3。
+        // 与 `gqy session list` 同一份列表、同一套编号,找不到退出码 3。
         return Ok(TurnSession::Explicit(
             crate::cli::turn_request::resolve_managed_session(paths, arg)
                 .await?
@@ -51,7 +51,7 @@ pub(in crate::cli) fn ephemeral_session_name() -> String {
 
 /// `mode`(normal/dev)决定阅后即焚会话建在哪个人格名下;None = 普通。
 pub(in crate::cli) async fn create_ephemeral_session(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     mode: Option<&str>,
 ) -> Result<String> {
     let (_, data) = session_admin(
@@ -68,13 +68,13 @@ pub(in crate::cli) async fn create_ephemeral_session(
         .and_then(|session| session.get("session_id"))
         .and_then(serde_json::Value::as_str)
         .map(str::to_string)
-        .ok_or_else(|| anyhow::anyhow!("Miyu core returned an invalid response"))
+        .ok_or_else(|| anyhow::anyhow!("GQY core returned an invalid response"))
 }
 
 /// Tears a throwaway session down. Background jobs go first so nothing is left
 /// pointing at a session that is about to disappear. Best effort: a daemon
 /// that has gone away leaves a row the startup sweep collects.
-pub(in crate::cli) async fn discard_ephemeral_session(paths: &MiyuPaths, session_id: &str) {
+pub(in crate::cli) async fn discard_ephemeral_session(paths: &GqyPaths, session_id: &str) {
     // CLI 中转(claude-code/antigravity)的联动:直连形态没有 daemon,DeleteSession
     // 那条路上的 forget 不会跑到,这里自己收——续传映射与 CLI 侧转录都在本进程。
     crate::llm::forget_relay_sessions(session_id);
@@ -171,7 +171,7 @@ pub(in crate::cli) fn detect_origin_tty() -> Option<crate::ipc::OriginTty> {
     })
 }
 
-pub(in crate::cli) async fn send_ipc_command(paths: &MiyuPaths, command: IpcCommand) -> Result<()> {
+pub(in crate::cli) async fn send_ipc_command(paths: &GqyPaths, command: IpcCommand) -> Result<()> {
     let mut stream = ipc::connect(&paths.ipc_socket()).await?;
     ipc::send(&mut stream, &IpcRequest::new(command)).await?;
     validate_ipc_command_response(ipc::receive::<IpcFrame>(&mut stream).await?)
@@ -183,8 +183,8 @@ pub(in crate::cli) fn validate_ipc_command_response(frame: Option<IpcFrame>) -> 
             Ok(())
         }
         Some(IpcFrame::Error { message, .. }) => bail!("{message}"),
-        Some(other) => bail!("Miyu core returned an unexpected response: {other:?}"),
-        None => bail!("Miyu core closed the connection without a response"),
+        Some(other) => bail!("GQY core returned an unexpected response: {other:?}"),
+        None => bail!("GQY core closed the connection without a response"),
     }
 }
 
@@ -214,7 +214,7 @@ pub(in crate::cli) fn display_session_name(name: &str) -> &str {
 }
 
 /// 会话有没有可见回合。空会话挂 banner、Tab 可换车道;读不到就当非空(保守)。
-pub(in crate::cli) fn session_is_empty(paths: &MiyuPaths, session_id: &str) -> bool {
+pub(in crate::cli) fn session_is_empty(paths: &GqyPaths, session_id: &str) -> bool {
     StateStore::new(paths)
         .ok()
         .and_then(|store| store.pinned(session_id).load_visible_turns().ok())
@@ -227,7 +227,7 @@ pub(in crate::cli) fn session_is_empty(paths: &MiyuPaths, session_id: &str) -> b
 /// 空会话上有意义,不能一按掉进一个 200 轮的老会话还回不来。
 #[allow(clippy::too_many_arguments)]
 pub(in crate::cli) async fn switch_repl_lane(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     mode: AgentMode,
     active_session_id: &mut String,
@@ -288,7 +288,7 @@ pub(in crate::cli) async fn switch_repl_lane(
 }
 
 pub(in crate::cli) async fn apply_repl_session_switch(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &AppConfig,
     mode: AgentMode,
     state: &ipc::SessionState,
@@ -563,7 +563,7 @@ pub(in crate::cli) fn repl_list_mode(mode: AgentMode) -> Option<String> {
 }
 
 pub(in crate::cli) async fn resolve_repl_session_target(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     live: &mut LiveReplTail,
     mode: AgentMode,
     arg: &str,
@@ -612,7 +612,7 @@ pub(in crate::cli) async fn resolve_repl_session_target(
 
 pub(in crate::cli) fn reload_repl_queue(
     live: &mut LiveReplTail,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session_id: &str,
 ) -> Result<()> {
     let store = StateStore::new(paths)?.pinned(session_id);
@@ -638,7 +638,7 @@ pub(in crate::cli) fn confirm_stdin(prompt: &str) -> Result<bool> {
 /// busy, core restarting, …) through the live tail instead of propagating
 /// them so the REPL survives.
 pub(in crate::cli) async fn repl_ipc_admin(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     live: &mut LiveReplTail,
     command: IpcCommand,
 ) -> Result<Option<(ipc::SessionState, serde_json::Value)>> {
@@ -655,7 +655,7 @@ pub(in crate::cli) async fn repl_ipc_admin(
 }
 
 pub(in crate::cli) async fn repl_get_session_state(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     live: &mut LiveReplTail,
     target: crate::ipc::SessionRef,
 ) -> Result<Option<ipc::SessionState>> {
@@ -667,7 +667,7 @@ pub(in crate::cli) async fn repl_get_session_state(
 }
 
 pub(in crate::cli) async fn repl_fallback_session_state(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     live: &mut LiveReplTail,
     mode: AgentMode,
 ) -> Result<Option<ipc::SessionState>> {
@@ -712,7 +712,7 @@ pub(in crate::cli) async fn repl_fallback_session_state(
 /// session when the REPL's own session was one of the ones deleted, so backing
 /// out never strands the REPL on a session that no longer exists.
 pub(in crate::cli) async fn repl_pick_session(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     live: &mut LiveReplTail,
     mode: AgentMode,
     active_session_id: &str,
@@ -782,7 +782,7 @@ pub(in crate::cli) async fn repl_pick_session(
 }
 
 pub(in crate::cli) async fn repl_active_or_default_state(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     active_session_id: &str,
 ) -> Result<(ipc::SessionState, bool)> {
     match send_ipc_admin(
@@ -805,9 +805,9 @@ pub(in crate::cli) async fn repl_active_or_default_state(
 }
 
 /// Ensures the daemon is running, then sends one admin command; used by the
-/// one-shot session subcommands (`miyu new/session/rename/...`).
+/// one-shot session subcommands (`gqy new/session/rename/...`).
 pub(in crate::cli) async fn session_admin(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     command: IpcCommand,
 ) -> Result<(ipc::SessionState, serde_json::Value)> {
     session_admin_streaming(paths, command, |_, _| Ok(())).await
@@ -815,7 +815,7 @@ pub(in crate::cli) async fn session_admin(
 
 /// `session_admin` + 中途事件回调,见 [`send_ipc_admin_streaming`]。
 pub(in crate::cli) async fn session_admin_streaming<F>(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     command: IpcCommand,
     on_event: F,
 ) -> Result<(ipc::SessionState, serde_json::Value)>
@@ -823,7 +823,7 @@ where
     F: FnMut(&str, &serde_json::Value) -> Result<()>,
 {
     ipc::ensure_daemon(paths, None).await?;
-    let refreshed = MiyuPaths::new()?;
+    let refreshed = GqyPaths::new()?;
     send_ipc_admin_streaming(&refreshed, command, on_event).await
 }
 
@@ -834,7 +834,7 @@ where
 /// 「/goal edit 被当作消息发出去了」。返回 true 表示已变身（调用方跳过这次
 /// 提交并重绘输入行）；没有目标时返回 false，走正常提交让命令层去报错。
 pub(in crate::cli) fn prefill_goal_edit_input(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session_id: Option<&str>,
     live: &mut LiveReplTail,
 ) -> bool {
@@ -855,7 +855,7 @@ pub(in crate::cli) fn prefill_goal_edit_input(
 }
 
 pub(in crate::cli) async fn send_ipc_admin(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     command: IpcCommand,
 ) -> Result<(ipc::SessionState, serde_json::Value)> {
     send_ipc_admin_streaming(paths, command, |_, _| Ok(())).await
@@ -867,7 +867,7 @@ pub(in crate::cli) async fn send_ipc_admin(
 /// ——它要跑一次完整的摘要调用,几十秒不吭声的话终端看着就是死的。所以这里
 /// 收帧改成循环而不是只读一帧;不关心事件的调用方用上面那层薄壳,行为不变。
 pub(in crate::cli) async fn send_ipc_admin_streaming<F>(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     command: IpcCommand,
     mut on_event: F,
 ) -> Result<(ipc::SessionState, serde_json::Value)>
@@ -881,7 +881,7 @@ where
             Some(IpcFrame::Event { kind, data, .. }) => on_event(&kind, &data)?,
             Some(IpcFrame::AdminResult { state, data }) => return Ok((state, data)),
             Some(IpcFrame::Error { message, .. }) => bail!("{message}"),
-            _ => bail!("Miyu core returned an invalid admin response"),
+            _ => bail!("GQY core returned an invalid admin response"),
         }
     }
 }

@@ -12,7 +12,7 @@
  * 同一回合改写同一文件,后端按 (turn_id, source_key) upsert、id 不变
  * (`src/state/conversation_db/attachments.rs` 的 ON CONFLICT),所以按 id 去重就够。
  */
-window.MiyuArtifactChips = (() => {
+window.GqyArtifactChips = (() => {
   const NAME_LIMIT = 14;
 
   /// 中间截断、保留扩展名:「体检报告2026版.md」→「体检报告20….md」。按字符数不按字节,中文不劈半。

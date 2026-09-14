@@ -117,7 +117,7 @@ fn seed_inline_media_turn(state: &StateStore) {
     state.complete_turn("old", "看到了", None).unwrap();
 }
 
-fn agent_for(config: AppConfig, paths: &MiyuPaths, state: StateStore) -> Agent {
+fn agent_for(config: AppConfig, paths: &GqyPaths, state: StateStore) -> Agent {
     let client =
         OpenAiCompatibleClient::new(config.provider(None).unwrap(), &config, paths).unwrap();
     Agent::new(
@@ -924,7 +924,7 @@ async fn compaction_resets_the_byte_prefix_at_most_once_each() {
     // system prompt and excluded from the prefix chain.
     config.context.compact_cache_reuse = false;
     // Pin the persona. This test is about compaction's effect on the byte
-    // prefix, not about whatever `prompts/miyu.md` currently weighs —
+    // prefix, not about whatever `prompts/gqy.md` currently weighs —
     // editing the persona used to move the overflow point and flip the
     // outcome.
     config.system_prompt = Some("prefix cache guard fixture persona".to_string());
@@ -1205,7 +1205,7 @@ async fn effective_context_tokens_prefers_the_provider_anchor() {
 #[tokio::test]
 async fn compaction_restores_recent_files_behind_the_checkpoint() {
     let home = tempfile::tempdir().unwrap();
-    // 工作区必须在 MIYU 根目录之外：根目录下的文件（人格/配置/记忆）不回灌。
+    // 工作区必须在 GQY 根目录之外：根目录下的文件（人格/配置/记忆）不回灌。
     let workspace = tempfile::tempdir().unwrap();
     let fixture = workspace.path().join("restored.rs");
     std::fs::write(&fixture, "fn alpha() {}\nfn beta() {}\nfn gamma() {}\n").unwrap();

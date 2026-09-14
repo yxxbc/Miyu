@@ -55,7 +55,7 @@ fn context_breakdown_for(state: &DaemonState, session_id: &str) -> Result<Value>
         Ok(provider) if provider.is_antigravity() => "antigravity",
         _ => "native",
     };
-    // 中转后端:CLI 自己的系统提示词与原生工具 Miyu 看不到,实测减估算就是
+    // 中转后端:CLI 自己的系统提示词与原生工具 顾清影 看不到,实测减估算就是
     // 「CLI 自带」,含分词器差异。可能为负(CLI 会话被重建过),原样给。
     let cli_overhead_tokens = (backend != "native")
         .then_some(breakdown.measured_tokens)

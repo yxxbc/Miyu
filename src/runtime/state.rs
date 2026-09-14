@@ -10,7 +10,7 @@ use super::*;
 use crate::agent::AgentMode;
 use crate::config::AppConfig;
 use crate::llm::OpenAiCompatibleClient;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platforms::PlatformRuntime;
 use crate::state::StateStore;
 use crate::tools::build_tool_registry;
@@ -35,7 +35,7 @@ pub(crate) struct DaemonState {
     pub(crate) web_port: u16,
     pub(crate) web_public: bool,
     pub(crate) web_bind: IpAddr,
-    pub(crate) paths: MiyuPaths,
+    pub(crate) paths: GqyPaths,
     pub(crate) manager: Arc<Mutex<ManagerState>>,
     /// 管理员的库(账号表、终端/语音会话、遗留数据都在这里)。
     pub(crate) state_store: StateStore,
@@ -51,7 +51,7 @@ pub(crate) struct DaemonState {
 
 #[cfg(test)]
 impl DaemonState {
-    pub(crate) fn for_test(paths: MiyuPaths, web_port: u16) -> Result<Self> {
+    pub(crate) fn for_test(paths: GqyPaths, web_port: u16) -> Result<Self> {
         let state_store = StateStore::new(&paths)?;
         let config = AppConfig::default();
         let context = cold_context(&config, &paths, &state_store)?;
@@ -166,7 +166,7 @@ impl TurnResourceCache {
     pub(crate) fn get_or_build(
         &mut self,
         config: &AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
     ) -> Result<Arc<TurnResources>> {
         let key = Self::key(config)?;
         if let Some(resources) = self.entries.get(&key).cloned() {
@@ -546,7 +546,7 @@ impl WebAuth {
 /// 累计值照常带出去，footer 少一个数字好过起不来。
 pub(crate) fn cold_context(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state_store: &StateStore,
 ) -> Result<ContextSnapshot> {
     let tokens = cold_context_tokens(config, paths, state_store).unwrap_or(0);
@@ -567,7 +567,7 @@ pub(crate) const STARTUP_CONTEXT_BUDGET: Duration = Duration::from_secs(3);
 
 pub(crate) fn startup_context(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state_store: &StateStore,
 ) -> Result<(ContextSnapshot, Option<Receiver<Result<ContextSnapshot>>>)> {
     let (tx, rx) = std::sync::mpsc::channel();
@@ -576,7 +576,7 @@ pub(crate) fn startup_context(
         let paths = paths.clone();
         let state_store = state_store.clone();
         std::thread::Builder::new()
-            .name("miyu-startup-context".to_string())
+            .name("gqy-startup-context".to_string())
             .spawn(move || {
                 let _ = tx.send(cold_context(&config, &paths, &state_store));
             })
@@ -621,7 +621,7 @@ fn cold_context_with_tokens(
 /// 现算一次这个会话的上下文 token。失败返回 None，由调用方决定怎么退。
 fn cold_context_tokens(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state_store: &StateStore,
 ) -> Option<u64> {
     crate::models_cache::ensure_active_metadata(paths, config);

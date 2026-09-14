@@ -15,7 +15,7 @@
   4. 大厅里 Ctrl+C 的「要退出请按 Ctrl+D」在输入框底下，不在左下角；
   5. reset 之后再发一句，仍在屏顶（旧对话与「已清空」提示都不该垫在上面）；
   6. `/config` 进设置再 Esc 出来：第一次亮光标发生在同步块里，光标落在输入框。
-产物在 ~/.cache/miyu-oobe/top/。
+产物在 ~/.cache/gqy-oobe/top/。
 """
 import os
 import signal
@@ -24,11 +24,11 @@ import sys
 import time
 from pathlib import Path
 
-os.environ.setdefault("MIYU_HOME", "/tmp/miyu-oobe-top/home")
-os.environ.setdefault("MIYU_TUI_RUNTIME", "/tmp/mx-oobe-top")
-os.environ.setdefault("MIYU_TUI_PORT", "18435")
+os.environ.setdefault("GQY_HOME", "/tmp/gqy-oobe-top/home")
+os.environ.setdefault("GQY_TUI_RUNTIME", "/tmp/mx-oobe-top")
+os.environ.setdefault("GQY_TUI_PORT", "18435")
 os.environ.setdefault("STUB_PORT", "18498")
-os.environ.setdefault("OUT", str(Path.home() / ".cache" / "miyu-oobe" / "top"))
+os.environ.setdefault("OUT", str(Path.home() / ".cache" / "gqy-oobe" / "top"))
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tui"))
 import run as h  # noqa: E402

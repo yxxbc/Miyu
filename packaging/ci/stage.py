@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage declared binaries and complete package resources without executing Miyu."""
+"""Stage declared binaries and complete package resources without executing GQY."""
 import argparse
 from pathlib import Path
 import re
@@ -34,7 +34,7 @@ def validate_build_evidence(record, manifest, input_hash, build_id, component, b
             or not isinstance(binary_hash, str) or not re.fullmatch(r'[0-9a-f]{64}', binary_hash)):
         raise ValueError('Build evidence requires immutable image and binary SHA256 digests.')
     command = ['cargo', 'build', '--release', '--frozen', '--target',
-        manifest['builds'][build_id]['target'], '--bin', 'miyu-voice' if component == 'voice' else 'miyu',
+        manifest['builds'][build_id]['target'], '--bin', 'gqy-voice' if component == 'voice' else 'gqy',
         '--config', 'source.crates-io.replace-with="vendored-sources"',
         '--config', 'source.vendored-sources.directory="/inputs/vendor"']
     features = manifest['builds'][build_id]['features'][component]
@@ -48,7 +48,7 @@ def validate_build_evidence(record, manifest, input_hash, build_id, component, b
 
 
 def payload_binary_hash(inventory, component):
-    binary = 'bin/'+('miyu-voice' if component == 'voice' else 'miyu')
+    binary = 'bin/'+('gqy-voice' if component == 'voice' else 'gqy')
     entries = [entry for entry in inventory if entry['path'] == binary]
     if len(entries) != 1 or entries[0]['type'] != 'file' or entries[0].get('size', 0) <= 0:
         raise ValueError('Package binary payload is missing or duplicated.')
@@ -70,12 +70,12 @@ def stage(manifest_path, inputs, build_id, build_root, destination):
     evidence = {}
     for component in components:
         record = load_json(build_root/component/'build-record.json')
-        binary = build_root/component/('miyu-voice' if component == 'voice' else 'miyu')
+        binary = build_root/component/('gqy-voice' if component == 'voice' else 'gqy')
         evidence[component] = validate_build_evidence(record, manifest, sha256_file(manifest_path),
             build_id, component, sha256_file(binary))
         install_file(binary, destination/component/'bin'/binary.name, 0o755)
         if component == 'core':
-            (destination/component/'bin/miyupm').symlink_to('miyu')
+            (destination/component/'bin/gqypm').symlink_to('gqy')
     for rule in catalog['assets']:
         if rule['component'] not in components or build_id not in rule.get('build_ids', [build_id]):
             continue

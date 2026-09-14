@@ -18,7 +18,7 @@
  * 工具两套坐标都给了,这里按 provider 取对应那套——取错的表现是标记稳定地落在
  * 隔壁街,而地图本身看起来完全正常,最难发现的那种错。
  */
-window.MiyuMap = (() => {
+window.GqyMap = (() => {
   const SVG_NS = "http://www.w3.org/2000/svg";
   const TILE = 256;
   const MIN_ZOOM = 3;

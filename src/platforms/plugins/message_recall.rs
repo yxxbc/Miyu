@@ -166,7 +166,7 @@ impl MessageRecallPlugin {
 
     /// 单条撤回。`forced_id`=批量路径逐条指定的目标,它会压过回复定向;
     /// 不传则退回"显式参数 → 回复目标"的老规矩。
-    /// 撤他人消息只看两件事:必须是群、且 Miyu 是该群管理员。不再做二次确认。
+    /// 撤他人消息只看两件事:必须是群、且 顾清影 是该群管理员。不再做二次确认。
     async fn withdraw_one(
         &self,
         context: Arc<PlatformTurnContext>,
@@ -191,7 +191,7 @@ impl MessageRecallPlugin {
         let id = &target.message_id;
         let settings = recall_settings(&context)?;
         let reason = reason(args, settings.max_reason_length)?;
-        // 已撤回短路:Miyu 记录过该消息的撤回事件(TTL 窗口内)就不再调接口,
+        // 已撤回短路:顾清影 记录过该消息的撤回事件(TTL 窗口内)就不再调接口,
         // 如实告知模型"此前已被撤回"——这是成功态,不是可重试失败。
         if self.recorded_recalled(&context, id) {
             return response(
@@ -249,7 +249,7 @@ impl MessageRecallPlugin {
                 return failure_response(
                     "permission_denied",
                     false,
-                    "私聊中只能撤回 Miyu 自己发送的消息",
+                    "私聊中只能撤回 顾清影 自己发送的消息",
                     json!({ "message_id": id }),
                 );
             }
@@ -257,7 +257,7 @@ impl MessageRecallPlugin {
                 return failure_response(
                     "permission_denied",
                     false,
-                    "Miyu 不是当前群的管理员，无法撤回群友消息",
+                    "顾清影 不是当前群的管理员，无法撤回群友消息",
                     json!({ "message_id": id }),
                 );
             }
@@ -271,7 +271,7 @@ impl MessageRecallPlugin {
                 );
             }
             tracing::warn!(
-                target: "miyu::qq",
+                target: "gqy::qq",
                 error = %error,
                 message_id = %id,
                 sender = %sender,
@@ -285,7 +285,7 @@ impl MessageRecallPlugin {
                 &error,
                 id,
                 target.source,
-                if own_message { "miyu" } else { "group_member" },
+                if own_message { "gqy" } else { "group_member" },
                 &content,
             );
         }
@@ -301,10 +301,10 @@ impl MessageRecallPlugin {
             }
         }
         tracing::info!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             message_id = %id,
             sender = %sender,
-            target_kind = if own_message { "miyu" } else { "group_member" },
+            target_kind = if own_message { "gqy" } else { "group_member" },
             reason = %reason,
             conversation = %context.conversation.scope_key(),
             preview = %preview,
@@ -318,7 +318,7 @@ impl MessageRecallPlugin {
                 "message_id": id,
                 "sender_id": info.sender_id,
                 "sender_display_name": info.sender_display_name,
-                "target_kind": if own_message { "miyu" } else { "group_member" },
+                "target_kind": if own_message { "gqy" } else { "group_member" },
                 "reason": reason,
                 "target_source": target.source.as_str(),
                 "content": content

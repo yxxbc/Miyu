@@ -21,11 +21,11 @@ use crate::config::AppConfig;
 use crate::ledger::money::format_amount;
 use crate::ledger::types::*;
 use crate::ledger::LedgerDb;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
-pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     // 描述与 schema 的真相源是 descriptions/ledger.json，这里只是占位。
     let placeholder = json!({
         "type": "object",
@@ -65,7 +65,7 @@ pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths
     );
 }
 
-async fn run_ledger(args: Value, paths: MiyuPaths, config: AppConfig) -> Result<String> {
+async fn run_ledger(args: Value, paths: GqyPaths, config: AppConfig) -> Result<String> {
     match args
         .get("action")
         .and_then(Value::as_str)
@@ -83,7 +83,7 @@ async fn run_ledger(args: Value, paths: MiyuPaths, config: AppConfig) -> Result<
 // ── 共享零件 ────────────────────────────────────────────────
 
 /// 打开账本库。每次调用现开连接：账本操作低频，连接池是纯粹的复杂度。
-pub(super) fn open_db(config: &AppConfig, paths: &MiyuPaths) -> Result<LedgerDb> {
+pub(super) fn open_db(config: &AppConfig, paths: &GqyPaths) -> Result<LedgerDb> {
     LedgerDb::open_for(config, paths)
 }
 

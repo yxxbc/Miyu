@@ -67,7 +67,7 @@ pub(crate) async fn run_platform_turn(
     {
         let mut manager = state.manager.lock().unwrap();
         if manager.admin_busy {
-            bail!("Miyu is busy with another operation");
+            bail!("GQY is busy with another operation");
         }
         manager.active_runs.insert(
             run_id.clone(),
@@ -123,7 +123,7 @@ pub(crate) async fn run_platform_turn(
         .is_err()
     {
         crate::runtime::finish_run(&state.manager, &run_id, None);
-        bail!("Miyu core worker is unavailable");
+        bail!("GQY core worker is unavailable");
     }
     // Cancels the run if this task dies before the turn settles.
     let mut run_guard = IpcRunGuard {
@@ -157,7 +157,7 @@ pub(crate) async fn run_platform_turn(
                 }
                 Ok(Err(broadcast::error::RecvError::Closed)) => {
                     break TurnDispatch::Failed(
-                        crate::i18n::text("Miyu core stopped", "Miyu 核心已停止").to_string(),
+                        crate::i18n::text("GQY core stopped", "顾清影 核心已停止").to_string(),
                     );
                 }
             }
@@ -207,14 +207,14 @@ pub(crate) async fn run_platform_turn(
             //
             // `reasoning.start` 一个人做不到这件事:它每次 **LLM 请求** 发一次,
             // 而中转线(claude-code / codex / antigravity)的工具循环在对端,
-            // Miyu 的回合循环整轮只发一次,于是那一次落在回合开头、text 还空着,
+            // 顾清影 的回合循环整轮只发一次,于是那一次落在回合开头、text 还空着,
             // flush 空转,中间说的话全积到 run.completed 一起投递。09-08 取证:
             // 六天 42 次私聊回合、2570 次工具调用,只 flush 出 1 条,还是端点
             // 切换换来的第二次 reasoning.start 的副作用。本地工具线一并受益
             // ——不必等工具跑完才见到上一段正文。
             "tool.started" => {
                 let readable = format_platform_tool_started_log(&run_id, &data);
-                tracing::info!(target: "miyu::qq", "\n{readable}");
+                tracing::info!(target: "gqy::qq", "\n{readable}");
                 let host_authored = data
                     .get("name")
                     .and_then(Value::as_str)
@@ -243,7 +243,7 @@ pub(crate) async fn run_platform_turn(
                         .unwrap_or("unknown")
                         .to_string();
                     tracing::warn!(
-                        target: "miyu::qq",
+                        target: "gqy::qq",
                         run_id = %run_id,
                         error = %error,
                         "平台工具图片事件不带资产,已跳过(图片不会投递)"
@@ -252,7 +252,7 @@ pub(crate) async fn run_platform_turn(
             }
             "tool.finished" => {
                 let readable = format_platform_tool_finished_log(&run_id, &data);
-                tracing::info!(target: "miyu::qq", "\n{readable}");
+                tracing::info!(target: "gqy::qq", "\n{readable}");
                 let suppression_start = platform_context
                     .as_ref()
                     .and_then(|context| context.take_final_reply_suppression_start(text.len()));

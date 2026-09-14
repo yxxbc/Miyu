@@ -43,13 +43,13 @@ fn make_executable_sets_x_bit() {
     assert_ne!(perms.mode() & 0o111, 0);
 }
 
-/// 脚本跑起来时必须带上 `MIYU_SCRIPT_CACHE_DIR`,指向 Miyu 自己的缓存目录。
+/// 脚本跑起来时必须带上 `GQY_SCRIPT_CACHE_DIR`,指向 顾清影 自己的缓存目录。
 ///
 /// 中间产物(登录 profile、会话快照、查询票据、二维码图)不该散落在用户的
-/// ~/.cache 下——`miyu wipe` 清 ~/.miyu 时应当一并带走。脚本单独在终端跑时
+/// ~/.cache 下——`gqy wipe` 清 ~/.gqy 时应当一并带走。脚本单独在终端跑时
 /// 这个变量不存在,退回 XDG 默认。
 #[tokio::test]
-async fn a_script_run_points_the_cache_at_miyu() {
+async fn a_script_run_points_the_cache_at_gqy() {
     let temp = tempfile::tempdir().unwrap();
     let scripts_dir = temp.path().join("scripts");
     let cache_dir = temp.path().join("cache");
@@ -58,7 +58,7 @@ async fn a_script_run_points_the_cache_at_miyu() {
     let script = scripts_dir.join("echo-cache");
     std::fs::write(
         &script,
-        "#!/bin/sh\nprintf '%s' \"$MIYU_SCRIPT_CACHE_DIR\"\n",
+        "#!/bin/sh\nprintf '%s' \"$GQY_SCRIPT_CACHE_DIR\"\n",
     )
     .unwrap();
     executable(&script);
@@ -77,11 +77,11 @@ async fn a_script_run_points_the_cache_at_miyu() {
 
     assert!(
         out.contains(cache_dir.to_str().unwrap()),
-        "脚本没拿到 Miyu 的缓存目录：{out}"
+        "脚本没拿到 顾清影 的缓存目录：{out}"
     );
 }
 
-/// `MIYU_ARGS_JSON` 与 stdin 是同一份 JSON:脚本读环境变量就不用写读管道那段。
+/// `GQY_ARGS_JSON` 与 stdin 是同一份 JSON:脚本读环境变量就不用写读管道那段。
 #[tokio::test]
 async fn args_json_env_mirrors_stdin() {
     let temp = tempfile::tempdir().unwrap();
@@ -90,7 +90,7 @@ async fn args_json_env_mirrors_stdin() {
     let script = scripts_dir.join("echo-env");
     std::fs::write(
         &script,
-        "#!/bin/sh\nprintf '%s|' \"$MIYU_ARGS_JSON\"\ncat\n",
+        "#!/bin/sh\nprintf '%s|' \"$GQY_ARGS_JSON\"\ncat\n",
     )
     .unwrap();
     executable(&script);
@@ -166,13 +166,13 @@ async fn flags_mode_passes_arguments_on_argv() {
     );
 }
 
-/// `MIYU-IMAGE: 路径 | 说明` 行从 stdout 里摘掉,图片交给投递层;相对路径按
+/// `GQY-IMAGE: 路径 | 说明` 行从 stdout 里摘掉,图片交给投递层;相对路径按
 /// 脚本缓存目录解析,不存在的文件只记警告不进投递。
 #[test]
 fn attachment_lines_are_split_out_of_stdout() {
-    let cache = Path::new("/tmp/miyu-cache");
+    let cache = Path::new("/tmp/gqy-cache");
     let (kept, images) = split_attachment_lines(
-        "hello\nMIYU-IMAGE: /tmp/a.png | 天气图\n  MIYU-IMAGE: rel/b.png\nMIYU-IMAGE:\nworld",
+        "hello\nGQY-IMAGE: /tmp/a.png | 天气图\n  GQY-IMAGE: rel/b.png\nGQY-IMAGE:\nworld",
         cache,
     );
     assert_eq!(kept, "hello\nworld");
@@ -185,7 +185,7 @@ fn attachment_lines_are_split_out_of_stdout() {
     );
 }
 
-/// 真跑一个脚本:它写一张图并报 MIYU-IMAGE,进度通道里应收到 Image 事件,
+/// 真跑一个脚本:它写一张图并报 GQY-IMAGE,进度通道里应收到 Image 事件,
 /// 返回体的 stdout 不再带那一行。
 #[tokio::test]
 async fn a_script_can_hand_back_an_image() {
@@ -200,7 +200,7 @@ async fn a_script_can_hand_back_an_image() {
     std::fs::write(
         &script,
         format!(
-            "#!/bin/sh\necho before\necho 'MIYU-IMAGE: {} | shot'\necho after\n",
+            "#!/bin/sh\necho before\necho 'GQY-IMAGE: {} | shot'\necho after\n",
             image.display()
         ),
     )

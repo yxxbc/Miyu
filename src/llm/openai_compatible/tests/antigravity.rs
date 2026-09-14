@@ -22,7 +22,7 @@ dir="$(cd "$(dirname "$0")" && pwd)"
 sid="conv-$(basename "$dir")"
 printf '%s\n' "$@" > "$dir/args.txt"
 cat > "$dir/stdin.txt"
-env | grep '^MIYU_' | sort > "$dir/env.txt" || true
+env | grep '^GQY_' | sort > "$dir/env.txt" || true
 resume=""
 agent=""
 prev=""
@@ -35,7 +35,7 @@ if [ -n "$resume" ] && [ ! -f "$dir/lost.txt" ]; then sid="$resume"; fi
 if [ -f "$dir/lost.txt" ]; then sid="fresh-$(basename "$dir")"; echo "warning: conversation \"$resume\" not found" >&2; fi
 if [ -f "$dir/noagent.txt" ]; then
   echo "{\"event\":\"init\",\"conversation_id\":\"$sid\",\"init\":{\"model\":\"m\",\"cwd\":\"/\",\"tools\":[]}}"
-  echo "Agent \"miyu\" not found, falling back to default" >&2
+  echo "Agent \"gqy\" not found, falling back to default" >&2
 else
   echo "{\"event\":\"init\",\"conversation_id\":\"$sid\",\"init\":{\"model\":\"m\",\"cwd\":\"/\",\"agent\":\"$agent\",\"tools\":[]}}"
 fi
@@ -61,10 +61,10 @@ echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\
 echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":1,\"state\":\"DONE\",\"step_type\":\"agent_response\",\"text_delta\":\"fake\",\"usage\":{\"input_tokens\":40,\"output_tokens\":2,\"thinking_tokens\":1,\"cache_read_tokens\":10,\"total_tokens\":42}}}"
 echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":2,\"state\":\"ACTIVE\",\"step_type\":\"tool\",\"tool_name\":\"run_command\",\"tool_info\":{\"name\":\"run_command\",\"parameters\":{\"CommandLine\":\"echo hi\"}}}}"
 echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":2,\"state\":\"DONE\",\"step_type\":\"tool\",\"tool_name\":\"run_command\",\"tool_info\":{\"name\":\"run_command\",\"parameters\":{\"CommandLine\":\"echo hi\"},\"output\":\"a\\r\\nb\\r\\n\"}}}"
-echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":3,\"state\":\"ACTIVE\",\"step_type\":\"tool\",\"tool_name\":\"mcp_miyu_use_meme\",\"tool_info\":{\"name\":\"mcp_miyu_use_meme\",\"parameters\":{\"action\":\"show\",\"id\":\"m1\"}}}}"
-echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":3,\"state\":\"ERROR\",\"step_type\":\"tool\",\"tool_name\":\"mcp_miyu_use_meme\",\"tool_info\":{\"name\":\"mcp_miyu_use_meme\",\"parameters\":{\"action\":\"show\",\"id\":\"m1\"},\"error\":{\"type\":\"TOOL_ERROR\",\"message\":\"meme missing\"}}}}"
-echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":9,\"state\":\"ACTIVE\",\"step_type\":\"tool\",\"tool_name\":\"mcp_miyu_ask_question\",\"tool_info\":{\"name\":\"mcp_miyu_ask_question\",\"parameters\":{\"questions\":[]}}}}"
-echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":9,\"state\":\"DONE\",\"step_type\":\"tool\",\"tool_name\":\"mcp_miyu_ask_question\",\"tool_info\":{\"name\":\"mcp_miyu_ask_question\",\"output\":\"answered\"}}}}"
+echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":3,\"state\":\"ACTIVE\",\"step_type\":\"tool\",\"tool_name\":\"mcp_gqy_use_meme\",\"tool_info\":{\"name\":\"mcp_gqy_use_meme\",\"parameters\":{\"action\":\"show\",\"id\":\"m1\"}}}}"
+echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":3,\"state\":\"ERROR\",\"step_type\":\"tool\",\"tool_name\":\"mcp_gqy_use_meme\",\"tool_info\":{\"name\":\"mcp_gqy_use_meme\",\"parameters\":{\"action\":\"show\",\"id\":\"m1\"},\"error\":{\"type\":\"TOOL_ERROR\",\"message\":\"meme missing\"}}}}"
+echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":9,\"state\":\"ACTIVE\",\"step_type\":\"tool\",\"tool_name\":\"mcp_gqy_ask_question\",\"tool_info\":{\"name\":\"mcp_gqy_ask_question\",\"parameters\":{\"questions\":[]}}}}"
+echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":9,\"state\":\"DONE\",\"step_type\":\"tool\",\"tool_name\":\"mcp_gqy_ask_question\",\"tool_info\":{\"name\":\"mcp_gqy_ask_question\",\"output\":\"answered\"}}}}"
 echo "{\"event\":\"step_update\",\"step_update\":{\"conversation_id\":\"$sid\",\"step_index\":4,\"state\":\"DONE\",\"step_type\":\"agent_response\",\"text_delta\":\"second\",\"usage\":{\"input_tokens\":60,\"output_tokens\":3,\"thinking_tokens\":0,\"cache_read_tokens\":0,\"total_tokens\":63}}}"
 echo "{\"event\":\"result\",\"result\":{\"conversation_id\":\"$sid\",\"status\":\"SUCCESS\",\"response\":\"Hello from fake\\n\\nsecond\",\"num_turns\":1,\"usage\":{\"input_tokens\":100,\"output_tokens\":5,\"thinking_tokens\":1,\"cache_read_tokens\":10,\"total_tokens\":105}}}"
 "#,
@@ -79,7 +79,7 @@ fn antigravity_client(
     dir: &std::path::Path,
     provider_id: &str,
     native: &str,
-    miyu: &str,
+    gqy: &str,
 ) -> OpenAiCompatibleClient {
     let mut provider = test_provider(provider_id, "");
     provider.protocol = "antigravity".to_string();
@@ -88,8 +88,8 @@ fn antigravity_client(
     client.antigravity = Some(Arc::new(AntigravityRuntime {
         binary: fake_agy_script(dir),
         native_tools: native.to_string(),
-        miyu_tools: miyu.to_string(),
-        miyu_tools_eager: true,
+        gqy_tools: gqy.to_string(),
+        gqy_tools_eager: true,
         idle_timeout: Duration::from_secs(30),
         print_timeout: Duration::from_secs(600),
         config_dir: dir.join("agyconfig"),
@@ -101,7 +101,7 @@ fn read(dir: &std::path::Path, name: &str) -> String {
     std::fs::read_to_string(dir.join(name)).unwrap_or_default()
 }
 
-/// 代理目录按内容哈希命名(`miyu-<hash>`):测试里只关心唯一那份的内容。
+/// 代理目录按内容哈希命名(`gqy-<hash>`):测试里只关心唯一那份的内容。
 fn agent_file(dir: &std::path::Path) -> (String, String) {
     let mut dirs: Vec<_> = std::fs::read_dir(dir.join("agyconfig/agents"))
         .unwrap()
@@ -110,7 +110,7 @@ fn agent_file(dir: &std::path::Path) -> (String, String) {
     assert_eq!(dirs.len(), 1, "应只有一份代理目录");
     let entry = dirs.pop().unwrap();
     let name = entry.file_name().to_string_lossy().to_string();
-    assert!(name.starts_with("miyu-"), "{name}");
+    assert!(name.starts_with("gqy-"), "{name}");
     (
         name.clone(),
         std::fs::read_to_string(entry.path().join("agent.md")).unwrap(),
@@ -193,7 +193,7 @@ async fn first_turn_writes_agent_and_bridge_then_translates_the_stream() {
     assert_eq!(started[0]["name"], "run_command");
     assert_eq!(started[0]["input"]["command"], "echo hi");
     assert_eq!(started[0]["id"], "agy-2");
-    assert_eq!(started[1]["name"], "use_meme", "桥工具剥 mcp_miyu_ 前缀");
+    assert_eq!(started[1]["name"], "use_meme", "桥工具剥 mcp_gqy_ 前缀");
     let finished: Vec<serde_json::Value> = chunks
         .iter()
         .filter(|chunk| chunk.kind == ChatStreamKind::RemoteToolFinished)
@@ -232,14 +232,14 @@ async fn first_turn_writes_agent_and_bridge_then_translates_the_stream() {
     assert!(agent.contains("persona prompt"));
     assert!(agent.contains("<relay-environment>"));
     assert!(agent.contains("<relay-environment-tools>"));
-    // 测试里没有回合作用域(无 Miyu 会话)→ 不注册桥、不给会话身份:桥本就
+    // 测试里没有回合作用域(无 顾清影 会话)→ 不注册桥、不给会话身份:桥本就
     // 应答空表,写一份空 eager 名单只会覆盖别的会话正在用的那份。
     assert!(
         !dir.path().join("agyconfig/mcp_config.json").exists(),
         "无会话不该写 mcp_config"
     );
     let env = read(dir.path(), "env.txt");
-    assert!(!env.contains("MIYU_SESSION="), "{env}");
+    assert!(!env.contains("GQY_SESSION="), "{env}");
 }
 
 /// 原生工具关掉时代理文件写空白名单;桥关掉时 eager 名单为空。

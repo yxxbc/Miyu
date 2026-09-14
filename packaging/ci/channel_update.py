@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--release-output',required=True,type=Path)
     parser.add_argument('--out',required=True,type=Path)
     parser.add_argument('--published-url',help='Require read-back verification of this formal GitHub release.')
-    parser.add_argument('--builder-image',default='miyu-distribution-arch:2026-09-14')
+    parser.add_argument('--builder-image',default='gqy-distribution-arch:2026-09-14')
     parser.add_argument('--apply',action='store_true',help='Also update the repository channel truth sources. No git operation.')
     args=parser.parse_args()
     try:
@@ -61,14 +61,14 @@ def main():
                     raise ValueError('Remote AUR source asset differs from the verified release.')
         out=fresh_directory(args.out)
         patch=[]
-        for package,asset_id in (('miyu','arch-core'),('miyu-voice','arch-voice')):
+        for package,asset_id in (('gqy','arch-core'),('gqy-voice','arch-voice')):
             relative=Path('packaging/arch')/package/'PKGBUILD'
             original=(REPO/relative).read_text()
             rendered=render_pkgbuild(original,manifest['version'],manifest['package_revision'],packages[asset_id]['sha256'])
             folder=out/package;folder.mkdir()
             (folder/'PKGBUILD').write_text(rendered)
             srcinfo=subprocess.run(['docker','run','--rm','--network','none','--user','65534:65534',
-                '--label','io.miyu.distribution.owner=distribution-2026-09-14',
+                '--label','io.gqy.distribution.owner=distribution-2026-09-14',
                 '--env','HOME=/tmp','--env','BUILDDIR=/tmp','--env','PKGDEST=/tmp',
                 '--env','SRCDEST=/tmp','--env','SRCPKGDEST=/tmp','--env','LOGDEST=/tmp',
                 '--mount',f'type=bind,src={folder.resolve()},dst=/package,readonly',
@@ -83,7 +83,7 @@ def main():
         (out/'channels.patch').write_text(''.join(patch))
         write_json(out/'channel-update.json',{'schema_version':1,'version':manifest['version'],
             'revision':manifest['package_revision'],'published_url':args.published_url,
-            'applied':args.apply,'remote_push':False,'channels':['aur-miyu','aur-miyu-voice']})
+            'applied':args.apply,'remote_push':False,'channels':['aur-gqy','aur-gqy-voice']})
         print(f'Generated reviewed channel files and patch: {out}')
         return 0
     except (ValueError,KeyError,OSError,RuntimeError,subprocess.SubprocessError) as error:

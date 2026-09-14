@@ -4,7 +4,7 @@
 //! 末尾给 `<speak>` 口语版 → 没给就把正文清洗一遍(去代码块/行内代码/链接/
 //! 路径/Markdown 记号)兜底 → 截到 `max_chars`。合成按 `tts.active` 分派:
 //! MiniMax `t2a_v2`(返回 hex 编码的 wav)或小米 MiMo `chat/completions`
-//! (`mimo-v2.5-tts` 系列,返回 base64 的 wav);播放在 miyu-voice 里。
+//! (`mimo-v2.5-tts` 系列,返回 base64 的 wav);播放在 gqy-voice 里。
 
 use crate::config::{MimoTtsConfig, MiniMaxTtsConfig, VoiceTtsConfig};
 use anyhow::{Context, Result};
@@ -581,7 +581,7 @@ mod tests {
         assert_eq!(body["messages"][0]["content"], "二十岁女声,清亮");
 
         // voiceclone:参考音频变 data URI。
-        let dir = std::env::temp_dir().join(format!("miyu-mimo-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-mimo-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let sample = dir.join("ref.wav");
         std::fs::write(&sample, fake_wav()).unwrap();
@@ -691,7 +691,7 @@ mod tests {
         assert_eq!(body["messages"][0]["content"], "测试一句");
     }
 
-    /// 真实 MiMo 接口(要 `MIMO_API_KEY`):合成一句写到 `MIYU_MIMO_OUT`(缺省
+    /// 真实 MiMo 接口(要 `MIMO_API_KEY`):合成一句写到 `GQY_MIMO_OUT`(缺省
     /// 当前目录 mimo-test.wav),人工听。
     #[tokio::test]
     #[ignore = "需要 MIMO_API_KEY"]
@@ -704,14 +704,14 @@ mod tests {
             api_key: Some(key),
             ..Default::default()
         };
-        if let Ok(voice) = std::env::var("MIYU_MIMO_VOICE") {
+        if let Ok(voice) = std::env::var("GQY_MIMO_VOICE") {
             cfg.voice = voice;
         }
         let started = std::time::Instant::now();
         let audio = synthesize_mimo(&cfg, "今天也是充满希望的一天")
             .await
             .unwrap();
-        let out = std::env::var("MIYU_MIMO_OUT").unwrap_or_else(|_| "mimo-test.wav".to_string());
+        let out = std::env::var("GQY_MIMO_OUT").unwrap_or_else(|_| "mimo-test.wav".to_string());
         std::fs::write(&out, &audio).unwrap();
         eprintln!(
             "MiMo 合成 {} 字节,耗时 {:?},写到 {out}",

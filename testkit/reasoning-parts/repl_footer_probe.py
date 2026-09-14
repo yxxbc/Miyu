@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """REPL 里 `/models <型号>` 之后,footer 的模型标签要**立刻**换,不能等下一次按键。
 
-    BIN=target/release/miyu python3 testkit/reasoning-parts/repl_footer_probe.py
+    BIN=target/release/gqy python3 testkit/reasoning-parts/repl_footer_probe.py
 
 沙箱同 repro_openai(隔离 home + daemon + OpenAI 桩 + PTY),但配两个型号:
 全局 stub-model,敲 `/models stub-b` 后不按任何键,直接把 PTY 收到的字节渲染成屏,

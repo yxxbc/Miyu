@@ -326,7 +326,7 @@ impl MemoryStore {
     }
 
     /// Embed every visible row that has no current vector, in bounded batches.
-    /// Also used by `miyu memory embed reindex`-style maintenance.
+    /// Also used by `gqy memory embed reindex`-style maintenance.
     pub(crate) async fn backfill_embeddings(&self, model: &str) -> Result<usize> {
         let Some(embedder) = Embedder::from_config(&self.app_config) else {
             return Ok(0);

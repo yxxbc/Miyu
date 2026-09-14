@@ -290,7 +290,7 @@ fn restore_applies_per_file_and_total_caps() {
 fn restore_skips_tail_reads_excluded_root_and_missing() {
     let temp = tempfile::tempdir().unwrap();
     let work = temp.path().join("work");
-    let root = temp.path().join("miyu-home");
+    let root = temp.path().join("gqy-home");
     std::fs::create_dir_all(&work).unwrap();
     std::fs::create_dir_all(&root).unwrap();
     std::fs::write(work.join("kept.rs"), "kept\n").unwrap();

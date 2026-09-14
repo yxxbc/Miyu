@@ -1,5 +1,5 @@
 //! 语音管线的真机 e2e:用模型自带 test_wavs 走完整 VAD→KWS→STT 链路。
-//! 需要模型已就位(~/.miyu/state/models 或 MIYU_VOICE_MODELS_DIR),
+//! 需要模型已就位(~/.gqy/state/models 或 GQY_VOICE_MODELS_DIR),
 //! 缺模型时标记为跳过而不是失败,因此全部 #[ignore],显式
 //! `cargo test --features voice -- --ignored` 运行。
 
@@ -9,10 +9,10 @@ use super::{models, SttChoice, VoiceEvent, VoiceRuntimeConfig};
 use std::path::PathBuf;
 
 fn models_dir() -> Option<PathBuf> {
-    let dir = std::env::var_os("MIYU_VOICE_MODELS_DIR")
+    let dir = std::env::var_os("GQY_VOICE_MODELS_DIR")
         .map(PathBuf::from)
         .or_else(|| {
-            directories::BaseDirs::new().map(|base| base.home_dir().join(".miyu/state/models"))
+            directories::BaseDirs::new().map(|base| base.home_dir().join(".gqy/state/models"))
         })?;
     models::models_ready(&dir).then_some(dir)
 }
@@ -118,7 +118,7 @@ fn sense_voice_transcribes_chinese() {
     );
 }
 
-/// `miyu listen` 是开关:空闲时进入等待指令(Wake),已在听时关窗(ListenOff),
+/// `gqy listen` 是开关:空闲时进入等待指令(Wake),已在听时关窗(ListenOff),
 /// 再按又进入等待指令;听写窗口内忽略。
 #[test]
 #[ignore = "需要本地语音模型"]
@@ -240,7 +240,7 @@ fn awaiting_phase_transcribes_next_segment_as_command() {
     assert!(woke, "「女儿」在测试音频上未触发任何事件");
 }
 
-/// 唤醒词实验台:`MIYU_KW_WAVS=<目录> MIYU_KW_KEYWORDS=a,b,c` 逐个 wav 过
+/// 唤醒词实验台:`GQY_KW_WAVS=<目录> GQY_KW_KEYWORDS=a,b,c` 逐个 wav 过
 /// VAD→KWS→STT,打印命中的唤醒词与识别文本。用来给非中文唤醒词定声调候选、
 /// 核对误唤醒。
 #[test]
@@ -250,21 +250,21 @@ fn keyword_lab() {
         eprintln!("模型未就位,跳过");
         return;
     };
-    let Ok(wavs_dir) = std::env::var("MIYU_KW_WAVS") else {
-        eprintln!("未设置 MIYU_KW_WAVS,跳过");
+    let Ok(wavs_dir) = std::env::var("GQY_KW_WAVS") else {
+        eprintln!("未设置 GQY_KW_WAVS,跳过");
         return;
     };
-    let keywords: Vec<String> = std::env::var("MIYU_KW_KEYWORDS")
+    let keywords: Vec<String> = std::env::var("GQY_KW_KEYWORDS")
         .unwrap_or_else(|_| "未有未有".to_string())
         .split(',')
         .map(|item| item.trim().to_string())
         .filter(|item| !item.is_empty())
         .collect();
-    let threshold: f32 = std::env::var("MIYU_KW_THRESHOLD")
+    let threshold: f32 = std::env::var("GQY_KW_THRESHOLD")
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(0.25);
-    let boost: f32 = std::env::var("MIYU_KW_BOOST")
+    let boost: f32 = std::env::var("GQY_KW_BOOST")
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(1.0);
@@ -272,7 +272,7 @@ fn keyword_lab() {
     config.wake_keywords = keywords;
     config.wake_threshold = threshold;
     config.wake_boost = boost;
-    let with_stt = std::env::var_os("MIYU_KW_STT").is_some();
+    let with_stt = std::env::var_os("GQY_KW_STT").is_some();
     let mut stt = with_stt.then(|| LocalSenseVoice::new(&dir, 2, "zh").expect("stt"));
     let tokens = dir.join(models::KWS_DIR).join("tokens.txt");
     for keyword in &config.wake_keywords {
@@ -281,8 +281,8 @@ fn keyword_lab() {
             Err(error) => eprintln!("ENC\t{keyword}\tERROR {error:#}"),
         }
     }
-    // MIYU_KW_EACH=1:每个唤醒词单独建管线,输出 keyword×wav 命中矩阵。
-    if std::env::var_os("MIYU_KW_EACH").is_some() {
+    // GQY_KW_EACH=1:每个唤醒词单独建管线,输出 keyword×wav 命中矩阵。
+    if std::env::var_os("GQY_KW_EACH").is_some() {
         let mut wavs: Vec<PathBuf> = std::fs::read_dir(&wavs_dir)
             .expect("wavs dir")
             .filter_map(|entry| entry.ok().map(|entry| entry.path()))
@@ -352,20 +352,20 @@ fn kws_raw() {
     let Some(dir) = models_dir() else {
         return;
     };
-    let Ok(wavs_dir) = std::env::var("MIYU_KW_WAVS") else {
+    let Ok(wavs_dir) = std::env::var("GQY_KW_WAVS") else {
         return;
     };
-    let keywords: Vec<String> = std::env::var("MIYU_KW_KEYWORDS")
+    let keywords: Vec<String> = std::env::var("GQY_KW_KEYWORDS")
         .unwrap_or_else(|_| "未有未有".to_string())
         .split(',')
         .map(|item| item.trim().to_string())
         .filter(|item| !item.is_empty())
         .collect();
-    let threshold: f32 = std::env::var("MIYU_KW_THRESHOLD")
+    let threshold: f32 = std::env::var("GQY_KW_THRESHOLD")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(0.25);
-    let boost: f32 = std::env::var("MIYU_KW_BOOST")
+    let boost: f32 = std::env::var("GQY_KW_BOOST")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(1.0);

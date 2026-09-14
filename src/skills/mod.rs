@@ -4,7 +4,7 @@ pub(crate) use draft::*;
 pub(crate) use manifest::*;
 
 use crate::config::{persona_scope_name, AppConfig};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -19,7 +19,7 @@ use yaml_rust2::{Yaml, YamlLoader};
 /// user skill of the same name in the persona/global directories overrides the
 /// built-in.
 ///
-/// 内置技能默认属于 Miyu 这个出厂人格,只在默认人格下可见——别人换上自定义
+/// 内置技能默认属于 顾清影 这个出厂人格,只在默认人格下可见——别人换上自定义
 /// 人格拿到的是纯净状态(09-01)。唯一例外是 `platform_wide=true` 的
 /// skill-creator:它是"如何扩展自己"的元能力,任何人格(包括从白板捏起的)
 /// 想给自己加技能都得用它,归人格等于锁死自定义角色的自我扩展入口。
@@ -48,8 +48,8 @@ const BUILTIN_SKILLS: &[(&str, &str, bool)] = &[
     ),
 ];
 
-/// 内置资源(技能/脚本)默认只属于 Miyu 出厂人格。判据:`active_persona` 去空
-/// 白后为空 = scope "default" = Miyu 本人。非默认人格下,非平台级的内置资源
+/// 内置资源(技能/脚本)默认只属于 顾清影 出厂人格。判据:`active_persona` 去空
+/// 白后为空 = scope "default" = 顾清影 本人。非默认人格下,非平台级的内置资源
 /// 一律隐藏,换上自定义人格即得纯净状态。
 pub(crate) fn is_default_persona(config: &AppConfig) -> bool {
     config.prompt.active_persona.trim().is_empty()
@@ -59,7 +59,7 @@ const MAX_SKILL_ROOT_DIRECTORIES: usize = 1_024;
 const MAX_SKILL_RESOURCE_ENTRIES: usize = 256;
 
 /// 人格清单里的技能白名单(`plugins.skills`);None = 全部。
-fn skill_allowlist(config: &AppConfig, paths: &MiyuPaths) -> Option<Vec<String>> {
+fn skill_allowlist(config: &AppConfig, paths: &GqyPaths) -> Option<Vec<String>> {
     crate::config::PersonaManifest::load(config, paths, &config.active_persona_scope())
         .plugins
         .skills
@@ -72,7 +72,7 @@ pub(crate) fn is_platform_wide_builtin(name: &str) -> bool {
         .any(|(builtin, _, platform_wide)| *builtin == name && *platform_wide)
 }
 
-/// 非平台级的内置技能(linux-game-compatibility 这类 Miyu 配件)。
+/// 非平台级的内置技能(linux-game-compatibility 这类 顾清影 配件)。
 fn is_optional_builtin(name: &str) -> bool {
     BUILTIN_SKILLS
         .iter()
@@ -110,7 +110,7 @@ fn allowed_by(
 /// **不看白名单**——表要摆全,勾选状态由调用方按清单填。
 pub(crate) fn persona_skill_options(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Vec<(String, String, bool)> {
     discover_visible(config, paths)
         .unwrap_or_default()
@@ -127,7 +127,7 @@ pub(crate) fn persona_skill_options(
 }
 
 /// 本人格看得见的技能,再过一道清单白名单——这才是模型面上的目录。
-pub fn discover(config: &AppConfig, paths: &MiyuPaths) -> Result<Vec<SkillEntry>> {
+pub fn discover(config: &AppConfig, paths: &GqyPaths) -> Result<Vec<SkillEntry>> {
     let allowlist = skill_allowlist(config, paths);
     let default_persona = is_default_persona(config);
     Ok(discover_visible(config, paths)?
@@ -144,7 +144,7 @@ pub fn discover(config: &AppConfig, paths: &MiyuPaths) -> Result<Vec<SkillEntry>
 }
 
 /// 目录扫描 + 全部内置技能(含非平台级的),不含人格门与白名单——门在 `allowed_by`。
-fn discover_visible(config: &AppConfig, paths: &MiyuPaths) -> Result<Vec<SkillEntry>> {
+fn discover_visible(config: &AppConfig, paths: &GqyPaths) -> Result<Vec<SkillEntry>> {
     let mut entries = Vec::new();
     let mut seen = BTreeSet::new();
     for (root, source) in skill_roots(config, paths) {
@@ -198,7 +198,7 @@ fn discover_visible(config: &AppConfig, paths: &MiyuPaths) -> Result<Vec<SkillEn
     Ok(entries)
 }
 
-pub fn catalog_fingerprint(config: &AppConfig, paths: &MiyuPaths) -> Result<[u8; 32]> {
+pub fn catalog_fingerprint(config: &AppConfig, paths: &GqyPaths) -> Result<[u8; 32]> {
     let mut hasher = blake3::Hasher::new();
     for (root, source) in skill_roots(config, paths) {
         hasher.update(source.as_str().as_bytes());
@@ -230,7 +230,7 @@ pub fn catalog_fingerprint(config: &AppConfig, paths: &MiyuPaths) -> Result<[u8;
     Ok(*hasher.finalize().as_bytes())
 }
 
-pub fn load(name: &str, config: &AppConfig, paths: &MiyuPaths) -> Result<LoadedSkill> {
+pub fn load(name: &str, config: &AppConfig, paths: &GqyPaths) -> Result<LoadedSkill> {
     let name = name.trim();
     // 白名单外的技能加载不了:下面按 `discover` 找,它已经把可见性裁过了——
     // 模型照着历史 load 也捞不回关掉的技能。
@@ -287,14 +287,14 @@ pub fn load(name: &str, config: &AppConfig, paths: &MiyuPaths) -> Result<LoadedS
 pub fn is_generated_skill(raw: &str) -> bool {
     parse_skill_metadata(raw, None)
         .ok()
-        .and_then(|metadata| metadata.metadata.get("miyu.generated").cloned())
+        .and_then(|metadata| metadata.metadata.get("gqy.generated").cloned())
         .is_some_and(|value| value.eq_ignore_ascii_case("true"))
-        || raw.contains("generated_by: miyu")
+        || raw.contains("generated_by: gqy")
         || raw.contains("Auto-learned method from assistant conversation")
-        || raw.contains("Auto-learned method from Miyu conversation")
+        || raw.contains("Auto-learned method from GQY conversation")
 }
 
-fn skill_roots(config: &AppConfig, paths: &MiyuPaths) -> Vec<(PathBuf, SkillSource)> {
+fn skill_roots(config: &AppConfig, paths: &GqyPaths) -> Vec<(PathBuf, SkillSource)> {
     vec![
         (
             config.active_persona_skills_dir(paths),
@@ -334,8 +334,8 @@ fn sorted_skill_directories(root: &Path) -> Result<Vec<PathBuf>> {
 mod tests {
     use super::*;
 
-    fn test_paths(root: &Path) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(root: &Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -344,7 +344,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("data/pictures"),
-            fish_hook_file: root.join("fish/miyu.fish"),
+            fish_hook_file: root.join("fish/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("data/scripts"),
@@ -354,10 +354,10 @@ mod tests {
 
     #[test]
     fn parses_standard_frontmatter_fields() {
-        let raw = "---\nname: sample-skill\ndescription: Sample workflow\nlicense: MIT\ncompatibility: Miyu\nallowed-tools: read_file\nmetadata:\n  author: test\n---\n\nBody.";
+        let raw = "---\nname: sample-skill\ndescription: Sample workflow\nlicense: MIT\ncompatibility: GQY\nallowed-tools: read_file\nmetadata:\n  author: test\n---\n\nBody.";
         let metadata = parse_skill_metadata(raw, Some("sample-skill")).unwrap();
         assert_eq!(metadata.license.as_deref(), Some("MIT"));
-        assert_eq!(metadata.compatibility.as_deref(), Some("Miyu"));
+        assert_eq!(metadata.compatibility.as_deref(), Some("GQY"));
         assert_eq!(metadata.allowed_tools.as_deref(), Some("read_file"));
         assert_eq!(
             metadata.metadata.get("author").map(String::as_str),
@@ -401,7 +401,7 @@ mod tests {
         assert_eq!(creator.metadata.description, "persona");
     }
 
-    /// 内置技能默认属于 Miyu 出厂人格:默认人格看得见非平台级内置技能,
+    /// 内置技能默认属于 顾清影 出厂人格:默认人格看得见非平台级内置技能,
     /// 自定义人格只剩平台级(skill-creator、script-creator)。
     #[test]
     fn builtin_skills_are_persona_gated_except_platform_wide() {

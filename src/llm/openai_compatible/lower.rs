@@ -219,7 +219,7 @@ pub(in crate::llm::openai_compatible) fn lower_anthropic_user_content(
                     }
                 })
                 .collect();
-            // Anthropic 规定 document 块摆在文本块**之前**,而 Miyu 组装 parts
+            // Anthropic 规定 document 块摆在文本块**之前**,而 顾清影 组装 parts
             // 时正文在最前(图/视频/PDF 依次追加)。稳定分区把 document 提上来,
             // 同类块之间的原有次序不动——这一层是字节纯度的一部分,排序不确定
             // 就等于每轮换一份前缀。

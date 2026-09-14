@@ -31,7 +31,7 @@ pub(in crate::llm::openai_compatible) struct RelayProcess {
 }
 
 /// 三条中转线各自的配置/登录态目录:claude(`~/.claude`、`~/.claude.json`)、
-/// codex(`~/.codex`)、agy(`~/.gemini`,或 `MIYU_AGY_CONFIG_DIR`)。不存在的不给。
+/// codex(`~/.codex`)、agy(`~/.gemini`,或 `GQY_AGY_CONFIG_DIR`)。不存在的不给。
 fn relay_config_grants() -> Vec<std::path::PathBuf> {
     let mut grants = Vec::new();
     if let Some(home) = std::env::var_os("HOME") {
@@ -40,7 +40,7 @@ fn relay_config_grants() -> Vec<std::path::PathBuf> {
             grants.push(home.join(name));
         }
     }
-    if let Some(dir) = std::env::var_os("MIYU_AGY_CONFIG_DIR") {
+    if let Some(dir) = std::env::var_os("GQY_AGY_CONFIG_DIR") {
         grants.push(std::path::PathBuf::from(dir));
     }
     grants

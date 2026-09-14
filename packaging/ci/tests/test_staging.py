@@ -42,14 +42,14 @@ class StagingTests(unittest.TestCase):
             source = root/'script'
             source.write_text('fixture')
             stage = root/'stage'
-            install_file(source, stage/'bin/miyu', 0o755)
-            (stage/'bin/miyupm').symlink_to('miyu')
+            install_file(source, stage/'bin/gqy', 0o755)
+            (stage/'bin/gqypm').symlink_to('gqy')
             inventory = tree_manifest(stage)
             self.assertEqual(inventory, tree_manifest(stage))
-            self.assertEqual(next(i for i in inventory if i['path']=='bin/miyu')['mode'], '0755')
-            self.assertEqual(next(i for i in inventory if i['path']=='bin/miyupm')['target'], 'miyu')
+            self.assertEqual(next(i for i in inventory if i['path']=='bin/gqy')['mode'], '0755')
+            self.assertEqual(next(i for i in inventory if i['path']=='bin/gqypm')['target'], 'gqy')
             with self.assertRaises(ValueError):
-                install_file(source, stage/'bin/miyu', 0o755)
+                install_file(source, stage/'bin/gqy', 0o755)
 
     def test_catalog_duplicate_and_path_escape_rejected(self):
         catalog = load_json(COMMON/'assets.json')

@@ -142,10 +142,10 @@ fn is_database_corrupt(error: &anyhow::Error) -> bool {
 
 impl ConversationDb {
     /// 开库。库损坏时把 rusqlite 的裸报错换成一条能照着做的说明——
-    /// 08-29 用户反馈:`miyu daemon start` / `web` / `dev` 全都只吐
+    /// 08-29 用户反馈:`gqy daemon start` / `web` / `dev` 全都只吐
     /// 「exited before becoming ready (exit status: 1)」,daemon.log 里也只有
     /// 一行 `database disk image is malformed`,既不说是哪个文件,也不说怎么
-    /// 办;真正有用的那句在第三个文件 `miyu.<date>.log` 里。
+    /// 办;真正有用的那句在第三个文件 `gqy.<date>.log` 里。
     ///
     /// 损坏可能从 open/PRAGMA/版本读取/迁移里任意一处冒出来,所以在出口统一
     /// 认,不逐个 `?` 去猜。
@@ -170,9 +170,9 @@ impl ConversationDb {
                 String::new()
             };
             error.context(format!(
-                "会话数据库已损坏：{}\n先停掉所有 miyu 进程，再任选一条：\n\
+                "会话数据库已损坏：{}\n先停掉所有 gqy 进程，再任选一条：\n\
                  1. 抢救数据：用 sqlite3 命令行对该文件跑 \".recover\" 导出后重建\n\
-                 2. 放弃历史：把 conversation.db、conversation.db-wal、conversation.db-shm 一起挪走，Miyu 会重建空库{}",
+                 2. 放弃历史：把 conversation.db、conversation.db-wal、conversation.db-shm 一起挪走，顾清影 会重建空库{}",
                 db_path.display(),
                 recovery
             ))
@@ -982,8 +982,8 @@ mod reclaim_probe {
     /// 路径跑一遍，看能还回去多少磁盘。
     ///
     /// ```
-    /// cp ~/.miyu/state/conversation.db /tmp/probe/
-    /// MIYU_RECLAIM_PROBE_DIR=/tmp/probe \
+    /// cp ~/.gqy/state/conversation.db /tmp/probe/
+    /// GQY_RECLAIM_PROBE_DIR=/tmp/probe \
     ///   cargo test --lib reclaim_probe -- --ignored --nocapture
     /// ```
     ///
@@ -991,8 +991,8 @@ mod reclaim_probe {
     #[test]
     #[ignore]
     fn reclaim_on_a_real_database() {
-        let Some(dir) = std::env::var_os("MIYU_RECLAIM_PROBE_DIR") else {
-            println!("\n  跳过：没给 MIYU_RECLAIM_PROBE_DIR");
+        let Some(dir) = std::env::var_os("GQY_RECLAIM_PROBE_DIR") else {
+            println!("\n  跳过：没给 GQY_RECLAIM_PROBE_DIR");
             return;
         };
         let dir = std::path::PathBuf::from(dir);

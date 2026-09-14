@@ -7,7 +7,7 @@
 
 use super::persona_scoped_config;
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::tools::{
     scripts_dashboard_delete, scripts_dashboard_disable, scripts_dashboard_enable,
     scripts_dashboard_overview, scripts_dashboard_register, scripts_dashboard_source,
@@ -66,7 +66,7 @@ fn default_source_lines() -> usize {
 fn scoped(
     state: &DaemonState,
     persona: &str,
-) -> std::result::Result<(AppConfig, MiyuPaths), ApiError> {
+) -> std::result::Result<(AppConfig, GqyPaths), ApiError> {
     Ok((persona_scoped_config(state, persona)?, state.paths.clone()))
 }
 

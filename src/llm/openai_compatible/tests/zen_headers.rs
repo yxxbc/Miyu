@@ -247,11 +247,11 @@ async fn separate_calls_get_separate_message_ids() {
     );
 }
 
-/// 会话头跟着 Miyu 的会话走：同一段对话恒定（跨 daemon 重启也一样，因为是
+/// 会话头跟着 顾清影 的会话走：同一段对话恒定（跨 daemon 重启也一样，因为是
 /// 确定性散列），换一段对话就换一个。整个 daemon 共用一个会话，服务端那边
 /// 所有对话会糊成一条。
 #[tokio::test]
-async fn the_session_header_follows_the_miyu_session() {
+async fn the_session_header_follows_the_gqy_session() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!(
         "http://{}/v1/chat/completions",

@@ -7,11 +7,11 @@ use crate::cli::*;
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
-#[command(name = "miyu", version, about = "Miyu CLI AI Agent")]
+#[command(name = "gqy", version, about = "GQY CLI AI Agent")]
 pub struct Cli {
     #[arg(long, global = true)]
     pub debug: bool,
-    /// 只看空会话的 banner(星空 + 渐变 MIYU),按任意键退出
+    /// 只看空会话的 banner(星空 + 渐变 GQY),按任意键退出
     #[arg(long)]
     pub banner: bool,
 
@@ -19,7 +19,7 @@ pub struct Cli {
     #[arg(long)]
     pub stdout: bool,
 
-    /// 一次性对话的回合选项;`miyu ask` 子命令上同样一套,子命令的赢。
+    /// 一次性对话的回合选项;`gqy ask` 子命令上同样一套,子命令的赢。
     #[command(flatten)]
     pub turn: TurnOptions,
 
@@ -84,8 +84,8 @@ pub enum Command {
     AlarmWorker(AlarmWorkerArgs),
     #[command(name = "__tool", hide = true)]
     Tool(ToolArgs),
-    /// Internal: run as the Miyu daemon (spawned by the CLI via
-    /// `current_exe`, replacing the former separate `miyud` binary).
+    /// Internal: run as the GQY daemon (spawned by the CLI via
+    /// `current_exe`, replacing the former separate `gqyd` binary).
     #[command(name = "__daemon", hide = true)]
     DaemonWorker(WebArgs),
     Ask(MessageArgs),
@@ -99,7 +99,7 @@ pub enum Command {
     Paths,
     /// 家目录布局:看计划 / --apply 立刻搬 / --rollback 搬回去
     Layout(LayoutArgs),
-    /// 包管理器:install / remove / upgrade / search / list / tap(`miyupm` 同)
+    /// 包管理器:install / remove / upgrade / search / list / tap(`gqypm` 同)
     Pm(PmArgs),
     Config(ConfigArgs),
     Reload,
@@ -131,7 +131,7 @@ pub enum Command {
     Daemon(DaemonArgs),
     /// 进入开发模式 REPL(极简编码形态,无人格)
     Dev,
-    /// 新手引导:人格 / 功能 / 认识你 / 终端集成 / 接模型(裸 miyu 第一次会自动进)
+    /// 新手引导:人格 / 功能 / 认识你 / 终端集成 / 接模型(裸 gqy 第一次会自动进)
     Oobe,
     /// 工具桥:以当前会话身份调用一个结构化工具(供 run_command 脚本编排)
     #[command(name = "tool-call")]
@@ -141,7 +141,7 @@ pub enum Command {
     McpServe,
     /// 会话管理:list / new / show / delete / rename / clear / pop / compact / models / sandbox
     Session(SessionArgs),
-    /// 长驻协议模式:stdin 一行一请求(JSON),stdout 一行一事件;宿主软件把 Miyu 当后端用
+    /// 长驻协议模式:stdin 一行一请求(JSON),stdout 一行一事件;宿主软件把 顾清影 当后端用
     Stdio,
 }
 
@@ -270,7 +270,7 @@ pub struct MessageArgs {
     pub message: Vec<String>,
 }
 
-/// `miyu session …`:程序驱动的会话管理面,全部映射到 daemon 的会话 IPC。
+/// `gqy session …`:程序驱动的会话管理面,全部映射到 daemon 的会话 IPC。
 #[derive(Debug, Args)]
 pub struct SessionArgs {
     #[command(subcommand)]
@@ -372,7 +372,7 @@ pub struct ToolArgs {
     pub arguments: Option<String>,
 }
 
-/// 工具桥:以本会话身份(MIYU_SESSION)调用结构化工具。--list 列出的即
+/// 工具桥:以本会话身份(GQY_SESSION)调用结构化工具。--list 列出的即
 /// 本会话可调用的集合;内层调用在 daemon 侧的会话工作区执行,不继承本
 /// shell 的环境变量与当前目录,跨工具传数据走参数 JSON 或文件。
 #[derive(Debug, Args)]
@@ -452,8 +452,8 @@ pub struct ResetArgs {
     pub session: Option<String>,
 }
 
-/// `miyu compact`:立即压缩一个会话的上下文。与 `reset`/`pop` 同形——缺省打
-/// 终端集成会话,`--session` 才换目标;程序驱动的宿主用 `miyu session compact`。
+/// `gqy compact`:立即压缩一个会话的上下文。与 `reset`/`pop` 同形——缺省打
+/// 终端集成会话,`--session` 才换目标;程序驱动的宿主用 `gqy session compact`。
 #[derive(Debug, Args)]
 pub struct CompactArgs {
     /// 目标会话(名字、编号或 id);缺省为终端集成会话

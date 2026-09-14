@@ -1,6 +1,6 @@
 //! 合并转发的解析与递归展开(08-26)。
 //!
-//! 用户反馈:Miyu 看不见别人转发进来的消息,尤其是转发里还套转发的。根因是
+//! 用户反馈:顾清影 看不见别人转发进来的消息,尤其是转发里还套转发的。根因是
 //! 入站段分派表里根本没有 `forward` 分支,整条消息落进 `_ => {}`。
 
 use super::shared::*;
@@ -186,7 +186,7 @@ async fn a_failed_lookup_leaves_the_rest_of_the_message_intact() {
 }
 
 /// 被引用消息里的转发也要展开(08-26 实测:用户引用一条转发问"里面是什么",
-/// Miyu 答"那条在我这儿是空的")。图片并入**当前消息**的图片位。
+/// 顾清影 答"那条在我这儿是空的")。图片并入**当前消息**的图片位。
 #[tokio::test]
 async fn quoted_forwards_expand_into_the_quoted_text() {
     let (handle, mut frames) = test_connection(None);

@@ -24,7 +24,7 @@ const MAX_ZOOM: u32 = 19;
 const MAX_TILE_BYTES: usize = 512 * 1024;
 const TILE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(12);
 /// Nominatim / OSM 瓦片的使用条款都要求带一个能联系上的 User-Agent。
-const OSM_USER_AGENT: &str = "Miyu/0.5 (personal assistant; https://github.com/yxxbc/Miyu)";
+const OSM_USER_AGENT: &str = "GQY/0.5 (personal assistant; https://github.com/yxxbc/Miyu)";
 
 #[derive(Deserialize)]
 pub(in crate::web) struct TileQuery {

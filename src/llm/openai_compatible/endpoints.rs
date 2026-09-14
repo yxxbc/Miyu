@@ -23,7 +23,7 @@ pub(in crate::llm::openai_compatible) struct ResponsesContinuationHealth {
 
 impl ResponsesContinuationHealth {
     pub(in crate::llm::openai_compatible) fn for_provider(
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         provider: &ProviderConfig,
     ) -> Self {
         let store = crate::llm::provider_capabilities::store_path(&paths.cache_dir);
@@ -342,7 +342,7 @@ fn stale_active_model_reasons(config: &AppConfig) -> Vec<String> {
 
 pub(in crate::llm::openai_compatible) fn llm_endpoints(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Vec<LlmEndpoint>> {
     let mut endpoints = Vec::new();
     let mut errors = Vec::new();

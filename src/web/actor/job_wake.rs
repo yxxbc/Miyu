@@ -176,7 +176,7 @@ pub(in crate::web) async fn stream_job_wake_to_origin_tty(
         tracing::info!(job_id = %completion.job_id, reason, "job wake writeback fell back to a notification");
         if config.notifications.enabled {
             crate::notify::notify(
-                &format!("Miyu 后台任务跟进 · {}", completion.title),
+                &format!("顾清影 后台任务跟进 · {}", completion.title),
                 "任务已完成,跟进回复在会话里(终端不在提示符,没有直接写入)。",
             );
         }
@@ -210,7 +210,7 @@ pub(in crate::web) async fn stream_job_wake_to_origin_tty(
     let shell_pid = origin.shell_pid;
     let setup = TtyRenderSetup::from_config(&config, tty_cols(&tty), completion.title.clone());
     let writer = std::thread::Builder::new()
-        .name("miyu-tty-writeback".to_string())
+        .name("gqy-tty-writeback".to_string())
         .spawn(move || origin_tty_writer(tty, shell_pid, ops_rx, setup));
     if writer.is_err() {
         notify_fallback("writer thread spawn failed");

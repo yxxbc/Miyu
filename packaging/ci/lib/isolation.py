@@ -24,9 +24,9 @@ class Sandbox:
                       'pid': os.getpid(), 'uid': os.getuid()}
         self.marker.write_text(json.dumps(self.owner), encoding='utf-8')
         self.marker.chmod(0o600)
-        for name in ('miyu', 'home', 'runtime', 'cache', 'config', 'data', 'state', 'work', 'tmp'):
+        for name in ('gqy', 'home', 'runtime', 'cache', 'config', 'data', 'state', 'work', 'tmp'):
             (self.root / name).mkdir(mode=0o700)
-        config = self.root / 'miyu/config'
+        config = self.root / 'gqy/config'
         config.mkdir(mode=0o700)
         # No inherited provider. Port 9 fails locally until a suite owns a mock.
         (config / 'config.jsonc').write_text(json.dumps({
@@ -51,7 +51,7 @@ class Sandbox:
         env.setdefault('RUSTUP_HOME', str(original_home / '.rustup'))
         env.setdefault('PATH', os.defpath)
         env.setdefault('CARGO_BUILD_JOBS', '2')
-        env.update(HOME=str(self.root/'home'), MIYU_HOME=str(self.root/'miyu'),
+        env.update(HOME=str(self.root/'home'), GQY_HOME=str(self.root/'gqy'),
                    TMPDIR=str(self.root/'tmp'), XDG_RUNTIME_DIR=str(self.root/'runtime'),
                    XDG_CACHE_HOME=str(self.root/'cache'), XDG_CONFIG_HOME=str(self.root/'config'),
                    XDG_DATA_HOME=str(self.root/'data'), XDG_STATE_HOME=str(self.root/'state'))

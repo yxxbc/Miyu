@@ -11,7 +11,7 @@ use crate::web::*;
 
 pub(in crate::web) const MAX_SECRET_CHARS: usize = 100_000;
 
-pub(in crate::web) const AUTH_COOKIE: &str = "miyu_session";
+pub(in crate::web) const AUTH_COOKIE: &str = "gqy_session";
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -154,8 +154,8 @@ pub(in crate::web) async fn auth_login(
             "username is required",
         ));
     };
-    // 内置账号 miyu/miyu 只到建号为止:有了管理员账号,同名就走账号表(管理员
-    // 可以真叫 miyu),没有这个账号就是普通的用户名或密码错误。
+    // 内置账号 gqy/gqy 只到建号为止:有了管理员账号,同名就走账号表(管理员
+    // 可以真叫 gqy),没有这个账号就是普通的用户名或密码错误。
     let builtin = username.eq_ignore_ascii_case(BUILTIN_SETUP_USERNAME)
         && !state.state_store.has_admin_account().unwrap_or(true);
     let attempt = if builtin {
@@ -168,7 +168,7 @@ pub(in crate::web) async fn auth_login(
             .flatten()
             .is_none()
     {
-        // 建号之后再拿 miyu/miyu 来:这不是在猜谁的密码,不计入限流,直接拒。
+        // 建号之后再拿 gqy/gqy 来:这不是在猜谁的密码,不计入限流,直接拒。
         return Err(ApiError::new(
             StatusCode::UNAUTHORIZED,
             "the built-in account is disabled once an admin account exists; sign in with your own account",
@@ -311,7 +311,7 @@ pub(in crate::web) async fn auth_register(
 }
 
 /// 成员的家目录 `home/<用户名>/`(0700)。老布局下也建——档案文件要有地方放。
-pub(in crate::web) fn ensure_user_home(paths: &MiyuPaths, username: &str) -> Result<()> {
+pub(in crate::web) fn ensure_user_home(paths: &GqyPaths, username: &str) -> Result<()> {
     crate::paths::ensure_private_dir(&paths.homes_dir())?;
     crate::paths::ensure_private_dir(&paths.user_home_dir(username))
 }

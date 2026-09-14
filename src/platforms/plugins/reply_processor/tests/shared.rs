@@ -1,7 +1,7 @@
 //! 回复处理测试共用的 fixture。
 
 use crate::config::AppConfig;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platforms::plugins::reply_processor::*;
 use crate::platforms::{ConversationKind, PlatformAdapter, PlatformConversation};
 use crate::state::StateStore;
@@ -11,7 +11,7 @@ use std::path::PathBuf;
 pub(super) fn test_context(is_admin: bool) -> (tempfile::TempDir, PlatformTurnContext) {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
-    let paths = MiyuPaths {
+    let paths = GqyPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -20,7 +20,7 @@ pub(super) fn test_context(is_admin: bool) -> (tempfile::TempDir, PlatformTurnCo
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("pictures"),
-        fish_hook_file: root.join("fish/miyu.fish"),
+        fish_hook_file: root.join("fish/gqy.fish"),
         bash_hook_file: root.join("shell/bash-hook.sh"),
         zsh_hook_file: root.join("shell/zsh-hook.zsh"),
         scripts_dir: root.join("config/scripts"),
@@ -65,6 +65,6 @@ impl PlatformAdapter for NoopAdapter {
     }
 
     fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-        Box::pin(async { Ok("Miyu".to_string()) })
+        Box::pin(async { Ok("GQY".to_string()) })
     }
 }

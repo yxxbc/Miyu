@@ -18,7 +18,7 @@ use crate::cli::*;
 /// 3. 本会话的历史文件（`/reset` 删掉 turn 之后它仍在，是持久真相）
 pub(in crate::cli) fn load_repl_input_history(
     state: &StateStore,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<Vec<ReplHistoryEntry>> {
     let session_id = state.session_id();
     let mut merged: Vec<ReplHistoryEntry> =
@@ -49,7 +49,7 @@ pub(in crate::cli) fn load_repl_input_history(
 /// 只在「从空输入框开始翻」时调用：翻到一半重载会让 `history_index` 错位。
 pub(in crate::cli) fn refresh_repl_input_history(
     history: &mut Vec<ReplHistoryEntry>,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session_id: &str,
 ) -> bool {
     let mut added = false;
@@ -182,7 +182,7 @@ impl LiveReplEditor {
     pub(in crate::cli) fn handle_event(
         &mut self,
         event: Event,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         allow_interrupt: bool,
     ) -> Result<LiveEditorAction> {
         let is_escape = matches!(
@@ -426,7 +426,7 @@ impl LiveReplEditor {
         Ok(LiveEditorAction::Redraw)
     }
 
-    pub(in crate::cli) fn paste_clipboard(&mut self, paths: &MiyuPaths) -> Result<()> {
+    pub(in crate::cli) fn paste_clipboard(&mut self, paths: &GqyPaths) -> Result<()> {
         match crate::clipboard::read_clipboard() {
             Ok(crate::clipboard::ClipboardContent::Image(image)) => {
                 let index = self.pasted_images.len() + 1;

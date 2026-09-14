@@ -4,9 +4,9 @@
 前提:隔离 home 已配 antigravity(或任一 CLI 中转)供应商,且 daemon 在跑——
 直连模式下桥上没有 ask_question(它的注册门槛是 /dev/tty)。用法:
 
-    MIYU_HOME=/tmp/miyu-agy/home XDG_RUNTIME_DIR=/tmp/miyu-agy/run \\
-      target/debug/miyu daemon start --port 18300
-    MIYU_HOME=/tmp/miyu-agy/home XDG_RUNTIME_DIR=/tmp/miyu-agy/run python3 testkit/antigravity/question_pty.py
+    GQY_HOME=/tmp/gqy-agy/home XDG_RUNTIME_DIR=/tmp/gqy-agy/run \\
+      target/debug/gqy daemon start --port 18300
+    GQY_HOME=/tmp/gqy-agy/home XDG_RUNTIME_DIR=/tmp/gqy-agy/run python3 testkit/antigravity/question_pty.py
 
 证伪法:把 cli_relay::hidden_remote_tool 临时改成恒 false,面板之后会出现二十几处「准备问题」。
 
@@ -19,8 +19,8 @@ import fcntl, os, pty, re, sqlite3, struct, subprocess, sys, termios, threading,
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-MIYU = REPO / "target/debug/miyu"
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-agy/home"))
+GQY = REPO / "target/debug/gqy"
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-agy/home"))
 LOG = HOME / "cache" / "logs" / "question-pty.log"
 
 
@@ -29,11 +29,11 @@ class Repl:
         env = dict(os.environ)
         for k in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"):
             env.pop(k, None)
-        env.update(MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=os.environ.get("XDG_RUNTIME_DIR", "/tmp/miyu-agy/run"),
+        env.update(GQY_HOME=str(HOME), XDG_RUNTIME_DIR=os.environ.get("XDG_RUNTIME_DIR", "/tmp/gqy-agy/run"),
                    TERM="xterm-256color", LANG="zh_CN.UTF-8")
         self.master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 140, 0, 0))
-        self.proc = subprocess.Popen([str(MIYU)], stdin=slave, stdout=slave, stderr=slave,
+        self.proc = subprocess.Popen([str(GQY)], stdin=slave, stdout=slave, stderr=slave,
                                      env=env, preexec_fn=os.setsid, close_fds=True)
         os.close(slave)
         self.buf = bytearray()
@@ -92,7 +92,7 @@ def main():
     try:
         time.sleep(3)
         start = repl.completed_turns()
-        repl.send("用 mcp_miyu_ask_question 工具问我喜欢红色还是蓝色(给两个选项),拿到我的回答后,再用 run_command 运行 echo AFTER-Q,最后一句话汇报颜色和命令输出\r")
+        repl.send("用 mcp_gqy_ask_question 工具问我喜欢红色还是蓝色(给两个选项),拿到我的回答后,再用 run_command 运行 echo AFTER-Q,最后一句话汇报颜色和命令输出\r")
         shown = repl.wait_for("红", 150)
         print("question panel shown:", shown)
         time.sleep(1.5)

@@ -199,7 +199,7 @@ impl PlatformAdapter for OneBotAdapter {
                 },
                 Err(error) => {
                     tracing::debug!(
-                        target: "miyu::qq",
+                        target: "gqy::qq",
                         error = %error,
                         self_id = self.self_id,
                         group_id,
@@ -258,7 +258,7 @@ impl PlatformAdapter for OneBotAdapter {
     fn fetch_platform_file<'a>(
         &'a self,
         file_ref: &'a PlatformContextFileRef,
-        paths: &'a crate::paths::MiyuPaths,
+        paths: &'a crate::paths::GqyPaths,
     ) -> BoxFuture<'a, Result<PlatformFileDownload>> {
         Box::pin(async move { self.fetch_platform_file_impl(file_ref, paths).await })
     }
@@ -572,7 +572,7 @@ impl OneBotAdapter {
     pub(in crate::platforms::onebot) async fn fetch_platform_file_impl(
         &self,
         file_ref: &PlatformContextFileRef,
-        paths: &crate::paths::MiyuPaths,
+        paths: &crate::paths::GqyPaths,
     ) -> Result<PlatformFileDownload> {
         migrate_legacy_platform_file_cache(paths).await;
         let max_bytes = platform_file_byte_limit(&file_ref.file_name);
@@ -609,7 +609,7 @@ impl OneBotAdapter {
         if fetched.is_none() && has_provider_id {
             if let Some(error) = &direct_error {
                 tracing::debug!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     error = %error,
                     file = %file_ref.id,
                     "direct platform file url failed; asking the bridge"

@@ -278,13 +278,13 @@ fn title_url_line_ignores_prose_parentheses() {
 
 #[test]
 fn file_scheme_links_are_recognized() {
-    let output = render_inline("[bilibili-summary](file:///home/u/.miyu/mcp-servers/bili)");
+    let output = render_inline("[bilibili-summary](file:///home/u/.gqy/mcp-servers/bili)");
     assert!(
         output.contains(&format!("{LINK_LABEL_STYLE}bilibili-summary{RESET}")),
         "{output}"
     );
     assert!(
-        output.contains("file:///home/u/.miyu/mcp-servers/bili"),
+        output.contains("file:///home/u/.gqy/mcp-servers/bili"),
         "{output}"
     );
     assert!(!output.contains("]("), "markdown 原文不该漏出来: {output}");
@@ -302,10 +302,10 @@ fn osc8_wraps_body_in_hyperlink_escape() {
 fn title_url_line_leaves_markdown_links_alone() {
     // `[label](url)` 独占一行时,结尾也是 `)`——按「标题 (地址)」处理的话整条
     // Markdown 会被当成标题原样漏出来(09-09 走查抓到)。
-    let output = render_markdown_line("[GitHub 上的 Miyu](https://github.com/x/y)");
+    let output = render_markdown_line("[GitHub 上的 顾清影](https://github.com/x/y)");
     assert!(!output.contains("]("), "{output}");
     assert!(
-        output.contains(&format!("{LINK_LABEL_STYLE}GitHub 上的 Miyu{RESET}")),
+        output.contains(&format!("{LINK_LABEL_STYLE}GitHub 上的 顾清影{RESET}")),
         "{output}"
     );
 }

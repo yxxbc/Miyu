@@ -16,10 +16,10 @@
   4. 收尾断言:未索引归零、没有失败
 
 `--shoot` 再用 playwright 走一遍浏览器侧(拖放 → 进度条 → 完成),截图落在
-`~/.cache/miyu-kb-reindex/`。
+`~/.cache/gqy-kb-reindex/`。
 
 前置:`cargo build`(web 静态资源编进二进制)、本机装了 onnxruntime 与内置
-bge-small-zh 模型(`miyu embed status` 能探通)。端口默认 18436,别碰 8300。
+bge-small-zh 模型(`gqy embed status` 能探通)。端口默认 18436,别碰 8300。
 """
 
 import argparse
@@ -36,11 +36,11 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-kb-reindex/home"))
-LIBRARY = Path(os.environ.get("MIYU_KBR_LIB", "/tmp/miyu-kb-reindex/library"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-kb-reindex/home"))
+LIBRARY = Path(os.environ.get("GQY_KBR_LIB", "/tmp/gqy-kb-reindex/library"))
 RUNTIME = "/tmp/mx-kbr"
-SHOTS = Path(os.environ.get("MIYU_KBR_SHOTS", Path.home() / ".cache" / "miyu-kb-reindex"))
+SHOTS = Path(os.environ.get("GQY_KBR_SHOTS", Path.home() / ".cache" / "gqy-kb-reindex"))
 
 
 def api(base, path, body=None, method="GET", timeout=120):
@@ -123,15 +123,15 @@ def line(elapsed, overview, status):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--files", type=int, default=400)
-    parser.add_argument("--port", type=int, default=int(os.environ.get("MIYU_KBR_PORT", "18436")))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("GQY_KBR_PORT", "18436")))
     parser.add_argument("--budget", type=float, default=900.0, help="重建等待上限(秒)")
-    parser.add_argument("--keep-home", action="store_true", help="复用上次的 MIYU_HOME")
+    parser.add_argument("--keep-home", action="store_true", help="复用上次的 GQY_HOME")
     parser.add_argument("--second-batch", type=int, default=100,
                         help="第一趟重建跑着的时候再传这么多个(根因就在这里)")
     parser.add_argument("--shoot", action="store_true", help="跑 playwright 截图")
     args = parser.parse_args()
     base = f"http://127.0.0.1:{args.port}"
-    env = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+    env = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
     if not BIN.exists():
         print(f"! 先 cargo build:{BIN} 不存在", file=sys.stderr)

@@ -4,7 +4,7 @@
 //! 一个颜色只写一次 RGB，落地时按能力分四档——真彩 / 256 / 16 / 不上色。
 //! 降级不是「颜色变少」，是换一种手段表达同一件事（16 色以下选中态改反显）。
 //!
-//! 手动压：`MIYU_COLOR=truecolor|256|16|none`、`MIYU_ASCII=1`；`NO_COLOR`
+//! 手动压：`GQY_COLOR=truecolor|256|16|none`、`GQY_ASCII=1`；`NO_COLOR`
 //! （跨工具的无参数约定）优先级最高。
 
 use ratatui::style::{Color, Modifier, Style};
@@ -27,7 +27,7 @@ impl Depth {
         if std::env::var_os("NO_COLOR").is_some() {
             return Depth::Mono;
         }
-        if let Ok(value) = std::env::var("MIYU_COLOR") {
+        if let Ok(value) = std::env::var("GQY_COLOR") {
             return match value.trim().to_ascii_lowercase().as_str() {
                 "truecolor" | "24bit" | "true" => Depth::True,
                 "256" | "xterm256" => Depth::X256,
@@ -67,7 +67,7 @@ impl Depth {
 /// 设计稿里的颜色一律写成 RGB，落地时才降级。
 pub type Rgb = (u8, u8, u8);
 
-/// 种子色取自 web/styles.css（miyu-logo 抽的）。
+/// 种子色取自 web/styles.css（gqy-logo 抽的）。
 pub const BLUE: Rgb = (0xae, 0xbd, 0xe8); // primary  瞳色雾蓝
 pub const CORAL: Rgb = (0xe3, 0x8c, 0x9a); // tertiary 丝带酒红
 pub const GOLD: Rgb = (0xe4, 0xbf, 0x79); // secondary 发色暖金
@@ -148,7 +148,7 @@ pub struct Theme {
 
 impl Theme {
     pub fn detect() -> Self {
-        let ascii = std::env::var("MIYU_ASCII")
+        let ascii = std::env::var("GQY_ASCII")
             .map(|value| value != "0" && !value.is_empty())
             .unwrap_or(false);
         Self {

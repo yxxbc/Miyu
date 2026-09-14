@@ -3,7 +3,7 @@
 //! stdout 每行一个 JSON 事件;`stream_event` 里包的就是原生 Anthropic SSE
 //! 事件,直接复用 [`AnthropicStreamEvent`] 与缓冲发射件。与 HTTP 线的两个关
 //! 键差异:①一个 claude 回合可能含多次模型调用(MCP 工具循环),content 跨
-//! 消息累积,权威用量以最终 `result` 帧为准;②tool_use 不回吐给 Miyu 执行
+//! 消息累积,权威用量以最终 `result` 帧为准;②tool_use 不回吐给 顾清影 执行
 //! (桥在 claude 侧闭环),只翻成远程工具卡片事件。进程本身(拉起/看门狗/
 //! stderr/击杀)在 [`cli_relay::process`]。
 
@@ -250,10 +250,10 @@ where
     Ok(RelayOutcome { result, session_id })
 }
 
-/// MCP 前缀剥掉:Miyu 工具按本名显示(readable_tool_name / preparing_phase
+/// MCP 前缀剥掉:顾清影 工具按本名显示(readable_tool_name / preparing_phase
 /// 才认识),claude 原生工具保持原名。
 fn remote_tool_name(raw_name: &str) -> &str {
-    raw_name.strip_prefix("mcp__miyu__").unwrap_or(raw_name)
+    raw_name.strip_prefix("mcp__gqy__").unwrap_or(raw_name)
 }
 
 fn emit_remote_tool_started<F>(

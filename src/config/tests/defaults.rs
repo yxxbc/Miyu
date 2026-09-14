@@ -25,8 +25,8 @@ fn mixed_context_window_uses_the_global_default_when_model_metadata_is_missing()
     let provider = &mut config.providers[0];
     let provider_id = provider.id.clone();
     provider.models = vec![
-        "miyu-known-window-model".to_string(),
-        "miyu-unknown-window-model".to_string(),
+        "gqy-known-window-model".to_string(),
+        "gqy-unknown-window-model".to_string(),
     ];
     provider.default_model = provider.models[0].clone();
     provider
@@ -46,7 +46,7 @@ fn mixed_context_window_uses_the_global_default_when_model_metadata_is_missing()
     assert_eq!(config.active_context_window().unwrap(), Some(168_000));
     config.providers[0]
         .model_context_window
-        .insert("miyu-unknown-window-model".to_string(), 128_000);
+        .insert("gqy-unknown-window-model".to_string(), 128_000);
     assert_eq!(config.active_context_window().unwrap(), Some(128_000));
 }
 
@@ -105,7 +105,7 @@ fn display_language_hint_reads_jsonc_without_loading_full_config() {
         "{\n  // UI preference\n  \"display\": { \"language\": \"en\" }\n}\n",
     )
     .unwrap();
-    let paths = MiyuPaths {
+    let paths = GqyPaths {
         root_dir: temp.path().to_path_buf(),
         config_dir: temp.path().to_path_buf(),
         config_file,
@@ -114,9 +114,9 @@ fn display_language_hint_reads_jsonc_without_loading_full_config() {
         cache_dir: temp.path().join("cache"),
         state_dir: temp.path().join("state"),
         pictures_dir: temp.path().join("pictures"),
-        fish_hook_file: temp.path().join("miyu.fish"),
-        bash_hook_file: temp.path().join("miyu.bash"),
-        zsh_hook_file: temp.path().join("miyu.zsh"),
+        fish_hook_file: temp.path().join("gqy.fish"),
+        bash_hook_file: temp.path().join("gqy.bash"),
+        zsh_hook_file: temp.path().join("gqy.zsh"),
         scripts_dir: temp.path().join("scripts"),
         system_scripts_dir: temp.path().join("system-scripts"),
     };

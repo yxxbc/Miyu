@@ -147,7 +147,7 @@ fn timeline_renderer() -> crate::render::StreamRenderer {
 
 /// 一行里挂着的那一块的 id（行首的私有 OSC 标记）。
 fn block_id_in(line: &str) -> Option<u64> {
-    let rest = line.split_once("\x1b]1337;miyu-block=")?.1;
+    let rest = line.split_once("\x1b]1337;gqy-block=")?.1;
     rest.split_once('\u{7}')?.0.parse().ok()
 }
 
@@ -1146,7 +1146,7 @@ fn a_quick_tool_step_does_not_report_zero_seconds() {
     with_blocks(|| {
         let mut renderer = timeline_renderer();
         renderer
-            .write_tool_call("web_search", r#"{"query":"miyu 转轮"}"#)
+            .write_tool_call("web_search", r#"{"query":"gqy 转轮"}"#)
             .unwrap();
         renderer
             .write_tool_result("web_search", true, "done")
@@ -1156,7 +1156,7 @@ fn a_quick_tool_step_does_not_report_zero_seconds() {
             .timeline_step_lines()
             .into_iter()
             .map(|line| crate::render::strip_ansi_text(&line))
-            .find(|line| line.contains("miyu 转轮"))
+            .find(|line| line.contains("gqy 转轮"))
             .expect("没有那一步");
         assert!(!step.contains("0.0s"), "报了个 0.0s: {step:?}");
     });
@@ -1383,7 +1383,7 @@ fn panel_speech_blocks_fit_the_panel_width() {
 /// Wiki、新闻一个样子。
 #[test]
 fn arch_family_tools_get_the_arch_logo() {
-    if std::env::var_os("MIYU_TUI_ASCII").is_some() {
+    if std::env::var_os("GQY_TUI_ASCII").is_some() {
         return;
     }
     for name in [

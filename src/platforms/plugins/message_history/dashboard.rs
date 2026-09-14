@@ -10,7 +10,7 @@ use super::store::{
 pub(crate) use super::store::{
     ConversationKey as DashConversationKey, HistoryCursor as DashHistoryCursor,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Result};
 use rusqlite::{params_from_iter, types::Value as SqlValue, Connection, OpenFlags};
 use serde_json::{json, Value};
@@ -18,15 +18,15 @@ use std::path::PathBuf;
 
 const PLATFORM: &str = "onebot";
 
-pub(crate) fn dashboard_store(paths: &MiyuPaths) -> HistoryStore {
+pub(crate) fn dashboard_store(paths: &GqyPaths) -> HistoryStore {
     super::store_for_paths(paths)
 }
 
-fn db_path(paths: &MiyuPaths) -> PathBuf {
+fn db_path(paths: &GqyPaths) -> PathBuf {
     super::history_db_path(paths)
 }
 
-fn open_readonly(paths: &MiyuPaths) -> Result<Option<Connection>> {
+fn open_readonly(paths: &GqyPaths) -> Result<Option<Connection>> {
     let path = db_path(paths);
     if !path.is_file() {
         return Ok(None);
@@ -54,7 +54,7 @@ pub(crate) fn conversation_key(
 
 /// 会话清单:每个 (账号, 类型, 会话) 的消息数、首末时间、撤回数;附库文件大小。
 pub(crate) fn dashboard_conversations(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     account_id: Option<&str>,
 ) -> Result<Value> {
     let path = db_path(paths);
@@ -131,7 +131,7 @@ pub(crate) struct MessagesQuery {
 
 /// 消息列表:游标向前翻(sent_at, row_id 双键),关键词 ≥3 字全走 trigram,
 /// 否则 LIKE;结果新在前。
-pub(crate) fn dashboard_messages(paths: &MiyuPaths, query: MessagesQuery) -> Result<Value> {
+pub(crate) fn dashboard_messages(paths: &GqyPaths, query: MessagesQuery) -> Result<Value> {
     let Some(conn) = open_readonly(paths)? else {
         return Ok(json!({ "ok": true, "items": [], "next_cursor": Value::Null }));
     };
@@ -234,7 +234,7 @@ pub(crate) fn dashboard_messages(paths: &MiyuPaths, query: MessagesQuery) -> Res
 
 /// 统计:发言榜(复用工具同款查询)+ 星期×小时热力 + 人机占比 + 媒体类型。
 pub(crate) fn dashboard_stats(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     key: ConversationKey,
     since: i64,
     until: i64,
@@ -321,7 +321,7 @@ pub(crate) fn dashboard_stats(
 
 /// 撤回记录:撤回表按时间倒序,能对上原消息就带上正文。
 pub(crate) fn dashboard_recalls(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     key: ConversationKey,
     limit: usize,
     offset: usize,
@@ -378,7 +378,7 @@ pub(crate) struct DeleteSpec {
     pub(crate) until: Option<i64>,
 }
 
-pub(crate) async fn dashboard_delete(paths: &MiyuPaths, spec: DeleteSpec) -> Result<Value> {
+pub(crate) async fn dashboard_delete(paths: &GqyPaths, spec: DeleteSpec) -> Result<Value> {
     let scope = match spec.key {
         Some(key) if key.is_group() => HistoryScope::Group(key),
         Some(key) => HistoryScope::Private(key),
@@ -405,7 +405,7 @@ pub(crate) async fn dashboard_delete(paths: &MiyuPaths, spec: DeleteSpec) -> Res
 }
 
 pub(crate) async fn dashboard_boundary(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     key: ConversationKey,
     persona_scope: String,
 ) -> Result<Value> {
@@ -416,7 +416,7 @@ pub(crate) async fn dashboard_boundary(
 }
 
 pub(crate) async fn dashboard_reset_context(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     key: ConversationKey,
     persona_scope: String,
 ) -> Result<Value> {
@@ -427,7 +427,7 @@ pub(crate) async fn dashboard_reset_context(
 }
 
 /// 情绪"冷清感"用:该账号最近一条人类消息的时间;库不存在或没有则 None。
-pub(crate) fn latest_human_message_at(paths: &MiyuPaths, account_id: &str) -> Result<Option<i64>> {
+pub(crate) fn latest_human_message_at(paths: &GqyPaths, account_id: &str) -> Result<Option<i64>> {
     let Some(conn) = open_readonly(paths)? else {
         return Ok(None);
     };

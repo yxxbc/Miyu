@@ -593,13 +593,13 @@
       id: "voice",
       title: "语音功能",
       description:
-        "麦克风常开的唤醒词对话与听写。识别在本机独立的 miyu-voice 进程里跑,关着时零占用;" +
+        "麦克风常开的唤醒词对话与听写。识别在本机独立的 gqy-voice 进程里跑,关着时零占用;" +
         "首次启用会下载约 190MB 识别模型。改动需重载配置生效。",
       fields: [
         {
           path: "voice.enabled",
           label: "语音唤醒",
-          hint: "麦克风常开、唤醒词、听写。需要安装 miyu-voice;与文本转语音独立",
+          hint: "麦克风常开、唤醒词、听写。需要安装 gqy-voice;与文本转语音独立",
           kind: "toggle",
           default: false,
         },
@@ -699,7 +699,7 @@
         {
           path: "voice.tts.enabled",
           label: "文本转语音",
-          hint: "唤醒对话的回复合成成语音播出;也给模型提供 speak 工具主动说话。与语音唤醒独立,任一开启都会运行 miyu-voice",
+          hint: "唤醒对话的回复合成成语音播出;也给模型提供 speak 工具主动说话。与语音唤醒独立,任一开启都会运行 gqy-voice",
           kind: "toggle",
           default: false,
         },
@@ -1095,7 +1095,7 @@
         {
           path: "accounts.member_personas",
           label: "成员可以创建自己的人格",
-          hint: "关掉后成员只能用共享的 Miyu",
+          hint: "关掉后成员只能用共享的 顾清影",
           kind: "toggle",
           default: true,
         },
@@ -1365,7 +1365,7 @@
           key: "output_dir",
           label: "输出目录",
           kind: "text",
-          default: "~/.miyu/data/pictures/generated-images",
+          default: "~/.gqy/data/pictures/generated-images",
         },
         { key: "auto_print", label: "完成后打印", kind: "toggle", hidden: true, default: true },
         {
@@ -1747,8 +1747,8 @@
           default: "all",
         },
         {
-          key: "miyu_tools",
-          label: "Miyu 工具挂给 claude 的作用域",
+          key: "gqy_tools",
+          label: "顾清影 工具挂给 claude 的作用域",
           hint: "经 MCP 桥挂载;与原生重复的剔除",
           kind: "select",
           choices: TOOL_SCOPE_CHOICES,
@@ -1807,14 +1807,14 @@
           default: "all",
         },
         {
-          key: "miyu_tools",
-          label: "Miyu 工具挂给 agy 的作用域",
+          key: "gqy_tools",
+          label: "顾清影 工具挂给 agy 的作用域",
           kind: "select",
           choices: TOOL_SCOPE_CHOICES,
           default: "all",
         },
         {
-          key: "miyu_tools_eager",
+          key: "gqy_tools_eager",
           label: "桥工具 eager 注册",
           hint: "原生名直调;关掉走懒加载省 token 但多一跳",
           kind: "toggle",
@@ -1861,8 +1861,8 @@
           default: "all",
         },
         {
-          key: "miyu_tools",
-          label: "Miyu 工具挂给 codex 的作用域",
+          key: "gqy_tools",
+          label: "顾清影 工具挂给 codex 的作用域",
           kind: "select",
           choices: TOOL_SCOPE_CHOICES,
           default: "all",
@@ -2164,7 +2164,7 @@
           kind: "select",
           choices: [
             { value: "inherit", label: "继承当前人格" },
-            { value: "miyu", label: "内置 Miyu" },
+            { value: "gqy", label: "内置 顾清影" },
             { value: "custom", label: "指定人格文件" },
           ],
           default: "inherit",
@@ -3509,5 +3509,5 @@
     },
   };
 
-  window.MiyuSettingsSchema = { general, toolPlugins, qq, qqPlugins };
+  window.GqySettingsSchema = { general, toolPlugins, qq, qqPlugins };
 })();

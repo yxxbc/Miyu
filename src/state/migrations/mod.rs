@@ -611,7 +611,7 @@ mod tests {
         assert_eq!(user_version(&conn).unwrap(), LATEST_VERSION);
         conn.execute(
             "INSERT INTO sessions (session_id, persona, name, created_at, updated_at)
-             VALUES ('platform-session', 'miyu', 'platform', 'now', 'now')",
+             VALUES ('platform-session', 'gqy', 'platform', 'now', 'now')",
             [],
         )
         .unwrap();
@@ -619,7 +619,7 @@ mod tests {
             "INSERT INTO platform_session_bindings (
                 platform, account_id, conversation_kind, conversation_id,
                 persona, session_id, created_at, updated_at
-             ) VALUES ('onebot', '10000', 'private', '20000', 'miyu',
+             ) VALUES ('onebot', '10000', 'private', '20000', 'gqy',
                        'platform-session', 'now', 'now')",
             [],
         )
@@ -631,7 +631,7 @@ mod tests {
                 "INSERT INTO platform_session_bindings (
                     platform, account_id, conversation_kind, conversation_id,
                     persona, session_id, created_at, updated_at
-                 ) VALUES ('onebot', '10000', 'private', 'other', 'miyu',
+                 ) VALUES ('onebot', '10000', 'private', 'other', 'gqy',
                            'platform-session', 'now', 'now')",
                 [],
             )
@@ -751,7 +751,7 @@ mod tests {
         assert_eq!(user_version(&conn).unwrap(), 35);
         conn.execute(
             "INSERT INTO sessions (session_id, persona, name, kind, workspace, created_at, updated_at) \
-             VALUES ('s1', 'miyu', 'old', 'user', '/tmp/old-workspace', '2026-01-01', '2026-01-01')",
+             VALUES ('s1', 'gqy', 'old', 'user', '/tmp/old-workspace', '2026-01-01', '2026-01-01')",
             [],
         )
         .unwrap();

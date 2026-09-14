@@ -328,7 +328,7 @@ impl KnowledgeBase {
 #[cfg(test)]
 mod tests {
     use crate::config::AppConfig;
-    use crate::paths::MiyuPaths;
+    use crate::paths::GqyPaths;
     use crate::tools::knowledge_base::KnowledgeBase;
     use serde_json::{json, Value};
 
@@ -354,8 +354,8 @@ mod tests {
         std::fs::write(kb.dashboard_root().join("embedding.lock"), b"").unwrap();
     }
 
-    fn paths(temp: &tempfile::TempDir) -> MiyuPaths {
-        MiyuPaths {
+    fn paths(temp: &tempfile::TempDir) -> GqyPaths {
+        GqyPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),
@@ -364,7 +364,7 @@ mod tests {
             cache_dir: temp.path().join("cache"),
             state_dir: temp.path().join("state"),
             pictures_dir: temp.path().join("pictures"),
-            fish_hook_file: temp.path().join("fish/miyu.fish"),
+            fish_hook_file: temp.path().join("fish/gqy.fish"),
             bash_hook_file: temp.path().join("shell/bash-hook.sh"),
             zsh_hook_file: temp.path().join("shell/zsh-hook.zsh"),
             scripts_dir: temp.path().join("config/scripts"),
@@ -414,9 +414,9 @@ mod tests {
             .unwrap(),
             "notes/macos.md"
         );
-        // 守卫:Miyu 自己的资产目录不进库;非法类型不进库;路径不能逃逸。
+        // 守卫:顾清影 自己的资产目录不进库;非法类型不进库;路径不能逃逸。
         assert!(kb
-            .dashboard_import("personas/miyu.md", "她是谁".as_bytes())
+            .dashboard_import("personas/gqy.md", "她是谁".as_bytes())
             .is_err());
         assert!(kb.dashboard_import("bin.exe", b"hello").is_err());
         assert!(kb.dashboard_import("../escape.md", b"hello").is_err());

@@ -19,7 +19,7 @@ use super::probe::{Facts, Fcitx, Ime, Loader};
 use super::providers::{CatalogJob, Prefetch, ProviderOption};
 use crate::config::feature_catalog::{self, FeatureItem, FeatureKind, FeatureSources};
 use crate::config::{AppConfig, ProviderConfig};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::terminal::palette::{Depth, Theme};
 use crate::terminal::starfield::BannerArt;
 use widgets::Cx;
@@ -115,7 +115,7 @@ pub(super) struct App {
     pub theme: Theme,
     pub art: BannerArt,
     pub config: AppConfig,
-    pub paths: MiyuPaths,
+    pub paths: GqyPaths,
     pub loader: Loader,
     pub facts: Facts,
     pub fcitx: Fcitx,
@@ -189,7 +189,7 @@ pub(super) struct App {
 }
 
 impl App {
-    pub fn new(config: AppConfig, paths: MiyuPaths) -> Self {
+    pub fn new(config: AppConfig, paths: GqyPaths) -> Self {
         let fcitx = Fcitx::probe();
         let theme = Theme::detect();
         let depth_label = match theme.depth {
@@ -198,7 +198,7 @@ impl App {
             Depth::Ansi16 => "16 色",
             Depth::Mono => "无色",
         };
-        // 已经有人格/自述的机器（跑过一半、或手动 `miyu oobe`）：预填，别让人重敲。
+        // 已经有人格/自述的机器（跑过一半、或手动 `gqy oobe`）：预填，别让人重敲。
         let existing = apply::current_persona(&config, &paths);
         let identity = apply::current_identity(&config, &paths);
         let (persona_custom, name, setting) = match existing {
@@ -286,7 +286,7 @@ impl App {
         if self.persona_custom && !self.name.trim().is_empty() {
             self.name.trim().to_string()
         } else {
-            "Miyu".into()
+            "GQY".into()
         }
     }
 
@@ -346,7 +346,7 @@ impl App {
         ];
         let dir_refs: Vec<&std::path::Path> = dirs.iter().map(|dir| dir.as_path()).collect();
         let sources = FeatureSources {
-            voice_available: super::probe::which("miyu-voice") || voice_beside_exe(),
+            voice_available: super::probe::which("gqy-voice") || voice_beside_exe(),
             scripts: crate::tools::list_scripts_with_origin(&dir_refs, Some(&self.paths)),
             skills: crate::skills::persona_skill_options(&self.config, &self.paths),
         };
@@ -666,10 +666,10 @@ mod search_tests {
     }
 }
 
-/// `miyu-voice` 也可能和主程序放在一起而不在 PATH 里。
+/// `gqy-voice` 也可能和主程序放在一起而不在 PATH 里。
 fn voice_beside_exe() -> bool {
-    crate::paths::miyu_executable()
+    crate::paths::gqy_executable()
         .ok()
-        .and_then(|exe| exe.parent().map(|dir| dir.join("miyu-voice").is_file()))
+        .and_then(|exe| exe.parent().map(|dir| dir.join("gqy-voice").is_file()))
         .unwrap_or(false)
 }

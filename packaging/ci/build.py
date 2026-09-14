@@ -34,9 +34,9 @@ def build(args):
     target = (args.target_cache or out/'target').resolve()
     target.mkdir(parents=True,exist_ok=True)
     identity = build_identity(manifest,args.build_id,args.component)
-    name = 'miyu-build-'+identity[:12]+'-'+args.component
+    name = 'gqy-build-'+identity[:12]+'-'+args.component
     command = ['docker','run','--rm','--name',name,'--network','none',
-        '--label','io.miyu.distribution.owner=distribution-2026-09-14',
+        '--label','io.gqy.distribution.owner=distribution-2026-09-14',
         '--user',f'{os.getuid()}:{os.getgid()}',
         '--mount',f'type=bind,src={source},dst=/source,readonly',
         '--mount',f'type=bind,src={inputs},dst=/inputs,readonly',
@@ -52,7 +52,7 @@ def build(args):
         # Explicitly stop this exact owned container on timeout/interruption as well.
         subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL,timeout=30)
-    binary = out/('miyu-voice' if args.component == 'voice' else 'miyu')
+    binary = out/('gqy-voice' if args.component == 'voice' else 'gqy')
     compiled = load_json(out/'compile.json')
     if compiled['version_output'] != f'{binary.name} {manifest["version"]}':
         raise ValueError('Built binary reports an unexpected application version.')

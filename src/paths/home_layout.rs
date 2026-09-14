@@ -1,7 +1,7 @@
 //! 家目录布局(09-10 分层架构阶段 6):目录树仿 Linux。
 //!
 //! ```text
-//! ~/.miyu/
+//! ~/.gqy/
 //!   config/            系统配置(/etc)
 //!   personas/          管理员发布的共享人格(/usr/share):default/、dev/
 //!   extensions/        已装扩展(/usr/lib):skills/、scripts/
@@ -16,14 +16,14 @@
 //!
 //! 搬家复用资源迁移那套「预检 → 日志 → 原子移动 → 标记」;标记文件
 //! `.home-layout-v1` 的内容就是管理员的家目录名,以后改系统用户名也不受影响。
-//! `miyu layout` 能看计划、手动执行与回滚。
+//! `gqy layout` 能看计划、手动执行与回滚。
 
 use crate::paths::*;
 
 pub(crate) const HOME_LAYOUT_MARKER: &str = ".home-layout-v1";
 pub(crate) const HOME_MIGRATION_JOURNAL: &str = ".home-layout-v1.journal.json";
 /// 回滚之后留下的「别再自动搬」标记:同一个二进制下次启动就不会又搬回去。
-/// `miyu layout --apply` 会撤掉它。
+/// `gqy layout --apply` 会撤掉它。
 pub(crate) const HOME_LAYOUT_OPT_OUT: &str = ".home-layout-off";
 /// 拿不到合法系统用户名时的家目录名。
 pub(crate) const DEFAULT_ADMIN_HOME: &str = "admin";
@@ -35,7 +35,7 @@ pub(crate) struct HomeLayout {
     pub(crate) admin: String,
 }
 
-/// 一条搬家计划(给 `miyu layout` 看的):源、目标、源现在在不在。
+/// 一条搬家计划(给 `gqy layout` 看的):源、目标、源现在在不在。
 #[derive(Clone, Debug)]
 pub(crate) struct HomeMovePlan {
     pub(crate) source: PathBuf,
@@ -156,9 +156,9 @@ pub(crate) fn is_valid_home_name(name: &str) -> bool {
         && name != ".."
 }
 
-/// 迁移时给管理员挑家目录名:`MIYU_ADMIN_USER` → 系统用户名 → `admin`。
+/// 迁移时给管理员挑家目录名:`GQY_ADMIN_USER` → 系统用户名 → `admin`。
 pub(crate) fn admin_home_name_from_env() -> String {
-    for key in ["MIYU_ADMIN_USER", "USER", "LOGNAME"] {
+    for key in ["GQY_ADMIN_USER", "USER", "LOGNAME"] {
         if let Some(value) = std::env::var_os(key) {
             let value = value.to_string_lossy().trim().to_string();
             if is_valid_home_name(&value) {
@@ -188,7 +188,7 @@ pub(crate) fn read_home_layout_admin(root: &Path) -> Result<Option<String>> {
     let name = raw.trim();
     if !is_valid_home_name(name) {
         bail!(
-            "Miyu home layout marker {} does not name a valid admin home ({name:?})",
+            "GQY home layout marker {} does not name a valid admin home ({name:?})",
             marker.display()
         );
     }
@@ -288,7 +288,7 @@ pub(crate) fn rollback_home_layout(
     Ok(true)
 }
 
-/// `miyu layout --apply`:撤掉回滚留下的「别再搬」标记。
+/// `gqy layout --apply`:撤掉回滚留下的「别再搬」标记。
 pub(crate) fn clear_home_layout_opt_out(layout: &HomeLayout) -> Result<()> {
     let marker = layout.opt_out_marker();
     match fs::remove_file(&marker) {

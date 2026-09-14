@@ -82,10 +82,19 @@
 
 ### P4 全量改名（机械替换后靠编译器兜底）
 - 规则见 D5。建议顺序：文件/目录改名（`git mv`）→ 标识符（`MiyuPaths` 等）→ 环境变量 → 路径与命令字符串 → 文案（按行判断是否含中文决定 GQY / 顾清影）→ 文档（含历史文档，D6）
+- **实测细化（P4 执行口径）**：用脚本 `scratchpad/rename_to_gqy.py`（会话临时目录，丢了按下述规则重写）一次替换全部 tracked 文本文件：
+  - `MIYU`→`GQY`（环境变量 111 个名，`MIYU_HOME` 245 处）；`miyu`→`gqy`（含复合写法 `miyu-voice`、`.miyu`、`miyuwallpaper`、`miyu_session`…）；`Miyu` 后接字母数字下划线（标识符前缀，`MiyuPaths` 884 处、JS `MiyuDash` 等 19 个）→`Gqy`
+  - 独立单词 `Miyu`：**按字符串字面量判断**，不按整行——同一行常见 `t("Miyu daemon stopped", "Miyu daemon 已停止")`。所在引号字面量含中文 → 顾清影；不在字面量里、所在行含中文（注释/文档）→ 顾清影；其余 → GQY。实测含中文行 747 处、不含 1332 处
+  - **不改**：外部 URL（GitHub/AUR 等，改了链接失效）、非 UTF-8 文件与第三方 vendor 文件
+  - **不改**：不带 URL 的仓库名 `owner/Miyu`、`owner/miyu-agent`、`owner/miyu-bangumi`（实测命中 SHORiN-KiWATA/miyu-agent 32、github/Miyu 10、shorinkiwata/Miyu 6、yxxbc/Miyu 4、SHORiN-KiWATA/Miyu 4、Pictures/Miyu 4、Documents/Miyu 2 等）；**本文档自身排除**（否则规则描述会被改坏）；`test_scripts/__pycache__/` 排除
+  - 执行后已知需手修：README 里 clone 地址被保护（仍是 …/Miyu.git），下一行 `cd Miyu` 会被改成 `cd GQY`，两者对不上
+  - dry-run 终版：内容改动 706 文件（miyu→gqy 3037、Miyu 标识符前缀 992、MIYU→GQY 928、Miyu→顾清影 733、Miyu→GQY 396，保护 74）；改名 19 文件
+  - 文件/目录名同规则 `git mv`（19 个，含 `packaging/arch/miyu*`、`src/prompts/miyu*`、`web/assets/miyu*`、`pics/`、`resources/matugen/miyu-theme.css`、`testkit/**/miyu-package.toml`、`testkit/voice/samples/miyumiyu-ja.wav`）
+  - 用户配置里的枚举值（如路由人格模式 `"miyu"`）改名后旧值不认 → P6 迁移脚本要一并改写 `config.jsonc`
 - 必改清单：Cargo.toml 包名与两个 `[[bin]]`、`Cargo.lock`（去掉 `--locked` 构建一次刷新）、`~/.miyu`→`~/.gqy`、`MIYU_*`→`GQY_*`、`state/miyu/core.sock`、shell hook 标记与 `fish/conf.d/miyu.fish`、MCP 服务名、`clientInfo.name`、`window.Miyu*`、`packaging/**`、`.github`、README / AGENTS.md / docs
 - 注意：工具描述有「不含中文」的测试规则（commit 69ae92ba），英文里只能写 GQY
 - web 前端待一起改的硬编码：`web/settings-schema.js:2167`（人格模式选项值 `"miyu"`/「内置 Miyu」，与后端 route persona mode 同步改）、`web/settings.js:2403,2499`（同上）、`web/app.js:10563`（登录用户名占位 `miyu`→`gqy`）
-- ☐ 文件/目录改名 ☐ 标识符 ☐ 环境变量 ☐ 路径/命令/协议字符串 ☐ 文案 ☐ 文档 ☐ 打包/CI
+- ☑ 文件/目录改名 ☑ 标识符 ☑ 环境变量 ☑ 路径/命令/协议字符串 ☑ 文案 ☑ 文档 ☑ 打包/CI（脚本一次完成：697 修改、19 改名；待抽查与手修后提交）
 
 ### P5 构建与测试
 - ☐ `cargo build`（先不带 `--locked` 刷新 lock）☐ `cargo test --lib` 全绿 ☐ `cargo test write_registry_shape_fixture -- --ignored` 重生夹具后复测 ☐ release 构建 `gqy` 与 `--features voice --bin gqy-voice`
@@ -94,6 +103,7 @@
 1. 停旧 daemon（`miyu daemon stop`），确认无进程
 2. 桌面备份：`~/Desktop/顾清影数据备份-<时间>/`，含 §三.10 全部内容 + 整个 `conversation.db(-wal,-shm)` + `config.jsonc`
 3. `mv ~/.miyu ~/.gqy`；改写 `config.jsonc` 与 `artifact_assets.source_key` 里的 `/.miyu/` → `/.gqy/`
+   - 实测 `config.jsonc` 需改：MCP 服务器命令/参数与 `output_dir` 的 `/.miyu/` 绝对路径（6 处）；provider 配置**字段名** `miyu_tools`、`miyu_tools_eager` → `gqy_tools`、`gqy_tools_eager`（P4 改了 serde 字段名，旧键会被忽略）；以及任何枚举值 `"miyu"`（如路由人格模式）
 4. 默认人格迁移：旧 `default` 目录挪进 `~/.gqy/bin-backup/miyu-legacy/`；库内 `default`→`miyu-legacy`（`rename_persona_scope` 同款 SQL，补 REPL 指针与表情包引用）；`persona-a37fae32f007`→`default`（目录 6 类 + 库）；表情包目录改到新默认库名；删 `personas/default/persona.toml`（默认人格不需要）；`config.jsonc` 里 `prompt.active_persona` 置空
 5. 完整性检查 + 计数核对
 
@@ -110,3 +120,4 @@
 - 2026-09-14 P0：写本文档；D1–D12 已确认，D13 待用户澄清。
 - 2026-09-14 P1：D13 = 本地提交不推送。两批修复分别提交（Mac RLIMIT、迁移补全），均**未跑测试**，留待 P5 一并验证。
 - 2026-09-14 P2+P3：默认人格内容换成顾清影、logo GQY、默认头像看板、删内置 Miyu 表情包、脚本面板越界修复。仅 rustfmt 检查，**未编译未测试**。
+- 2026-09-14 P4：脚本全量替换（706 文件内容、19 文件改名）。抽查通过：Cargo 包名/两个 bin、build.rs 引 gqy*.md、`default_gqy_*`、`~/.gqy`/`GQY_HOME`、hook 标记、MCP 服务名 gqy。手修 3 类误伤：`src/tools/alarm.rs` 英文工具描述里的「顾清影」→ GQY（字面量含中文示例被误判）；README `cd GQY` → `cd miyu-agent`；`src/web/turns/mod.rs`、`src/web/tests/turn.rs` 注释里引用的「顾清影 is busy」→「GQY is busy」。**未编译**，下一步 P5。

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """REPL 里 `/models …` 的输出该落在输入框上方,而不是孤零零留在输入框底下。
 
-    BIN=target/release/miyu python3 testkit/reasoning-parts/repl_models_probe.py
+    BIN=target/release/gqy python3 testkit/reasoning-parts/repl_models_probe.py
 
 复用 repro_openai 的沙箱(隔离 home + daemon + OpenAI 桩 + PTY),依次敲
 `/models stub-model`(钉模型)与 `/models default`(恢复跟随全局),用 pyte 渲染屏幕,

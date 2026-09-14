@@ -90,7 +90,7 @@ pub(crate) fn default_true() -> bool {
 }
 
 pub(crate) fn default_tools_loading_mode() -> String {
-    // 默认 full(09-01 定稿):对 Miyu 这个 ~60 工具量级的目录,stub 的省 token
+    // 默认 full(09-01 定稿):对 顾清影 这个 ~60 工具量级的目录,stub 的省 token
     // 优势本就薄(两模式缓存命中率一样,stub 只是常驻块更小,而这优势随 load
     // 的工具增多被尾部契约吃掉),且约束解码型模型(glm-5.3-flash)吃不下空壳。
     // full 更可靠(免 load 舞蹈/免"先调用后报错")、选工具准确度实测持平。想省
@@ -336,17 +336,17 @@ pub(crate) fn default_image_generation_resolution() -> String {
 }
 
 pub(crate) fn default_image_generation_output_dir() -> String {
-    default_miyu_home()
+    default_gqy_home()
         .join("data/pictures/generated-images")
         .display()
         .to_string()
 }
 
-pub(crate) fn default_miyu_home() -> PathBuf {
-    std::env::var_os("MIYU_HOME")
+pub(crate) fn default_gqy_home() -> PathBuf {
+    std::env::var_os("GQY_HOME")
         .map(PathBuf::from)
-        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".miyu")))
-        .unwrap_or_else(|| PathBuf::from("~/.miyu"))
+        .or_else(|| directories::BaseDirs::new().map(|dirs| dirs.home_dir().join(".gqy")))
+        .unwrap_or_else(|| PathBuf::from("~/.gqy"))
 }
 
 pub(crate) fn default_image_generation_timeout() -> u64 {
@@ -453,7 +453,7 @@ pub(crate) fn default_claude_code_native_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_claude_code_miyu_tools() -> String {
+pub(crate) fn default_claude_code_gqy_tools() -> String {
     "all".to_string()
 }
 
@@ -465,7 +465,7 @@ pub(crate) fn default_antigravity_native_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_antigravity_miyu_tools() -> String {
+pub(crate) fn default_antigravity_gqy_tools() -> String {
     "all".to_string()
 }
 
@@ -481,7 +481,7 @@ pub(crate) fn default_codex_native_tools() -> String {
     "all".to_string()
 }
 
-pub(crate) fn default_codex_miyu_tools() -> String {
+pub(crate) fn default_codex_gqy_tools() -> String {
     "all".to_string()
 }
 

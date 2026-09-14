@@ -4,7 +4,7 @@
 低占用。任何一项预算守不住，就回到现在的 inline REPL，不硬上。
 
 配套：调研与实测在 testkit/tui-demo/README.md（v1–v11 记录）；架构勘察结论见记忆
-`miyu-tui-rewrite-research-2026-09-10`。
+`gqy-tui-rewrite-research-2026-09-10`。
 
 ## 0. 定论
 

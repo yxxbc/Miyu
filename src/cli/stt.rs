@@ -1,13 +1,13 @@
-//! `miyu stt`:终端里说一句,识别成文字后当作一条消息发出去,回复照常
+//! `gqy stt`:终端里说一句,识别成文字后当作一条消息发出去,回复照常
 //! 流式打印——shellhook/一次性 CLI 的语音形态。
 //!
-//! 音频来自本机麦克风(daemon 让 `miyu-voice` 开听写窗),这里只拿文字。
+//! 音频来自本机麦克风(daemon 让 `gqy-voice` 开听写窗),这里只拿文字。
 //! 识别出第一句就关掉听写并提交;静默 10 秒没说话则空手退出。
 
 use crate::cli::*;
 
 pub(in crate::cli) async fn run_stt_once(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     plain: bool,
     mode: AgentMode,
     session: TurnSession,
@@ -24,12 +24,12 @@ pub(in crate::cli) async fn run_stt_once(
     run_chat_with_options(paths, text, None, plain, mode, session, None).await
 }
 
-/// `miyu listen`:让前端直接进入等待指令状态(等价于唤醒词命中),
+/// `gqy listen`:让前端直接进入等待指令状态(等价于唤醒词命中),
 /// 绑到合成器快捷键上就是"按键呼叫"。成功时不输出,便于静默绑定。
-pub(in crate::cli) async fn run_listen(paths: &MiyuPaths) -> Result<()> {
+pub(in crate::cli) async fn run_listen(paths: &GqyPaths) -> Result<()> {
     let mut stream = ipc::connect(&paths.ipc_socket())
         .await
-        .context(t("Miyu daemon is not running", "Miyu daemon 未运行"))?;
+        .context(t("GQY daemon is not running", "顾清影 daemon 未运行"))?;
     ipc::send(&mut stream, &IpcRequest::new(IpcCommand::VoiceListen)).await?;
     match ipc::receive::<IpcFrame>(&mut stream).await? {
         Some(IpcFrame::Ack) => Ok(()),
@@ -38,9 +38,9 @@ pub(in crate::cli) async fn run_listen(paths: &MiyuPaths) -> Result<()> {
     }
 }
 
-/// `miyu voice …`:播报试听、语音会话清空/回看、前端状态。
+/// `gqy voice …`:播报试听、语音会话清空/回看、前端状态。
 pub(in crate::cli) async fn run_voice_command(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     command: crate::cli::args::VoiceCommand,
 ) -> Result<()> {
     use crate::cli::args::VoiceCommand;
@@ -113,10 +113,10 @@ pub(in crate::cli) async fn run_voice_command(
     }
 }
 
-async fn connect_daemon(paths: &MiyuPaths) -> Result<tokio::net::UnixStream> {
+async fn connect_daemon(paths: &GqyPaths) -> Result<tokio::net::UnixStream> {
     ipc::connect(&paths.ipc_socket())
         .await
-        .context(t("Miyu daemon is not running", "Miyu daemon 未运行"))
+        .context(t("GQY daemon is not running", "顾清影 daemon 未运行"))
 }
 
 async fn expect_ack(stream: &mut tokio::net::UnixStream, what: &str) -> Result<()> {
@@ -128,10 +128,10 @@ async fn expect_ack(stream: &mut tokio::net::UnixStream, what: &str) -> Result<(
 }
 
 /// 认领一条听写流,拿到第一句非空文本就返回;窗口结束返回 None。
-pub(in crate::cli) async fn dictate_one_sentence(paths: &MiyuPaths) -> Result<Option<String>> {
+pub(in crate::cli) async fn dictate_one_sentence(paths: &GqyPaths) -> Result<Option<String>> {
     let mut stream = ipc::connect(&paths.ipc_socket())
         .await
-        .context(t("Miyu daemon is not running", "Miyu daemon 未运行"))?;
+        .context(t("GQY daemon is not running", "顾清影 daemon 未运行"))?;
     ipc::send(&mut stream, &IpcRequest::new(IpcCommand::StartDictation)).await?;
     match ipc::receive::<IpcFrame>(&mut stream).await? {
         Some(IpcFrame::Ack) => {}

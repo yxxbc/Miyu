@@ -335,7 +335,7 @@ impl Agent {
         }
         if !self.context_images.is_empty() && !vision_tool_available {
             tracing::warn!(
-                target: "miyu::qq",
+                target: "gqy::qq",
                 refs = self.context_images.len(),
                 tools_enabled = self.tools_enabled,
                 "{}",

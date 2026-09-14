@@ -158,14 +158,14 @@ async fn paraphrase_is_found_by_the_semantic_pass() {
 }
 
 /// 量尺:用真实语料 + LLM 改写查询对比纯关键词与融合的 hit@3。
-/// `MIYU_EMBED_EVAL_DIR` 指向含 `memory.jsonl`(`{"id","text"}`)与
+/// `GQY_EMBED_EVAL_DIR` 指向含 `memory.jsonl`(`{"id","text"}`)与
 /// `memory-q.jsonl`(`{"q","expect":[id]}`)的目录。
 /// cargo test --lib memory::tests::semantic::eval_real_corpus -- --ignored --nocapture
 #[tokio::test]
 #[ignore]
 async fn eval_real_corpus() {
-    let Ok(dir) = std::env::var("MIYU_EMBED_EVAL_DIR") else {
-        eprintln!("set MIYU_EMBED_EVAL_DIR");
+    let Ok(dir) = std::env::var("GQY_EMBED_EVAL_DIR") else {
+        eprintln!("set GQY_EMBED_EVAL_DIR");
         return;
     };
     if !runtime_available() {

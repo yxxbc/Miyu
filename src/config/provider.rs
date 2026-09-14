@@ -776,7 +776,7 @@ impl ProviderConfig {
     ///
     /// agy 中转线恒为纯文本:它的 stream-json 只收 text 块(09-04 实测,image/
     /// media 块一律 `not supported (only "text")`),模型看媒体只能自己调原生
-    /// `view_file`。目录里 Gemini 标着 image 输入,照抄就会让 Miyu 把图内联进
+    /// `view_file`。目录里 Gemini 标着 image 输入,照抄就会让 顾清影 把图内联进
     /// 消息——中转层再降级成占位文本,图没到模型,活体消息与化石还因此字节
     /// 不同,续传链逢图必断(09-04 群 130515298 实证)。内联、视觉旁路选客户端
     /// 都要问这个;池成员资格问 [`Self::input_modalities`]。
@@ -793,7 +793,7 @@ impl ProviderConfig {
         self.is_antigravity()
     }
 
-    pub fn resolved_api_keys(&self, _paths: &MiyuPaths) -> Result<Vec<ResolvedProviderKey>> {
+    pub fn resolved_api_keys(&self, _paths: &GqyPaths) -> Result<Vec<ResolvedProviderKey>> {
         let mut keys = Vec::new();
         if let Some(api_key) = self.api_key.as_deref() {
             append_resolved_api_keys(&mut keys, api_key)?;

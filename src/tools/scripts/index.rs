@@ -107,7 +107,7 @@ pub(crate) struct ScriptScanResult {
 /// (09-01 的旧口径是「自定义人格天然拿不到内置」,09-13 起改成可选件。)
 pub(crate) fn script_scan_roots(
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Vec<PathBuf> {
     // 09-13:内置脚本对自定义人格改成**可选**——目录照扫,能不能用由
     // `prepare_script_refresh` 按人格清单的 `plugins.scripts` 白名单裁决
@@ -124,12 +124,12 @@ pub(crate) fn script_scan_roots(
 }
 
 /// 内置脚本的目录:`<system>/personas/default/`。
-pub(crate) fn builtin_scripts_dir(paths: &MiyuPaths) -> PathBuf {
+pub(crate) fn builtin_scripts_dir(paths: &GqyPaths) -> PathBuf {
     paths.system_scripts_dir.join("personas").join("default")
 }
 
 /// 这条脚本是不是内置层的(装在 `<system>/` 下)。
-pub(crate) fn is_builtin_script(paths: &MiyuPaths, entry: &ScriptEntry) -> bool {
+pub(crate) fn is_builtin_script(paths: &GqyPaths, entry: &ScriptEntry) -> bool {
     Path::new(&entry.path).starts_with(&paths.system_scripts_dir)
 }
 
@@ -376,7 +376,7 @@ pub(crate) fn resolve_script_path(path_str: &str, scripts_dir: &Path) -> PathBuf
             }
         }
         if let Some(base) = directories::BaseDirs::new() {
-            let legacy = base.config_dir().join("miyu/scripts");
+            let legacy = base.config_dir().join("gqy/scripts");
             if let Ok(relative) = p.strip_prefix(&legacy) {
                 return scripts_dir.join(relative);
             }

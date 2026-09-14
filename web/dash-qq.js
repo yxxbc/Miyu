@@ -6,7 +6,7 @@
  * 数据来自 /api/dash/qq/*。
  */
 (() => {
-  const D = window.MiyuDash;
+  const D = window.GqyDash;
   if (!D) return;
 
   const state = {

@@ -9,7 +9,7 @@
 use crate::config_tui::*;
 
 pub(in crate::config_tui) struct ProviderBrowser<'a> {
-    pub(in crate::config_tui) paths: &'a MiyuPaths,
+    pub(in crate::config_tui) paths: &'a GqyPaths,
     pub(in crate::config_tui) config: &'a mut AppConfig,
     pub(in crate::config_tui) thinking_variants: &'a mut ThinkingVariantPreferences,
     pub(in crate::config_tui) active_col: usize,
@@ -81,7 +81,7 @@ pub(crate) fn fetch_models(
         .build()?
         .get(url)
         .header("Accept", "application/json")
-        .header("User-Agent", "miyu-config");
+        .header("User-Agent", "gqy-config");
     if !api_key.is_empty() {
         request = request.bearer_auth(api_key);
     }
@@ -102,7 +102,7 @@ pub(crate) fn fetch_models(
 
 /// 该模型在 models.dev 目录里的条目(读磁盘全量目录,没有就联网取一次)。
 pub(in crate::config_tui) fn catalog_entry(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     provider: &ProviderConfig,
     model: &str,
 ) -> Option<crate::models_cache::ModelCatalogEntry> {
@@ -119,7 +119,7 @@ pub(in crate::config_tui) fn catalog_entry(
 /// (09-04,与 WebUI 「从目录补全」同一语义)。价格不落盘——运行时本来就按
 /// 目录价估算,编辑表单里只把目录价显示出来。
 pub(crate) fn auto_configure_model_tags(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     provider: &mut ProviderConfig,
     model: &str,
 ) {
@@ -153,7 +153,7 @@ pub(crate) fn auto_configure_model_tags(
 /// 手填的必须置顶:它们不在供应商目录里,混进几百条中间就等于没加。同名去重
 /// 是给内置 CLI 供应商准备的——它的目录本来就并了 `models`(见 `cli_catalog`)。
 ///
-/// 抽成自由函数是为了能直接测:`ProviderBrowser` 要一份 `MiyuPaths`,建一个
+/// 抽成自由函数是为了能直接测:`ProviderBrowser` 要一份 `GqyPaths`,建一个
 /// 就会去碰真实 home。
 pub(in crate::config_tui) fn group_models(
     custom: &[String],
@@ -783,7 +783,7 @@ pub(in crate::config_tui) fn parse_extra_body(
 
 pub(in crate::config_tui) fn edit_model_form(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     provider: &mut ProviderConfig,
     model: &str,
     thinking_variants: &mut ThinkingVariantPreferences,

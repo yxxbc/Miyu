@@ -182,18 +182,18 @@ pub(crate) fn version(id: u64) -> u64 {
 /// 块的起止标记。用私有 OSC：真终端不认得就整条吞掉，不会漏字符上屏——
 /// inline 下本来也不会发出来，这只是双保险。
 pub(crate) fn begin_marker(id: u64) -> String {
-    format!("\x1b]1337;miyu-block={id}\x07")
+    format!("\x1b]1337;gqy-block={id}\x07")
 }
 
-pub(crate) const END_MARKER: &str = "\x1b]1337;miyu-block-end\x07";
+pub(crate) const END_MARKER: &str = "\x1b]1337;gqy-block-end\x07";
 
 /// OSC 载荷 → 块 id。`Term` 解析时用。
 pub(crate) fn parse_marker(payload: &str) -> Option<BlockMarker> {
-    if payload == "miyu-block-end" {
+    if payload == "gqy-block-end" {
         return Some(BlockMarker::End);
     }
     payload
-        .strip_prefix("miyu-block=")
+        .strip_prefix("gqy-block=")
         .and_then(|id| id.parse().ok())
         .map(BlockMarker::Begin)
 }

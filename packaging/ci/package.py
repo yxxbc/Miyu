@@ -41,17 +41,17 @@ def nfpm_config(manifest, asset, stage, inventory):
     family = 'deb' if asset['format']=='deb' else 'fedora'
     config=load_json(Path(__file__).resolve().parents[1]/'linux'/f'nfpm-{family}.yaml')
     voice=asset['component']=='voice'
-    name='miyu-voice' if voice else 'miyu'
+    name='gqy-voice' if voice else 'gqy'
     release=str(manifest['package_revision'])
     if family=='fedora':
         release+=f'.fc{manifest["fedora_version"]}'
     config.update(name=name,version=manifest['version'],release=release,
         maintainer='SHORiN <shorin@users.noreply.github.com>',
         homepage='https://github.com/SHORiN-KiWATA/miyu-agent',license='MIT AND OFL-1.1',
-        description='Miyu voice front end' if voice else 'Miyu terminal AI assistant',contents=[])
+        description='GQY voice front end' if voice else 'GQY terminal AI assistant',contents=[])
     if voice:
         exact=f'{manifest["version"]}-{release}'
-        config['depends']=[f'miyu (= {exact})' if family=='deb' else f'miyu = {exact}',
+        config['depends']=[f'gqy (= {exact})' if family=='deb' else f'gqy = {exact}',
             'libasound2t64' if family=='deb' else 'alsa-lib',
             'libstdc++6' if family=='deb' else 'libstdc++',
             'libgcc-s1' if family=='deb' else 'libgcc',

@@ -20,7 +20,7 @@ All URLs and SHA256 values in `packaging/common/third-party.lock.json` were obta
 | `sherpa-onnx-license` | `sherpa-onnx-LICENSE` | 11,358 | `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30` |
 | `silero-vad-license` | `silero-vad-LICENSE` | 1,075 | `2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b` |
 
-Total downloaded bytes: 400,961,749. The entire input directory belongs to this task, identified by `.miyu-owned-input-inventory`. Retain it until packaging/voice checks finish. Then remove this owned directory, including `ort-probe/` and `voice-fixtures/`. No user configuration, product home, daemon, Docker container or image was created by this subtask. No downloads were written outside the worktree.
+Total downloaded bytes: 400,961,749. The entire input directory belongs to this task, identified by `.gqy-owned-input-inventory`. Retain it until packaging/voice checks finish. Then remove this owned directory, including `ort-probe/` and `voice-fixtures/`. No user configuration, product home, daemon, Docker container or image was created by this subtask. No downloads were written outside the worktree.
 
 ## ORT selection evidence
 
@@ -49,19 +49,19 @@ Both are mono, 16 kHz, 16-bit PCM. Their exact public download URL is their cont
 
 The source roots are:
 
-- `source`: exported Miyu source snapshot.
+- `source`: exported GQY source snapshot.
 - `wiki`: the exported root of fixed Wiki commit `af99c4ac22a1be849206639807577a51b9e12061`, retaining `LICENSE` and `wiki/` but excluding `.git`.
 - `runtime`: prepared/generated data containing `onnxruntime/` (archive top directory stripped), `licenses/sherpa-onnx-LICENSE`, and generated `default-kb/manifest/{manifest.json,shorinwiki.commit}`.
 
 The inventory reproduces the four actual PKGBUILDs: three fonts and their licenses, MIT application license in core and voice, seven embedding model files plus the separately installed model license, 36 meme images and one index, 22 scripts, and 40 local KB markdown files. KB/Wiki filters retain `*.md` and exclude `.git`, `pictures`, `legacy`, `Legacy`, `lagacy`, `Lagacy` and `Wikis`. Top-level model export scripts and READMEs are not installed, matching the original minimum-depth rule. Wiki content is taken only from the `wiki/` subdirectory. All source rules were checked nonempty; the model and tokenizer hashes match the source manifest. All 36 meme index image references exist. Evidence: `resource-inventory-checks.json`.
 
-The binary and relative `miyupm -> miyu` link are stage responsibilities, since their input is the explicit component build root. Compiled-in prompts/web/word lists remain build inputs. They do not need duplicate external resource rules.
+The binary and relative `gqypm -> gqy` link are stage responsibilities, since their input is the explicit component build root. Compiled-in prompts/web/word lists remain build inputs. They do not need duplicate external resource rules.
 
 ## Licenses and remaining work
 
 GNU ORT's archive contains `LICENSE` and `ThirdPartyNotices.txt`; both have resource rules. The sherpa static archives contain no license. The fixed corresponding source commit's Apache-2.0 LICENSE is downloaded separately and has a voice package rule. T05/T18 must still inventory notices needed by the statically linked third-party dependencies.
 
-The Wiki archive has a CC BY-SA 4.0 LICENSE, now explicitly installed as `share/licenses/miyu/ShorinWiki.LICENSE` (the old PKGBUILDs omitted it). The unchanged Wiki content retains its source commit manifest.
+The Wiki archive has a CC BY-SA 4.0 LICENSE, now explicitly installed as `share/licenses/gqy/ShorinWiki.LICENSE` (the old PKGBUILDs omitted it). The unchanged Wiki content retains its source commit manifest.
 
 Voice models and WAVs are acceptance inputs; this inventory does not newly distribute them inside packages. The KWS model archive has no LICENSE, so the lock truthfully records `NOASSERTION`. SenseVoice's `LICENSE` is a 71-byte reference to the FunASR license section rather than a complete license. Silero's fixed upstream MIT license is locked separately. Redistribution of these test models requires resolving the upstream terms; this is not claimed verified by a successful download.
 
@@ -72,9 +72,9 @@ The initial inventory step did not claim T02/T03 verified. The T02 follow-up bel
 
 The parent subsequently assigned `prepare.py`, `lib/downloads.py`, `lib/inputs.py` and `tests/test_prepare.py`. Overall progress at handoff is 20% for the user-updated Linux 0.6.0 objective (the original 25-task matrix remains 4% fully VERIFIED).
 
-`prepare.py` only consumes the manifest-adjacent exported `source/` and `source-files.json`. It checks the full snapshot inventory, file bytes/modes/links, all frozen locks and source SHA. Cached archives are rehashed even offline. Downloads are atomically saved. Tar paths, link cycles, link escapes, hardlink escapes and link-parent pivots are rejected before extraction. Runtime resources, exact Wiki SHA, models/WAVs and nFPM are prepared without executing Miyu. Cargo vendor is bounded by a 1,200-second timeout and then checked using Cargo metadata with `--locked --offline` against the generated vendor configuration.
+`prepare.py` only consumes the manifest-adjacent exported `source/` and `source-files.json`. It checks the full snapshot inventory, file bytes/modes/links, all frozen locks and source SHA. Cached archives are rehashed even offline. Downloads are atomically saved. Tar paths, link cycles, link escapes, hardlink escapes and link-parent pivots are rejected before extraction. Runtime resources, exact Wiki SHA, models/WAVs and nFPM are prepared without executing GQY. Cargo vendor is bounded by a 1,200-second timeout and then checked using Cargo metadata with `--locked --offline` against the generated vendor configuration.
 
-`--skip-vendor` truthfully records `vendor_complete:false`. `--vendor-cache` accepts a prior complete prepared directory only when Cargo.lock matches and every vendor file plus configuration passes its stored SHA256. Files are copied, never hardlinked, and copied bytes are checked again. This permits different Miyu snapshots with identical dependency locks to reuse dependencies without claiming that their source snapshots match.
+`--skip-vendor` truthfully records `vendor_complete:false`. `--vendor-cache` accepts a prior complete prepared directory only when Cargo.lock matches and every vendor file plus configuration passes its stored SHA256. Files are copied, never hardlinked, and copied bytes are checked again. This permits different GQY snapshots with identical dependency locks to reuse dependencies without claiming that their source snapshots match.
 
 `lib/inputs.py::verify_prepared(inputs, manifest, manifest_path=None, require_vendor=False)` is shared by build/stage. It checks manifest SHA, source commit/snapshot, Wiki SHA, Cargo.lock and the complete actual inventory of files, modes and symbolic links. Missing, extra or changed files fail. Build can require complete vendor inputs explicitly.
 

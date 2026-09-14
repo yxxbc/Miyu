@@ -13,7 +13,7 @@ The supplied 2026-09-13 execution plan fixes the six target IDs and T00–T24 sc
 
 ## User amendment (2026-09-14, authoritative over the original test bar)
 
-The user changed acceptance to actual container package installation plus a successful real Miyu response using the existing `opencodego/deepseek-v4.1-flash` provider. After all applicable targets pass, publish a new 0.6.0 release autonomously. Review and fix release-process defects as needed. Include real OOBE screenshots in the release note. Test environments must be cleaned after use. Credentials must remain ephemeral and must not enter logs, source exports or artifacts.
+The user changed acceptance to actual container package installation plus a successful real GQY response using the existing `opencodego/deepseek-v4.1-flash` provider. After all applicable targets pass, publish a new 0.6.0 release autonomously. Review and fix release-process defects as needed. Include real OOBE screenshots in the release note. Test environments must be cleaned after use. Credentials must remain ephemeral and must not enter logs, source exports or artifacts.
 
 The full implementation plan remains a reference, but its hardware/manual acceptance and no-publication constraints are superseded where they conflict with this explicit instruction. The Mac publication scope has been asked separately because Linux containers cannot supply native Apple Silicon evidence. No Mac success claim may be inferred from Linux tests.
 

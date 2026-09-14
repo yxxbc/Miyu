@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """复现:WebUI 删掉最后一个可见会话后冒出几个新会话。
 
-    BIN=target/release/miyu python3 delete_last.py
+    BIN=target/release/gqy python3 delete_last.py
 """
 import json
 import os
@@ -15,12 +15,12 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BIN = Path(os.environ["BIN"])
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-delete-last")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-delete-last")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18493"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
 
 
 def write_config():

@@ -1,14 +1,14 @@
 //! 本地模型资产：目录布局与查找链。
 //!
 //! 一个模型就是一个目录（`manifest.json` + ONNX + tokenizer），目录名即模型 id。
-//! 查找顺序：环境变量 → `~/.miyu/models` → 安装前缀 → Linux 系统目录 →
+//! 查找顺序：环境变量 → `~/.gqy/models` → 安装前缀 → Linux 系统目录 →
 //! 仅 debug 的源码目录。候选链由 paths::resources 统一生成。
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
-pub(crate) const MODELS_DIR_ENV: &str = "MIYU_EMBEDDING_MODELS_DIR";
+pub(crate) const MODELS_DIR_ENV: &str = "GQY_EMBEDDING_MODELS_DIR";
 pub(crate) const DEFAULT_LOCAL_MODEL: &str = "bge-small-zh-v1.5-int8";
 const MANIFEST_FILE: &str = "manifest.json";
 
@@ -108,7 +108,7 @@ fn resolve_local_model_from(name: &str, candidates: &[PathBuf]) -> Result<LocalM
         .collect::<Vec<_>>()
         .join(", ");
     bail!(
-        "embedding model `{name}` was not found; install it under /usr/share/miyu/models or ~/.miyu/models, or set {MODELS_DIR_ENV} (searched: {searched})"
+        "embedding model `{name}` was not found; install it under /usr/share/gqy/models or ~/.gqy/models, or set {MODELS_DIR_ENV} (searched: {searched})"
     )
 }
 

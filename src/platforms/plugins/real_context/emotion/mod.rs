@@ -11,7 +11,7 @@
 //! 缓存前缀里,但也不必往化石里塞废话)。
 
 use crate::config::{AppConfig, RealContextPluginSettings, REAL_CONTEXT_PLUGIN_ID};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platforms::PlatformTurnContext;
 use crate::state::{PlatformPluginScopeKey, StateStore};
 use anyhow::Result;
@@ -547,7 +547,7 @@ pub(crate) fn snapshot(
 
 pub(crate) fn snapshot_for(
     store: &StateStore,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     settings: &RealContextPluginSettings,
     account_id: &str,
     persona_scope: &str,
@@ -576,7 +576,7 @@ pub(crate) fn snapshot_for(
 
 pub(crate) fn dashboard_state(
     store: &StateStore,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     settings: &RealContextPluginSettings,
     account_id: &str,
     persona_scope: &str,
@@ -832,7 +832,7 @@ mod tests {
     fn apply_delta_respects_daily_limits_and_records_events() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path();
-        let paths = MiyuPaths {
+        let paths = GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),

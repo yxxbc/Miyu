@@ -8,7 +8,7 @@
     cargo build --release        # 预算要 release，debug 的体积与 RSS 不可比
     python3 testkit/tui/budget.py
 
-产物在 ~/.cache/miyu-tui-budget/budget.json。
+产物在 ~/.cache/gqy-tui-budget/budget.json。
 """
 
 import json
@@ -26,24 +26,24 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-BIN = ROOT / "target" / "release" / "miyu"
+BIN = ROOT / "target" / "release" / "gqy"
 SMOKE = ROOT / "testkit" / "repl-smoke"
 
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-tui-budget/home"))
-RUNTIME = os.environ.get("MIYU_TUI_RUNTIME", "/tmp/mx-budget")
-PORT = int(os.environ.get("MIYU_TUI_PORT", "18443"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-tui-budget/home"))
+RUNTIME = os.environ.get("GQY_TUI_RUNTIME", "/tmp/mx-budget")
+PORT = int(os.environ.get("GQY_TUI_PORT", "18443"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18497"))
-OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "miyu-tui-budget"))
+OUT = Path(os.environ.get("OUT", Path.home() / ".cache" / "gqy-tui-budget"))
 COLS, ROWS = 200, 60
 IDLE_SECONDS = float(os.environ.get("IDLE_SECONDS", "5"))
 
 
 def env_for(tui):
-    env = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+    env = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
     if tui:
-        env["MIYU_TUI"] = "1"
+        env["GQY_TUI"] = "1"
     else:
-        env.pop("MIYU_TUI", None)
+        env.pop("GQY_TUI", None)
     return env
 
 

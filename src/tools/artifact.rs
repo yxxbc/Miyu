@@ -1,5 +1,5 @@
 use super::{ToolProgress, ToolRegistry, ToolSpec};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde_json::{json, Value};
 #[cfg(test)]
@@ -11,11 +11,11 @@ use std::path::{Component, Path};
 pub(super) const MAX_ARTIFACT_BYTES: usize = 20 * 1024 * 1024;
 
 /// artifact 库根:成员回合落在自己家里(`home/<user>/artifacts`),与 KB 的
-/// `kb_root_for` 同一套口径——`MiyuPaths::artifacts_dir()` 是 admin_owned,永远指
+/// `kb_root_for` 同一套口径——`GqyPaths::artifacts_dir()` 是 admin_owned,永远指
 /// 管理员的家,成员用它就会去读写管理员的 artifacts(09-11 实测:成员读
 /// `artifact:x.svg` 报「outside your workspace」,因为解析到了 home/shorin)。
 /// 管理员 / 无成员身份时原样走默认。
-pub fn artifacts_root(config: &crate::config::AppConfig, paths: &MiyuPaths) -> PathBuf {
+pub fn artifacts_root(config: &crate::config::AppConfig, paths: &GqyPaths) -> PathBuf {
     match config.member_home_dir() {
         Some(home) => home.join("artifacts"),
         None => paths.artifacts_dir(),
@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn artifact_manifest_lists_names_without_file_contents() {
         let temp = tempfile::tempdir().unwrap();
-        let paths = MiyuPaths {
+        let paths = GqyPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),
@@ -366,7 +366,7 @@ mod tests {
     #[test]
     fn artifacts_root_prefers_member_home_over_admin() {
         let temp = tempfile::tempdir().unwrap();
-        let paths = MiyuPaths {
+        let paths = GqyPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),
@@ -385,10 +385,10 @@ mod tests {
         let mut config = crate::config::AppConfig::default();
         assert_eq!(artifacts_root(&config, &paths), paths.artifacts_dir());
         // 成员:落到自己家里的 artifacts,不再借用管理员目录(09-11 修复)。
-        config.accounts.home_dir = Some("/tmp/miyu-member-xyz".to_string());
+        config.accounts.home_dir = Some("/tmp/gqy-member-xyz".to_string());
         assert_eq!(
             artifacts_root(&config, &paths),
-            std::path::PathBuf::from("/tmp/miyu-member-xyz/artifacts")
+            std::path::PathBuf::from("/tmp/gqy-member-xyz/artifacts")
         );
     }
 }

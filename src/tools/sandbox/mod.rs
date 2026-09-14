@@ -55,7 +55,7 @@ pub struct SandboxPolicy {
     /// 插到子进程 PATH 头部的目录(`~/.cargo/bin` 这类,存在且放行了才进)。
     pub path_prepend: Vec<PathBuf>,
     /// 给模型看的可写/可读摘要(环境块与 `/sandbox` 查看共用),路径以 `~` 缩写;
-    /// 系统目录、Miyu 内部目录不逐条列,只写 `system dirs`。
+    /// 系统目录、顾清影 内部目录不逐条列,只写 `system dirs`。
     pub writable_summary: Vec<String>,
     pub readable_summary: Vec<String>,
 }

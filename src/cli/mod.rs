@@ -9,7 +9,7 @@ use crate::llm::{
     TurnTokens, Usage,
 };
 use crate::memory::{MemoryOrganizer, MemoryStore};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 mod args;
 mod daemon_cmds;
 pub(crate) mod exit_code;
@@ -123,20 +123,20 @@ use keyboard_enhancement::KeyboardEnhancementState;
 
 pub fn parse() -> Cli {
     let mut args: Vec<std::ffi::OsString> = std::env::args_os().collect();
-    // `miyupm …` 是 `miyu pm …` 的 shim:按 argv[0] 的文件名识别(打包时做个
+    // `gqypm …` 是 `gqy pm …` 的 shim:按 argv[0] 的文件名识别(打包时做个
     // 符号链接即可,不用第二个二进制)。
     let invoked_as_pm = args
         .first()
         .map(std::path::PathBuf::from)
         .and_then(|path| path.file_name().map(|name| name.to_os_string()))
-        .is_some_and(|name| name == "miyupm");
+        .is_some_and(|name| name == "gqypm");
     if invoked_as_pm {
         args.insert(1, std::ffi::OsString::from("pm"));
     }
     parse_args(args).unwrap_or_else(|err| err.exit())
 }
 
-pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
+pub async fn run(cli: Cli, paths: GqyPaths) -> Result<()> {
     if cli.shell_classify {
         let shell_name = cli.shell.as_deref().unwrap_or("fish");
         let message = shell_message_from_input(cli.stdin, cli.message)?;
@@ -229,12 +229,12 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
             // daemon 的 stdout/stderr 被重定向进 daemon.log，而 tracing 写的是
             // 另一个按天滚动的文件。出了事翻错文件是常态——排查一次长回复不转
             // 图片，我在 daemon.log 里绕了很久，真正的 warning 一直躺在
-            // miyu.YYYY-MM-DD.log 里。所以在这条日志的开头指一次路。
+            // gqy.YYYY-MM-DD.log 里。所以在这条日志的开头指一次路。
             println!(
                 "{}",
                 crate::i18n::text(
-                    "Detailed logs (warnings, tool failures) go to miyu.YYYY-MM-DD.log in the same directory; this file only carries startup output.",
-                    "详细日志（警告、工具失败）在同目录的 miyu.YYYY-MM-DD.log；本文件只有启动输出。"
+                    "Detailed logs (warnings, tool failures) go to gqy.YYYY-MM-DD.log in the same directory; this file only carries startup output.",
+                    "详细日志（警告、工具失败）在同目录的 gqy.YYYY-MM-DD.log；本文件只有启动输出。"
                 )
             );
             crate::daemon::run(paths, args).await
@@ -277,8 +277,8 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
                         println!(
                             "{}",
                             t(
-                                "Tencent QQ is enabled; run `miyu daemon start` to begin listening.",
-                                "腾讯 QQ 已启用；执行 `miyu daemon start` 后开始监听。",
+                                "Tencent QQ is enabled; run `gqy daemon start` to begin listening.",
+                                "腾讯 QQ 已启用；执行 `gqy daemon start` 后开始监听。",
                             )
                         );
                     }
@@ -411,7 +411,7 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
                         )
                     );
                 }
-                // 裸 miyu = 普通 REPL(`miyu dev` 才是开发预设)。第一次先走
+                // 裸 gqy = 普通 REPL(`gqy dev` 才是开发预设)。第一次先走
                 // 新手引导;老配置在 migrate 里已标成做过,不会被拦。
                 let config = AppConfig::load_or_default(&paths)?;
                 if crate::oobe::needed(&config) && !run_oobe_flow(&paths).await? {
@@ -429,10 +429,10 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
 
 /// 跑新手引导,返回「接下来要不要进 REPL」。
 ///
-/// 开场就退出(Esc / Ctrl+C)什么都不写、也不进 REPL,下次裸 `miyu` 还会再来;
+/// 开场就退出(Esc / Ctrl+C)什么都不写、也不进 REPL,下次裸 `gqy` 还会再来;
 /// 选了「进入设置界面」就先开完整设置再进;做完或跳过直接进——空会话的
 /// banner 就是第一帧,不做完成页。引导写了配置,顺手让活着的 daemon 重读。
-async fn run_oobe_flow(paths: &MiyuPaths) -> Result<bool> {
+async fn run_oobe_flow(paths: &GqyPaths) -> Result<bool> {
     spawn_hangup_watchdog();
     // 后面是全屏 REPL 的话,备用屏一路不退,中间不闪 shell 画面。
     let keep_alt = crate::cli::repl::tail::screen::requested();
@@ -458,13 +458,13 @@ async fn run_oobe_flow(paths: &MiyuPaths) -> Result<bool> {
     }
 }
 
-/// 一次性回合的总入口(`miyu ask …` 与裸 `miyu "…"`)。
+/// 一次性回合的总入口(`gqy ask …` 与裸 `gqy "…"`)。
 ///
 /// 没用到任何程序驱动特性时走原路(直连/阅后即焚/终端渲染),行为一字不改;
 /// 带了 `--create/--mode/--model/…` 或 JSON 输出时走新路:会话由
 /// `turn_request` 定,覆盖随 StartTurn 走,需要 daemon。
 async fn run_one_shot(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     options: TurnOptions,
     message: String,
     read_stdin: bool,
@@ -561,7 +561,7 @@ async fn run_one_shot(
     outcome
 }
 
-async fn run_repl(paths: &MiyuPaths, initial_mode: AgentMode) -> Result<()> {
+async fn run_repl(paths: &GqyPaths, initial_mode: AgentMode) -> Result<()> {
     if direct_mode_requested() {
         run_direct_repl(paths, initial_mode).await
     } else {
@@ -570,11 +570,11 @@ async fn run_repl(paths: &MiyuPaths, initial_mode: AgentMode) -> Result<()> {
 }
 
 fn direct_mode_requested() -> bool {
-    std::env::var_os("MIYU_DIRECT").is_some_and(|value| value != "0")
+    std::env::var_os("GQY_DIRECT").is_some_and(|value| value != "0")
 }
 
 fn reload_repl_config(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state: &StateStore,
     config: &mut AppConfig,
     client: &mut OpenAiCompatibleClient,
@@ -593,7 +593,7 @@ const REPL_HISTORY_CAP: usize = 200;
 /// 别的会话里敲的东西。会话 id 形如 `sess_1787036807476_a188fc33`，本来就是
 /// 安全的文件名，但它来自库里的字符串，还是过一遍白名单：一个 `../` 就能把
 /// 写入指到 state 目录外面去。
-fn repl_history_file(paths: &MiyuPaths, session_id: &str) -> PathBuf {
+fn repl_history_file(paths: &GqyPaths, session_id: &str) -> PathBuf {
     let safe = session_id
         .chars()
         .map(|ch| {
@@ -612,7 +612,7 @@ fn repl_history_file(paths: &MiyuPaths, session_id: &str) -> PathBuf {
 
 /// 分会话之前的那个全局文件。**只读不写**：老记录都在里面，直接丢掉用户会
 /// 觉得「历史没了」。新条目一律写进会话文件。
-fn legacy_repl_history_file(paths: &MiyuPaths) -> PathBuf {
+fn legacy_repl_history_file(paths: &GqyPaths) -> PathBuf {
     paths.state_dir.join("repl-history.jsonl")
 }
 
@@ -631,7 +631,7 @@ fn read_repl_history_file(path: &std::path::Path) -> Vec<ReplHistoryEntry> {
 /// append-only file, capped on load. Conversation resets delete turns, so the
 /// file is the durable source; the turns-derived list only seeds sessions that
 /// predate it.
-fn load_persistent_repl_history(paths: &MiyuPaths, session_id: &str) -> Vec<ReplHistoryEntry> {
+fn load_persistent_repl_history(paths: &GqyPaths, session_id: &str) -> Vec<ReplHistoryEntry> {
     let path = repl_history_file(paths, session_id);
     let mut entries = read_repl_history_file(&path);
     if entries.len() > REPL_HISTORY_CAP {
@@ -658,7 +658,7 @@ fn push_history_capped(history: &mut Vec<ReplHistoryEntry>, entry: ReplHistoryEn
     }
 }
 
-fn persist_repl_history_entry(paths: &MiyuPaths, session_id: &str, entry: &ReplHistoryEntry) {
+fn persist_repl_history_entry(paths: &GqyPaths, session_id: &str, entry: &ReplHistoryEntry) {
     if entry.display.trim().is_empty() {
         return;
     }
@@ -1079,7 +1079,7 @@ fn persist_queued_submission(
 /// Queues a submission for the turn currently running in the daemon, using
 /// the cross-process queue target so the daemon consumes it mid-turn.
 async fn persist_remote_queued_submission(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     run_id: &str,
     turn_id: &str,
     submission: &LiveSubmission,
@@ -1113,8 +1113,8 @@ async fn persist_remote_queued_submission(
             submitted_at,
         }),
         Some(IpcFrame::Error { message, .. }) => bail!("{message}"),
-        Some(_) => bail!("Miyu core returned an invalid queue response"),
-        None => bail!("Miyu core closed the queue connection"),
+        Some(_) => bail!("GQY core returned an invalid queue response"),
+        None => bail!("GQY core closed the queue connection"),
     }
 }
 
@@ -1188,7 +1188,7 @@ fn terminal_hangup() -> bool {
 /// 盯哪个 fd 判挂断:stdin 是终端就盯 stdin;stdin 被管道/重定向占用时盯
 /// **控制终端**——管道读到 EOF 是正常收尾,不是挂断。
 ///
-/// shellhook 的 `printf '%s' "$buffer" | miyu --shell-intercept --stdin` 就是
+/// shellhook 的 `printf '%s' "$buffer" | gqy --shell-intercept --stdin` 就是
 /// 这个形态:写端 printf 一退出,stdin 立刻常驻 POLLHUP。原先一律裸 poll
 /// stdin,于是问题面板一打开(它是 `spawn_hangup_watchdog` 的第一个调用点)
 /// 就按下 5 秒倒计时,到点 `exit(1)`,daemon 看到一次性客户端断线又把回合
@@ -1274,7 +1274,7 @@ fn repl_should_browse_history(
     input.is_empty() || repl_history_is_clean(input, history, history_clean_index)
 }
 
-fn run_history(paths: &MiyuPaths, args: HistoryArgs) -> Result<()> {
+fn run_history(paths: &GqyPaths, args: HistoryArgs) -> Result<()> {
     let state = StateStore::new(paths)?;
     run_history_with_state(&state, args)
 }

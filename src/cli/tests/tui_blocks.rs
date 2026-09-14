@@ -39,7 +39,7 @@ fn enabled_stream_wraps_the_collapsed_body() {
         .unwrap();
         let text = String::from_utf8(out).unwrap();
         assert!(text.contains("summary"));
-        assert!(text.starts_with("\x1b]1337;miyu-block="));
+        assert!(text.starts_with("\x1b]1337;gqy-block="));
         assert!(text.ends_with(blocks::END_MARKER));
     });
 }
@@ -88,11 +88,11 @@ fn registry_evicts_oldest_beyond_the_line_budget() {
 #[test]
 fn markers_parse_both_ways() {
     assert!(matches!(
-        blocks::parse_marker("miyu-block=42"),
+        blocks::parse_marker("gqy-block=42"),
         Some(blocks::BlockMarker::Begin(42))
     ));
     assert!(matches!(
-        blocks::parse_marker("miyu-block-end"),
+        blocks::parse_marker("gqy-block-end"),
         Some(blocks::BlockMarker::End)
     ));
     // 同号段的别家载荷(以及全屏自己的 paint trace)不能误判成块标记。
@@ -428,7 +428,7 @@ fn clicking_a_link_finds_its_target() {
 #[test]
 fn job_panel_merges_a_call_with_its_result() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -467,7 +467,7 @@ fn job_panel_merges_a_call_with_its_result() {
 #[test]
 fn job_panel_tool_step_expands_to_its_output() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-out-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-out-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -505,7 +505,7 @@ fn job_panel_tool_step_expands_to_its_output() {
 #[test]
 fn job_panel_starts_with_the_prompt_it_was_given() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-prompt-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-prompt-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -548,7 +548,7 @@ fn job_panel_starts_with_the_prompt_it_was_given() {
 #[test]
 fn job_panel_paints_thinking_body_green_not_its_handle() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-green-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-green-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -583,7 +583,7 @@ fn job_panel_paints_thinking_body_green_not_its_handle() {
 #[test]
 fn job_panel_rows_stay_inside_the_frame() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-frame-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-frame-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         let long = "这是一段很长的思考".repeat(30);
@@ -687,7 +687,7 @@ fn an_open_expansion_survives_a_panel_refresh() {
 #[test]
 fn job_panel_folds_its_steps_once_the_subagent_talks() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-fold-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-fold-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -776,7 +776,7 @@ fn opening_a_panel_does_not_move_the_body() {
 #[test]
 fn job_panel_does_not_hang_tool_output_on_speech_or_the_fold() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-speech-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-speech-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -827,7 +827,7 @@ fn job_panel_does_not_hang_tool_output_on_speech_or_the_fold() {
 #[test]
 fn a_log_fold_opens_into_a_timeline_and_the_running_step_spins() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-fold-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-fold-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -915,7 +915,7 @@ fn a_log_fold_opens_into_a_timeline_and_the_running_step_spins() {
 #[test]
 fn a_trailing_stats_line_is_not_a_running_step() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-stats-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-stats-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -949,7 +949,7 @@ fn a_trailing_stats_line_is_not_a_running_step() {
 fn a_multi_line_speech_paragraph_keeps_its_continuation_lines() {
     with_blocks(|| {
         let dir =
-            std::env::temp_dir().join(format!("miyu-log-speech-lines-{}", std::process::id()));
+            std::env::temp_dir().join(format!("gqy-log-speech-lines-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(
@@ -986,7 +986,7 @@ fn a_multi_line_speech_paragraph_keeps_its_continuation_lines() {
 #[test]
 fn a_log_preparing_row_wears_the_tools_own_glyph() {
     with_blocks(|| {
-        let dir = std::env::temp_dir().join(format!("miyu-log-prep-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-prep-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(

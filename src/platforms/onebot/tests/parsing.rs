@@ -194,7 +194,7 @@ async fn prepared_images_become_binary_attachments_and_deduplicate_content() {
 }
 
 /// 视频段(NapCat: file/url/file_id/file_size)要像文件一样进 `files`,否则当轮
-/// 正文里没有 id,模型不知道有段视频可看(09-04「miyu 看不了别人发的视频」)。
+/// 正文里没有 id,模型不知道有段视频可看(09-04「gqy 看不了别人发的视频」)。
 #[test]
 fn video_segments_become_lazy_file_refs() {
     let message = json!([

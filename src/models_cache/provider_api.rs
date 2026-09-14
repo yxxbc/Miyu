@@ -55,7 +55,7 @@ pub(crate) fn fetch_provider_context_windows(
     let mut request = client
         .get(url)
         .header("Accept", "application/json")
-        .header("User-Agent", "miyu-model-metadata");
+        .header("User-Agent", "gqy-model-metadata");
     if !api_key.is_empty() {
         request = request.bearer_auth(api_key);
     }

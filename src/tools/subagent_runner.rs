@@ -41,7 +41,7 @@ fn checkpoints() -> &'static Mutex<HashMap<String, SubagentCheckpoint>> {
 static CHECKPOINT_DIR: OnceLock<std::path::PathBuf> = OnceLock::new();
 
 /// daemon 启动时定一次落盘目录并清掉过期文件(server::run 调,紧挨 jobs::init)。
-pub fn init_checkpoint_dir(paths: &crate::paths::MiyuPaths) {
+pub fn init_checkpoint_dir(paths: &crate::paths::GqyPaths) {
     let dir = paths.state_dir.join("subagent-checkpoints");
     let _ = std::fs::create_dir_all(&dir);
     let _ = CHECKPOINT_DIR.set(dir);

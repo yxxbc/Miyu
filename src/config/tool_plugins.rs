@@ -45,7 +45,7 @@ pub struct PluginsConfig {
 }
 
 /// 本机 Claude Code CLI 接入:`claude-code` 供应商协议的运行参数。CLI 用
-/// 用户既有的订阅登录态,Miyu 不经手任何凭据。(早期还有一件 `claude_code`
+/// 用户既有的订阅登录态,顾清影 不经手任何凭据。(早期还有一件 `claude_code`
 /// 委托工具共用这份配置,08-21 已删;它专用的 timeout/max_output 字段随之
 /// 退役,存量配置里的同名键会被忽略。)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,14 +60,14 @@ pub struct ClaudeCodePluginConfig {
     pub permission_mode: String,
     /// 哪些模式的会话让 claude 用自带原生工具(Bash/Edit/Read…):
     /// off/dev/normal/all。原生工具在 claude 训练分布内,编码能力最强;
-    /// 经桥的 Miyu 工具反正不走 Miyu 渲染管线,所以默认 all。
+    /// 经桥的 顾清影 工具反正不走 顾清影 渲染管线,所以默认 all。
     #[serde(default = "default_claude_code_native_tools")]
     pub native_tools: String,
-    /// 哪些模式的会话把 Miyu 工具经 MCP 桥挂给 claude(记忆/生图/表情包等
+    /// 哪些模式的会话把 顾清影 工具经 MCP 桥挂给 claude(记忆/生图/表情包等
     /// claude 没有的能力):off/dev/normal/all,默认 all。两套同开时与原生
-    /// 重复的 Miyu 工具被剔除,原生优先。
-    #[serde(default = "default_claude_code_miyu_tools")]
-    pub miyu_tools: String,
+    /// 重复的 顾清影 工具被剔除,原生优先。
+    #[serde(default = "default_claude_code_gqy_tools")]
+    pub gqy_tools: String,
     /// 供应商中转模式的流空闲看门狗（秒）：这么久没有任何输出就杀进程。
     #[serde(default = "default_claude_code_idle_timeout_seconds")]
     pub idle_timeout_seconds: u64,
@@ -83,7 +83,7 @@ impl Default for ClaudeCodePluginConfig {
             binary: String::new(),
             permission_mode: default_claude_code_permission_mode(),
             native_tools: default_claude_code_native_tools(),
-            miyu_tools: default_claude_code_miyu_tools(),
+            gqy_tools: default_claude_code_gqy_tools(),
             idle_timeout_seconds: default_claude_code_idle_timeout_seconds(),
             prefer_subscription: true,
         }
@@ -91,9 +91,9 @@ impl Default for ClaudeCodePluginConfig {
 }
 
 /// 本机 Antigravity CLI(`agy`)接入:`antigravity` 供应商协议的运行参数。
-/// CLI 用用户既有的 Google 登录态,Miyu 不经手任何凭据。与 claude-code 的
-/// 差异:人格经全局自定义代理文件(`~/.gemini/config/agents/miyu/agent.md`)
-/// 替换默认提示词,Miyu 工具经全局 mcp_config.json 的 `miyu` 条目挂桥。
+/// CLI 用用户既有的 Google 登录态,顾清影 不经手任何凭据。与 claude-code 的
+/// 差异:人格经全局自定义代理文件(`~/.gemini/config/agents/gqy/agent.md`)
+/// 替换默认提示词,顾清影 工具经全局 mcp_config.json 的 `gqy` 条目挂桥。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntigravityPluginConfig {
     /// 空 = 从 PATH 解析 `agy`。
@@ -103,15 +103,15 @@ pub struct AntigravityPluginConfig {
     /// off/dev/normal/all。原生工具吃订阅额度,默认 all。
     #[serde(default = "default_antigravity_native_tools")]
     pub native_tools: String,
-    /// 哪些模式的会话把 Miyu 工具经 MCP 桥挂给 agy:off/dev/normal/all。
-    /// 两套同开时与原生重复的 Miyu 工具被剔除,原生优先。
-    #[serde(default = "default_antigravity_miyu_tools")]
-    pub miyu_tools: String,
-    /// 桥上的 Miyu 工具按 eager 注册(以 `mcp_miyu_<name>` 原生名直接可调,
+    /// 哪些模式的会话把 顾清影 工具经 MCP 桥挂给 agy:off/dev/normal/all。
+    /// 两套同开时与原生重复的 顾清影 工具被剔除,原生优先。
+    #[serde(default = "default_antigravity_gqy_tools")]
+    pub gqy_tools: String,
+    /// 桥上的 顾清影 工具按 eager 注册(以 `mcp_gqy_<name>` 原生名直接可调,
     /// schema 进系统提示词);关掉则走 agy 的懒加载(模型先读 schema 文件再经
     /// `call_mcp_tool` 调用,省 token 但每件工具多一跳)。
     #[serde(default = "default_true")]
-    pub miyu_tools_eager: bool,
+    pub gqy_tools_eager: bool,
     /// 流空闲看门狗(秒):这么久没有任何输出就杀进程。
     #[serde(default = "default_antigravity_idle_timeout_seconds")]
     pub idle_timeout_seconds: u64,
@@ -126,8 +126,8 @@ impl Default for AntigravityPluginConfig {
         Self {
             binary: String::new(),
             native_tools: default_antigravity_native_tools(),
-            miyu_tools: default_antigravity_miyu_tools(),
-            miyu_tools_eager: true,
+            gqy_tools: default_antigravity_gqy_tools(),
+            gqy_tools_eager: true,
             idle_timeout_seconds: default_antigravity_idle_timeout_seconds(),
             print_timeout_seconds: default_antigravity_print_timeout_seconds(),
         }
@@ -135,7 +135,7 @@ impl Default for AntigravityPluginConfig {
 }
 
 /// 本机 OpenAI Codex CLI 接入:`codex` 供应商协议的运行参数。CLI 用用户既有
-/// 的 ChatGPT 登录态,Miyu 不经手凭据。所有配置逐进程经 `-c` 注入,不碰用户
+/// 的 ChatGPT 登录态,顾清影 不经手凭据。所有配置逐进程经 `-c` 注入,不碰用户
 /// 的 ~/.codex/config.toml。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodexPluginConfig {
@@ -146,9 +146,9 @@ pub struct CodexPluginConfig {
     /// off/dev/normal/all,默认 all。
     #[serde(default = "default_codex_native_tools")]
     pub native_tools: String,
-    /// 哪些模式的会话把 Miyu 工具经 MCP 桥挂给 codex:off/dev/normal/all。
-    #[serde(default = "default_codex_miyu_tools")]
-    pub miyu_tools: String,
+    /// 哪些模式的会话把 顾清影 工具经 MCP 桥挂给 codex:off/dev/normal/all。
+    #[serde(default = "default_codex_gqy_tools")]
+    pub gqy_tools: String,
     /// codex 沙箱:danger-full-access(默认,与另两条线的全放行同义)/
     /// workspace-write / read-only。
     #[serde(default = "default_codex_sandbox_mode")]
@@ -167,7 +167,7 @@ impl Default for CodexPluginConfig {
         Self {
             binary: String::new(),
             native_tools: default_codex_native_tools(),
-            miyu_tools: default_codex_miyu_tools(),
+            gqy_tools: default_codex_gqy_tools(),
             sandbox_mode: default_codex_sandbox_mode(),
             ignore_user_config: true,
             idle_timeout_seconds: default_codex_idle_timeout_seconds(),

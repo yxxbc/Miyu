@@ -118,45 +118,45 @@ fn platform_access_grants_are_cached_persisted_and_audited() {
 #[test]
 fn platform_bindings_survive_rename_and_isolate_personas() {
     let (_temp, store) = test_store();
-    let miyu_session = store
-        .create_session("miyu", "old display name", "user", None)
+    let gqy_session = store
+        .create_session("gqy", "old display name", "user", None)
         .unwrap();
     let other_session = store
         .create_session("other", "another display name", "user", None)
         .unwrap();
-    let miyu_key = platform_binding_key("20000", None, "miyu");
+    let gqy_key = platform_binding_key("20000", None, "gqy");
     let other_key = platform_binding_key("20000", None, "other");
 
     store
-        .bind_platform_session(&miyu_key, &miyu_session.session_id)
+        .bind_platform_session(&gqy_key, &gqy_session.session_id)
         .unwrap();
     store
         .bind_platform_session(&other_key, &other_session.session_id)
         .unwrap();
     store
-        .rename_session(&miyu_session.session_id, "new display name")
+        .rename_session(&gqy_session.session_id, "new display name")
         .unwrap();
 
     assert_eq!(
-        store.find_platform_session_binding(&miyu_key).unwrap(),
-        Some(miyu_session.session_id.clone())
+        store.find_platform_session_binding(&gqy_key).unwrap(),
+        Some(gqy_session.session_id.clone())
     );
     // `None` and an empty participant are the same database identity.
-    let empty_participant_key = platform_binding_key("20000", Some(""), "miyu");
+    let empty_participant_key = platform_binding_key("20000", Some(""), "gqy");
     assert_eq!(
         store
             .find_platform_session_binding(&empty_participant_key)
             .unwrap(),
-        Some(miyu_session.session_id.clone())
+        Some(gqy_session.session_id.clone())
     );
     assert_eq!(
         store.find_platform_session_binding(&other_key).unwrap(),
         Some(other_session.session_id)
     );
 
-    store.delete_session(&miyu_session.session_id).unwrap();
+    store.delete_session(&gqy_session.session_id).unwrap();
     assert_eq!(
-        store.find_platform_session_binding(&miyu_key).unwrap(),
+        store.find_platform_session_binding(&gqy_key).unwrap(),
         None
     );
 }
@@ -164,11 +164,11 @@ fn platform_bindings_survive_rename_and_isolate_personas() {
 #[test]
 fn platform_binding_overwrite_and_conflict_are_atomic() {
     let (_temp, store) = test_store();
-    let session_a = store.create_session("miyu", "a", "user", None).unwrap();
-    let session_b = store.create_session("miyu", "b", "user", None).unwrap();
-    let session_c = store.create_session("miyu", "c", "user", None).unwrap();
-    let key_a = platform_binding_key("group-a", None, "miyu");
-    let key_b = platform_binding_key("group-b", None, "miyu");
+    let session_a = store.create_session("gqy", "a", "user", None).unwrap();
+    let session_b = store.create_session("gqy", "b", "user", None).unwrap();
+    let session_c = store.create_session("gqy", "c", "user", None).unwrap();
+    let key_a = platform_binding_key("group-a", None, "gqy");
+    let key_b = platform_binding_key("group-b", None, "gqy");
 
     store
         .bind_platform_session(&key_a, &session_a.session_id)
@@ -206,7 +206,7 @@ fn concurrent_platform_bind_rejects_session_sharing() {
     let (temp, store) = test_store();
     let second_store = StateStore::new(&test_paths(temp.path())).unwrap();
     let session = store
-        .create_session("miyu", "shared target", "user", None)
+        .create_session("gqy", "shared target", "user", None)
         .unwrap();
     let barrier = Arc::new(std::sync::Barrier::new(3));
     let handles = [store.clone(), second_store]
@@ -215,7 +215,7 @@ fn concurrent_platform_bind_rejects_session_sharing() {
         .map(|(store, conversation_id)| {
             let barrier = barrier.clone();
             let session_id = session.session_id.clone();
-            let key = platform_binding_key(conversation_id, None, "miyu");
+            let key = platform_binding_key(conversation_id, None, "gqy");
             std::thread::spawn(move || {
                 barrier.wait();
                 let result = store.bind_platform_session(&key, &session_id);
@@ -250,9 +250,9 @@ fn concurrent_platform_bind_rejects_session_sharing() {
 fn concurrent_platform_claim_converges_on_one_session() {
     let (temp, store) = test_store();
     let second_store = StateStore::new(&test_paths(temp.path())).unwrap();
-    let session_a = store.create_session("miyu", "a", "user", None).unwrap();
-    let session_b = store.create_session("miyu", "b", "user", None).unwrap();
-    let key = platform_binding_key("same-group", None, "miyu");
+    let session_a = store.create_session("gqy", "a", "user", None).unwrap();
+    let session_b = store.create_session("gqy", "b", "user", None).unwrap();
+    let key = platform_binding_key("same-group", None, "gqy");
     let barrier = Arc::new(std::sync::Barrier::new(3));
     let handles = [
         (store.clone(), session_a.session_id.clone()),
@@ -285,7 +285,7 @@ fn concurrent_platform_claim_converges_on_one_session() {
 #[test]
 fn platform_session_creation_is_bound_atomically() {
     let (_temp, store) = test_store();
-    let key = platform_binding_key("atomic-group", None, "miyu");
+    let key = platform_binding_key("atomic-group", None, "gqy");
     let (platform, created) = store
         .create_or_get_platform_session(&key, "platform")
         .unwrap();
@@ -295,7 +295,7 @@ fn platform_session_creation_is_bound_atomically() {
         Some(platform.session_id.clone())
     );
     assert!(!store
-        .list_local_sessions("miyu")
+        .list_local_sessions("gqy")
         .unwrap()
         .iter()
         .any(|entry| entry.record.session_id == platform.session_id));
@@ -322,18 +322,18 @@ fn platform_plugin_json_is_shared_across_personas_and_supports_deletion() {
 
     // Pinned stores represent independent persona sessions but share the
     // external-conversation plugin scope.
-    let miyu_session = store.create_session("miyu", "miyu", "user", None).unwrap();
+    let gqy_session = store.create_session("gqy", "gqy", "user", None).unwrap();
     let other_session = store
         .create_session("other", "other", "user", None)
         .unwrap();
-    let miyu_store = store.pinned(&miyu_session.session_id);
+    let gqy_store = store.pinned(&gqy_session.session_id);
     let other_store = store.pinned(&other_session.session_id);
-    let from_miyu: Option<Vec<String>> =
-        miyu_store.plugin_get_json(&scope, "recent_images").unwrap();
+    let from_gqy: Option<Vec<String>> =
+        gqy_store.plugin_get_json(&scope, "recent_images").unwrap();
     let from_other: Option<Vec<String>> = other_store
         .plugin_get_json(&scope, "recent_images")
         .unwrap();
-    assert_eq!(from_miyu, Some(replacement.clone()));
+    assert_eq!(from_gqy, Some(replacement.clone()));
     assert_eq!(from_other, Some(replacement));
 
     store.plugin_put_json(&scope, "mode", &"image").unwrap();

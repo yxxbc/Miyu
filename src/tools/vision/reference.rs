@@ -52,12 +52,12 @@ pub(crate) type ReferenceImage = (Vec<u8>, String);
 
 pub(crate) struct ReferenceResolver {
     pub(crate) config: AppConfig,
-    pub(crate) paths: MiyuPaths,
+    pub(crate) paths: GqyPaths,
     pub(crate) state: Option<Arc<ScopedVisionState>>,
 }
 
 impl ReferenceResolver {
-    pub(crate) fn unscoped(config: AppConfig, paths: MiyuPaths) -> Self {
+    pub(crate) fn unscoped(config: AppConfig, paths: GqyPaths) -> Self {
         Self {
             config,
             paths,
@@ -143,7 +143,7 @@ pub(crate) async fn download_reference_image(url: &str) -> Result<ReferenceImage
 }
 
 pub(crate) async fn resolve_context_image(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state: &ScopedVisionState,
     image_id: &str,
 ) -> Result<ResolvedContextImage> {
@@ -230,7 +230,7 @@ pub(crate) async fn resolve_context_image(
         cache_path,
     };
     tracing::info!(
-        target: "miyu::qq",
+        target: "gqy::qq",
         image_id,
         message_id = %source.message_id,
         image_index = source.image_index,
@@ -262,7 +262,7 @@ pub(crate) async fn resolve_context_image(
 /// 把 `file_<msg>_<n>` 引用懒下载到本地缓存,返回缓存里的路径。占用与图片
 /// 同一份取件配额(`fetches`);同一 id 本回合只下一次。
 pub(crate) async fn resolve_context_file(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state: &ScopedVisionState,
     file_id: &str,
 ) -> Result<PlatformFileDownload> {
@@ -303,7 +303,7 @@ pub(crate) async fn resolve_context_file(
         bail!("the downloaded platform file landed outside the platform file cache")
     }
     tracing::info!(
-        target: "miyu::qq",
+        target: "gqy::qq",
         file_id,
         message_id = %source.message_id,
         bytes = download.size,

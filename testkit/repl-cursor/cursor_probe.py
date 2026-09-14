@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """REPL 回车提交时的光标轨迹探针。
 
-在 PTY 里跑 miyu REPL(沙箱 MIYU_HOME + 独立端口 daemon + 桩 LLM),按 kitty 的语义
-回放 miyu 发出的每个 read 块:
+在 PTY 里跑 gqy REPL(沙箱 GQY_HOME + 独立端口 daemon + 桩 LLM),按 kitty 的语义
+回放 gqy 发出的每个 read 块:
   - ?2026h 开始暂停渲染:光标位置与可见性都取快照(kitty screen_pause_rendering)
   - ?2026l 或 2s 超时结束暂停
   - 每个 read 块结束 = 一个可能的渲染点(kitty 按 input_delay 攒批解析,块粒度是悲观上界)
@@ -32,10 +32,10 @@ from pathlib import Path
 import pyte
 
 REPO = Path("/home/shorin/Documents/github/Miyu")
-MIYU = Path(os.environ.get("BIN") or REPO / "target" / "debug" / "miyu")
-BASE = Path(os.environ.get("OUT") or Path.home() / ".cache" / "miyu-cursor-probe")
+GQY = Path(os.environ.get("BIN") or REPO / "target" / "debug" / "gqy")
+BASE = Path(os.environ.get("OUT") or Path.home() / ".cache" / "gqy-cursor-probe")
 HOME = BASE / "home"
-RUN = Path.home() / ".cache" / "miyu-cp-run"  # SUN_LEN 限制,路径要短
+RUN = Path.home() / ".cache" / "gqy-cp-run"  # SUN_LEN 限制,路径要短
 OUT = BASE / "out"
 PORT = int(os.environ.get("PORT", "18397"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18497"))
@@ -45,7 +45,7 @@ spec = importlib.util.spec_from_file_location("clitk", REPO / "testkit" / "cli" 
 clitk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(clitk)
 clitk.HOME, clitk.RUN, clitk.OUT, clitk.PORT, clitk.STUB_PORT = HOME, RUN, OUT, PORT, STUB_PORT
-clitk.MIYU = MIYU
+clitk.GQY = GQY
 
 CSI_RE = re.compile(rb"\x1b\[(\?)?([0-9;]*)([A-Za-z@`])")
 
@@ -120,10 +120,10 @@ class Term:
 class Repl:
     def __init__(self, rows, cols, direct):
         self.rows, self.cols = rows, cols
-        e = env({"MIYU_DIRECT": "1"} if direct else None)
+        e = env({"GQY_DIRECT": "1"} if direct else None)
         self.master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
-        self.proc = subprocess.Popen([str(MIYU)], stdin=slave, stdout=slave, stderr=slave,
+        self.proc = subprocess.Popen([str(GQY)], stdin=slave, stdout=slave, stderr=slave,
                                      env=e, preexec_fn=os.setsid, close_fds=True, cwd=str(BASE))
         os.close(slave)
         self.chunks = []  # (t, bytes)
@@ -253,7 +253,7 @@ def main():
     ap.add_argument("--lines", type=int, default=30, help="每轮桩回复的行数")
     ap.add_argument("--keep-home", action="store_true")
     args = ap.parse_args()
-    assert MIYU.exists(), MIYU
+    assert GQY.exists(), GQY
     if not args.keep_home:
         clitk.build_home()
         # 桩模型指向本探针自己的桩。
@@ -268,7 +268,7 @@ def main():
     daemon = None
     try:
         if not args.direct:
-            daemon = subprocess.Popen([str(MIYU), "daemon", "--port", str(PORT)], env=env(),
+            daemon = subprocess.Popen([str(GQY), "daemon", "--port", str(PORT)], env=env(),
                                       stdout=(OUT / "daemon.log").open("w"), stderr=subprocess.STDOUT)
             for _ in range(60):
                 if clitk.find_socket():
@@ -302,7 +302,7 @@ def main():
         analyze(chunks, args.rows, args.cols, marks, OUT / "report.txt")
     finally:
         if daemon:
-            subprocess.run([str(MIYU), "daemon", "stop"], env=env(), capture_output=True, timeout=30)
+            subprocess.run([str(GQY), "daemon", "stop"], env=env(), capture_output=True, timeout=30)
             try:
                 daemon.wait(timeout=10)
             except subprocess.TimeoutExpired:

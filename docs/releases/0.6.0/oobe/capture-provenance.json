@@ -1,8 +1,8 @@
 {
-  "binary_name": "miyu",
+  "binary_name": "gqy",
   "binary_sha256": "559ab9e0cff1bd27cb7b887824ac5571dd447e9999501df8db302fcfb5ded615",
   "captured_at_utc": "2026-09-13T17:03:09.529865+00:00",
-  "cleanup": "Owned PTY processes and temporary HOME/MIYU_HOME/XDG roots removed.",
+  "cleanup": "Owned PTY processes and temporary HOME/GQY_HOME/XDG roots removed.",
   "network": "Isolated Linux user/network namespace. No external or host-loopback connection.",
   "raw_ansi_sha256": "0e3e42066fb8ae1fb7d17e51cbaedbfcd6ceca0129bfb48f7b5b65c5e1d4712e",
   "reaped_descendants": [],
@@ -77,5 +77,5 @@
     "rows": 38,
     "term": "xterm-256color"
   },
-  "version": "miyu 0.6.0"
+  "version": "gqy 0.6.0"
 }

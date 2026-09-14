@@ -31,10 +31,10 @@ pub(in crate::config_tui) fn edit_antigravity_provider_form(
         .choices(TOOL_SCOPES),
         Field::new(
             t(
-                "Miyu tools via MCP bridge scope",
-                "Miyu 工具挂给 agy 的作用域",
+                "GQY tools via MCP bridge scope",
+                "顾清影 工具挂给 agy 的作用域",
             ),
-            plugin.miyu_tools.clone(),
+            plugin.gqy_tools.clone(),
         )
         .choices(TOOL_SCOPES),
         Field::new(
@@ -42,7 +42,7 @@ pub(in crate::config_tui) fn edit_antigravity_provider_form(
                 "Register bridged tools eagerly",
                 "桥工具 eager 注册(原生名直调)",
             ),
-            plugin.miyu_tools_eager.to_string(),
+            plugin.gqy_tools_eager.to_string(),
         )
         .choices(&["true", "false"]),
         Field::new(
@@ -81,13 +81,13 @@ pub(in crate::config_tui) fn edit_antigravity_provider_form(
         };
         plugin.binary = fields[2].value.trim().to_string();
         plugin.native_tools = normalize_scope(&fields[3].value);
-        plugin.miyu_tools = normalize_scope(&fields[4].value);
-        plugin.miyu_tools_eager = eager;
+        plugin.gqy_tools = normalize_scope(&fields[4].value);
+        plugin.gqy_tools_eager = eager;
         plugin.idle_timeout_seconds = fields[6].value.trim().parse().unwrap_or(300);
         plugin.print_timeout_seconds = fields[7].value.trim().parse().unwrap_or(24 * 60 * 60);
         if !enabled {
             // 关掉即清理 agy 侧落盘物:代理目录与全局 mcp_config 的桥条目,
-            // 否则用户交互式开 agy 还会一直挂着一个指向旧二进制的 miyu 服务器。
+            // 否则用户交互式开 agy 还会一直挂着一个指向旧二进制的 gqy 服务器。
             crate::llm::remove_antigravity_relay_files();
         }
         let mut updated = provider.clone();

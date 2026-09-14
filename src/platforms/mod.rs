@@ -52,7 +52,7 @@ use crate::config::{
 };
 use crate::i18n::{text_for, Locale};
 use crate::ipc::ImageAttachment;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::runtime::{
     random_id, validate_content, ActorCommand, DaemonState, IpcRunGuard, RunInfo,
 };
@@ -215,7 +215,7 @@ impl PlatformRuntime {
 pub(crate) fn apply_platform_turn_scope(
     registry: &mut crate::tools::ToolRegistry,
     config: &crate::config::AppConfig,
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::GqyPaths,
     context: &PlatformTurnContext,
     restricted_base: Option<&crate::tools::ToolRegistry>,
 ) {

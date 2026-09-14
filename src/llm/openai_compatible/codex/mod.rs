@@ -1,7 +1,7 @@
 //! OpenAI Codex CLI 中转协议(`protocol = "codex"`)。
 //!
 //! 传输层是本机 `codex exec --json` 子进程的 JSONL 事件流:CLI 用用户既有的
-//! ChatGPT 登录态,Miyu 不经手凭据。与另两条 CLI 线同构(骨架在 [`cli_relay`]),
+//! ChatGPT 登录态,顾清影 不经手凭据。与另两条 CLI 线同构(骨架在 [`cli_relay`]),
 //! codex 特有的三样(09-03 实测,agy 1.1.24 同日对照):
 //! ①任何配置都能经 `-c key=value` **逐进程**注入——人格走
 //! `model_instructions_file`(整体替换内置指令,rollout 的 base_instructions
@@ -22,8 +22,8 @@ pub(in crate::llm::openai_compatible) struct CodexRuntime {
     pub(in crate::llm::openai_compatible) binary: PathBuf,
     /// codex 原生工具(shell/apply_patch/web_search)的模式作用域:off/dev/normal/all。
     pub(in crate::llm::openai_compatible) native_tools: String,
-    /// Miyu 工具经 MCP 桥挂给 codex 的模式作用域:off/dev/normal/all。
-    pub(in crate::llm::openai_compatible) miyu_tools: String,
+    /// 顾清影 工具经 MCP 桥挂给 codex 的模式作用域:off/dev/normal/all。
+    pub(in crate::llm::openai_compatible) gqy_tools: String,
     /// codex 沙箱:read-only / workspace-write / danger-full-access。
     pub(in crate::llm::openai_compatible) sandbox_mode: String,
     /// 不加载用户自己的 `~/.codex/config.toml`(登录态仍从 CODEX_HOME 读):
@@ -45,7 +45,7 @@ impl CodexRuntime {
         Self {
             binary,
             native_tools: plugin.native_tools.clone(),
-            miyu_tools: plugin.miyu_tools.clone(),
+            gqy_tools: plugin.gqy_tools.clone(),
             sandbox_mode: plugin.sandbox_mode.clone(),
             ignore_user_config: plugin.ignore_user_config,
             idle_timeout: Duration::from_secs(plugin.idle_timeout_seconds.max(30)),
@@ -54,32 +54,32 @@ impl CodexRuntime {
     }
 }
 
-/// `<state>/relay/codex`;拿不到 Miyu 路径时退到临时目录。
+/// `<state>/relay/codex`;拿不到 顾清影 路径时退到临时目录。
 fn default_instructions_dir() -> PathBuf {
-    if let Some(dir) = std::env::var_os("MIYU_CODEX_INSTRUCTIONS_DIR") {
+    if let Some(dir) = std::env::var_os("GQY_CODEX_INSTRUCTIONS_DIR") {
         return PathBuf::from(dir);
     }
-    crate::paths::MiyuPaths::new()
+    crate::paths::GqyPaths::new()
         .map(|paths| paths.state_dir.join("relay").join("codex"))
-        .unwrap_or_else(|_| std::env::temp_dir().join("miyu-codex"))
+        .unwrap_or_else(|_| std::env::temp_dir().join("gqy-codex"))
 }
 
-/// 两套工具同开时从桥里剔除的 Miyu 工具。codex 原生有 shell(=run_command)、
+/// 两套工具同开时从桥里剔除的 顾清影 工具。codex 原生有 shell(=run_command)、
 /// web_search 与 update_plan(=todowrite);glob/grep 它靠 shell 里的 rg 做,
-/// 没有独立工具,Miyu 的照留;read/edit/subagent/job/alarm 的保留理由同 claude 线。
+/// 没有独立工具,顾清影 的照留;read/edit/subagent/job/alarm 的保留理由同 claude 线。
 pub(in crate::llm::openai_compatible) const BRIDGE_DUPLICATE_TOOLS: &[&str] =
     &["run_command", "web_search", "todowrite"];
 
 /// 中转环境事实(声明式;常量字节保证提示词哈希稳定)。
 /// codex 不截断 stdin:45 万字节探针(针在末尾)原样答出(09-04 案卷 11.1),
-/// 已覆盖 Miyu 的 pop 包络(约 40 万字节)。不给预算。
+/// 已覆盖 顾清影 的 pop 包络(约 40 万字节)。不给预算。
 const STDIN_BYTE_BUDGET: Option<usize> = None;
 
-const RELAY_ENVIRONMENT_NOTE: &str = "\n\n<relay-environment>\nThis session runs inside Miyu's relay: each turn is a fresh codex process that exits when the turn ends. Anything backgrounded through the built-in shell dies with the process.\n</relay-environment>";
+const RELAY_ENVIRONMENT_NOTE: &str = "\n\n<relay-environment>\nThis session runs inside GQY's relay: each turn is a fresh codex process that exits when the turn ends. Anything backgrounded through the built-in shell dies with the process.\n</relay-environment>";
 
-/// miyu 工具桥在场时的补充事实(codex 给 MCP 工具的名字是 `miyu__<name>`… 实际
+/// gqy 工具桥在场时的补充事实(codex 给 MCP 工具的名字是 `gqy__<name>`… 实际
 /// 前缀由 codex 决定,这里按服务器名描述)。
-const RELAY_MIYU_TOOLS_NOTE: &str = "\n<relay-environment-tools>\nThe tools from the `miyu` MCP server live in the persistent Miyu daemon and survive across turns: its subagent tool runs a background subagent that wakes a follow-up turn when it finishes, job inspects or stops those, alarm schedules timed reminders, ask_question reaches the user and waits for the answer, and generate_image delivers the picture to the user.\n</relay-environment-tools>";
+const RELAY_GQY_TOOLS_NOTE: &str = "\n<relay-environment-tools>\nThe tools from the `gqy` MCP server live in the persistent GQY daemon and survive across turns: its subagent tool runs a background subagent that wakes a follow-up turn when it finishes, job inspects or stops those, alarm schedules timed reminders, ask_question reaches the user and waits for the answer, and generate_image delivers the picture to the user.\n</relay-environment-tools>";
 
 impl OpenAiCompatibleClient {
     pub(crate) async fn chat_codex_stream<F>(
@@ -99,20 +99,20 @@ impl OpenAiCompatibleClient {
         let model = self.provider.default_model.clone();
         let (system_prompt, conversation) = payload::split_system(messages);
         let workdir = crate::tools::workspace::effective_workdir();
-        let miyu_session = crate::tools::workspace::try_session();
-        let miyu_session = miyu_session.as_deref();
-        let host_tools = cli_relay::host_tools_face(miyu_session);
+        let gqy_session = crate::tools::workspace::try_session();
+        let gqy_session = gqy_session.as_deref();
+        let host_tools = cli_relay::host_tools_face(gqy_session);
         let scopes = cli_relay::tool_scopes(
             self.request_scope,
             &runtime.native_tools,
-            &runtime.miyu_tools,
+            &runtime.gqy_tools,
             self.claude_code_dev_mode,
         );
         let prompt = cli_relay::compose_prompt(
             &system_prompt,
             scopes,
             RELAY_ENVIRONMENT_NOTE,
-            RELAY_MIYU_TOOLS_NOTE,
+            RELAY_GQY_TOOLS_NOTE,
         );
         let mut plan = ResumePlan::new(
             &self.provider.id,
@@ -120,11 +120,11 @@ impl OpenAiCompatibleClient {
             &prompt,
             conversation,
             self.request_scope,
-            miyu_session,
+            gqy_session,
             host_tools,
         );
         let instructions = ensure_instructions_file(&runtime.instructions_dir, &prompt)?;
-        let overrides = self.codex_overrides(&runtime, scopes, miyu_session, &instructions);
+        let overrides = self.codex_overrides(&runtime, scopes, gqy_session, &instructions);
         let mut outcome = self
             .codex_turn(
                 &runtime, &model, &workdir, &overrides, &plan, request_id, on_chunk,
@@ -199,7 +199,7 @@ impl OpenAiCompatibleClient {
         &self,
         runtime: &CodexRuntime,
         scopes: ToolScopes,
-        miyu_session: Option<&str>,
+        gqy_session: Option<&str>,
         instructions: &std::path::Path,
     ) -> Vec<String> {
         let mut overrides = vec![
@@ -225,8 +225,8 @@ impl OpenAiCompatibleClient {
             overrides.push("features.unified_exec=false".to_string());
             overrides.push("web_search=\"disabled\"".to_string());
         }
-        if scopes.miyu_on {
-            if let Some(entry) = bridge_overrides(scopes.native_on, miyu_session) {
+        if scopes.gqy_on {
+            if let Some(entry) = bridge_overrides(scopes.native_on, gqy_session) {
                 overrides.extend(entry);
             }
         }
@@ -343,16 +343,16 @@ pub(in crate::llm::openai_compatible) fn ensure_instructions_file(
 
 /// MCP 桥条目(逐进程 `-c`):codex 给 MCP 服务器的环境要显式列——会话身份、
 /// 去重名单、home/runtime 识别变量(如实透传)。没有会话作用域就不挂桥。
-fn bridge_overrides(exclude_duplicates: bool, miyu_session: Option<&str>) -> Option<Vec<String>> {
-    let session = miyu_session?;
-    let exe = crate::paths::miyu_executable().ok()?;
+fn bridge_overrides(exclude_duplicates: bool, gqy_session: Option<&str>) -> Option<Vec<String>> {
+    let session = gqy_session?;
+    let exe = crate::paths::gqy_executable().ok()?;
     let origin = serde_json::to_string(&crate::tools::workspace::current_turn_origin()).ok()?;
     let mut env: Vec<(String, String)> = vec![
-        ("MIYU_SESSION".into(), session.to_string()),
-        ("MIYU_TURN_ORIGIN".into(), origin),
+        ("GQY_SESSION".into(), session.to_string()),
+        ("GQY_TURN_ORIGIN".into(), origin),
     ];
     if exclude_duplicates {
-        env.push(("MIYU_MCP_EXCLUDE".into(), BRIDGE_DUPLICATE_TOOLS.join(",")));
+        env.push(("GQY_MCP_EXCLUDE".into(), BRIDGE_DUPLICATE_TOOLS.join(",")));
     }
     env.extend(cli_relay::bridge_env_passthrough());
     let env_table = env
@@ -362,14 +362,14 @@ fn bridge_overrides(exclude_duplicates: bool, miyu_session: Option<&str>) -> Opt
         .join(",");
     Some(vec![
         format!(
-            "mcp_servers.miyu.command={}",
+            "mcp_servers.gqy.command={}",
             toml_string(&exe.display().to_string())
         ),
-        "mcp_servers.miyu.args=[\"mcp-serve\"]".to_string(),
-        format!("mcp_servers.miyu.env={{{env_table}}}"),
+        "mcp_servers.gqy.args=[\"mcp-serve\"]".to_string(),
+        format!("mcp_servers.gqy.env={{{env_table}}}"),
         // 桥问答要等人回答,默认 60s 等不起。
-        "mcp_servers.miyu.tool_timeout_sec=1800".to_string(),
-        "mcp_servers.miyu.startup_timeout_sec=30".to_string(),
+        "mcp_servers.gqy.tool_timeout_sec=1800".to_string(),
+        "mcp_servers.gqy.startup_timeout_sec=30".to_string(),
     ])
 }
 
@@ -451,7 +451,7 @@ fn render_prompt(
     Ok((text, images))
 }
 
-/// 清空 Miyu 会话时的联动:删 codex 侧的 rollout
+/// 清空 顾清影 会话时的联动:删 codex 侧的 rollout
 /// (`$CODEX_HOME/sessions/YYYY/MM/DD/rollout-<时间>-<thread_id>.jsonl`)。
 pub(in crate::llm::openai_compatible) fn remove_rollout(thread_id: &str) {
     if thread_id.is_empty()
@@ -497,7 +497,7 @@ pub(in crate::llm::openai_compatible) fn remove_rollout(thread_id: &str) {
     if removed {
         tracing::info!(
             thread_id,
-            "removed the codex-side rollout for a cleared Miyu session"
+            "removed the codex-side rollout for a cleared GQY session"
         );
     }
 }
@@ -571,7 +571,7 @@ mod tests {
         let runtime = CodexRuntime {
             binary: PathBuf::from("codex"),
             native_tools: "all".into(),
-            miyu_tools: "all".into(),
+            gqy_tools: "all".into(),
             sandbox_mode: String::new(),
             ignore_user_config: false,
             idle_timeout: Duration::from_secs(30),
@@ -605,7 +605,7 @@ mod tests {
     fn every_deduplicated_name_is_a_real_tool() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path();
-        let paths = crate::paths::MiyuPaths {
+        let paths = crate::paths::GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -614,7 +614,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("config/fish/conf.d/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),

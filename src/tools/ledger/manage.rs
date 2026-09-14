@@ -6,7 +6,7 @@
 use super::*;
 use crate::ledger::money::{format_amount, parse_amount, validate_currency};
 
-pub(super) async fn run(args: Value, paths: MiyuPaths, config: AppConfig) -> Result<String> {
+pub(super) async fn run(args: Value, paths: GqyPaths, config: AppConfig) -> Result<String> {
     let action = args
         .get("action")
         .and_then(Value::as_str)

@@ -24,7 +24,7 @@ pub use runtime::{
 };
 
 use super::{ToolRegistry, ToolSpec};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::state::{GoalDenied, GoalRecord, StateStore};
 use crate::tools::workspace::{self, TurnOrigin};
 use anyhow::{bail, Result};
@@ -47,7 +47,7 @@ pub const GOAL_ROUND_LABEL: &str = "goal-round";
 /// 管理员库时外键 `goals.session_id → sessions.session_id` 对不上(成员会话不在
 /// 管理员的 sessions 表)→ create/edit 一律 `FOREIGN KEY constraint failed`。
 /// 与 kb_root_for / artifacts_root 同口径:member_home_dir() 是 Some 就开那家的库。
-fn store_for(config: &crate::config::AppConfig, paths: &MiyuPaths) -> Result<StateStore> {
+fn store_for(config: &crate::config::AppConfig, paths: &GqyPaths) -> Result<StateStore> {
     match config.member_home_dir() {
         Some(home) => StateStore::open_at_home(paths, &home),
         None => StateStore::new(paths),
@@ -121,7 +121,7 @@ fn require_human(origin: &TurnOrigin, verb: &str) -> Result<()> {
 /// 教模型怎么用另外一份。
 pub const GOAL_TOOL: &str = "goal";
 
-pub fn register(registry: &mut ToolRegistry, config: crate::config::AppConfig, paths: MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, config: crate::config::AppConfig, paths: GqyPaths) {
     registry.register(
         ToolSpec::new(
             GOAL_TOOL,
@@ -156,7 +156,7 @@ pub fn register(registry: &mut ToolRegistry, config: crate::config::AppConfig, p
 
 async fn run_goal_action(
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     args: Value,
 ) -> Result<String> {
     let session = session_for_call()?;

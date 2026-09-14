@@ -10,4 +10,4 @@
 - 本次容器、七个镜像、临时供应商配置及构建/下载缓存已清理，保留最终资产和证据。
 - 原完整 T00–T24 的 Mac、硬件、托管服务、升级恢复等未验证项没有被记为 PASS。当前任务按用户后续修改的 linux-smoke 标准完成。
 
-详见 [最终发布验收记录](../../releases/0.6.0/validation.md)、[流程修复证据](gate-repairs.md) 和 [更新后的发布手册](../../../miyu-release-workflow.md)。
+详见 [最终发布验收记录](../../releases/0.6.0/validation.md)、[流程修复证据](gate-repairs.md) 和 [更新后的发布手册](../../../gqy-release-workflow.md)。

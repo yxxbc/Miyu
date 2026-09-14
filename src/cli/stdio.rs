@@ -1,4 +1,4 @@
-//! `miyu stdio`:长驻协议模式。stdin 一行一请求(JSON),stdout 一行一事件。
+//! `gqy stdio`:长驻协议模式。stdin 一行一请求(JSON),stdout 一行一事件。
 //!
 //! 宿主软件起一个进程常驻,多会话多回合并发。daemon 侧是「一连接一回合」,
 //! 所以这里是个 fan-in 分发器:每条 `message` 另开一条 IPC 连接跑回合,
@@ -12,7 +12,7 @@
 //! - `answer`:`{id, question_id, answer}`,answer 为字符串 / 字符串数组 /
 //!   二维数组(多选)
 //! - `cancel`:`{id}`
-//! - `session`:`{id, op, …}`,op 同 `miyu session` 子命令
+//! - `session`:`{id, op, …}`,op 同 `gqy session` 子命令
 //! - `ping`:`{id}`
 //!
 //! stdin EOF 或 Ctrl+C:取消所有在跑的回合,等它们收尾后退出。
@@ -27,7 +27,7 @@ use crate::cli::repl::session::discard_ephemeral_session;
 use crate::cli::session_cmds::session_op_json;
 use crate::cli::turn_request::{build_overrides, resolve_turn_session};
 use crate::ipc;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::Result;
 use serde::Deserialize;
 use serde_json::Value;
@@ -185,7 +185,7 @@ struct RunningTurn {
 }
 
 async fn start_message(
-    paths: MiyuPaths,
+    paths: GqyPaths,
     request: MessageRequest,
     out: Outbound,
 ) -> Option<RunningTurn> {
@@ -253,9 +253,9 @@ async fn start_message(
     })
 }
 
-pub(in crate::cli) async fn run_stdio(paths: &MiyuPaths) -> Result<()> {
+pub(in crate::cli) async fn run_stdio(paths: &GqyPaths) -> Result<()> {
     let info = ipc::ensure_daemon(paths, None).await?;
-    let paths = MiyuPaths::new()?;
+    let paths = GqyPaths::new()?;
     let (line_tx, mut line_rx) = mpsc::unbounded_channel::<String>();
     let writer = tokio::spawn(async move {
         let mut stdout = tokio::io::stdout();

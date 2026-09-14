@@ -289,7 +289,7 @@ pub(in crate::platforms::plugins::real_context) fn format_active_reply_skip_log_
 /// 「自认在本群被禁言,本轮不说话」的留痕。
 ///
 /// 这条路径原本一行日志都不打:消息收下、判官不跑、回复不发,群里看着就是
-/// Miyu 死了,日志里连"她决定不说话"都查不到。09-11 排查一次两小时二十分的
+/// 顾清影 死了,日志里连"她决定不说话"都查不到。09-11 排查一次两小时二十分的
 /// 群内失声,全靠禁言台账和时间戳倒推才定位。同 `format_active_reply_skip_log`。
 pub(in crate::platforms::plugins::real_context) fn format_active_reply_muted_log(
     account_id: &str,

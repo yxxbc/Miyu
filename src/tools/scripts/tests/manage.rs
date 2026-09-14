@@ -7,7 +7,7 @@ fn parse(out: &str) -> Value {
     serde_json::from_str(out).unwrap()
 }
 
-fn scan_roots(config: &crate::config::AppConfig, paths: &MiyuPaths) -> ScriptScanResult {
+fn scan_roots(config: &crate::config::AppConfig, paths: &GqyPaths) -> ScriptScanResult {
     let roots = script_scan_roots(config, paths);
     let dirs: Vec<&Path> = roots.iter().map(PathBuf::as_path).collect();
     scan_scripts(&dirs).unwrap()

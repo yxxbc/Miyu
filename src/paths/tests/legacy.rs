@@ -80,12 +80,12 @@ fn unified_layout_merges_xdg_documents_and_both_picture_directories() {
     fs::write(legacy.config_dir.join("shell/zsh-hook.zsh"), "zsh hook").unwrap();
     fs::write(
         temp.path().join(".bashrc"),
-        "before\n# >>> miyu bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< miyu bash hook <<<\nafter\n",
+        "before\n# >>> gqy bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< gqy bash hook <<<\nafter\n",
     )
     .unwrap();
     fs::write(
         temp.path().join(".zshrc"),
-        "before\n# >>> miyu zsh hook >>>\nsource '/legacy/zsh-hook.zsh'\n# <<< miyu zsh hook <<<\nafter\n",
+        "before\n# >>> gqy zsh hook >>>\nsource '/legacy/zsh-hook.zsh'\n# <<< gqy zsh hook <<<\nafter\n",
     )
     .unwrap();
     fs::write(legacy.data_dir.join("data.bin"), "data").unwrap();
@@ -279,7 +279,7 @@ fn unified_layout_cross_source_conflict_has_zero_migration_writes() {
     fs::create_dir_all(&legacy.config_dir).unwrap();
     fs::create_dir_all(&legacy.pictures_dirs[0]).unwrap();
     if legacy.pictures_dirs[1].exists() {
-        // 大小写不敏感的文件系统上 Pictures/miyu 与 Pictures/Miyu 是同一个
+        // 大小写不敏感的文件系统上 Pictures/gqy 与 Pictures/Miyu 是同一个
         // 目录,造不出跨源冲突;合并那一侧由上面的去重用例覆盖。
         return;
     }
@@ -341,7 +341,7 @@ fn interrupted_shell_hook_refresh_is_retried_before_marking_layout_complete() {
     fs::write(legacy.config_dir.join("shell/bash-hook.sh"), "bash hook").unwrap();
     fs::write(
         temp.path().join(".bashrc"),
-        "# >>> miyu bash hook >>>\nsource '/legacy/bash-hook.sh'\n",
+        "# >>> gqy bash hook >>>\nsource '/legacy/bash-hook.sh'\n",
     )
     .unwrap();
 
@@ -352,7 +352,7 @@ fn interrupted_shell_hook_refresh_is_retried_before_marking_layout_complete() {
 
     fs::write(
         temp.path().join(".bashrc"),
-        "# >>> miyu bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< miyu bash hook <<<\n",
+        "# >>> gqy bash hook >>>\nsource '/legacy/bash-hook.sh'\n# <<< gqy bash hook <<<\n",
     )
     .unwrap();
     migrate_legacy_layout(&legacy, &next).unwrap();
@@ -428,7 +428,7 @@ fn legacy_data_and_state_alias_is_migrated_once() {
 fn legacy_layout_stays_put_while_the_core_lock_is_held() {
     let temp = tempfile::tempdir().unwrap();
     let (legacy, _) = test_layouts(temp.path());
-    let runtime_dir = legacy.state_dir.join("miyu");
+    let runtime_dir = legacy.state_dir.join("gqy");
     fs::create_dir_all(&runtime_dir).unwrap();
     let lock = OpenOptions::new()
         .create(true)
@@ -453,7 +453,7 @@ fn legacy_layout_stays_put_while_the_core_lock_is_held() {
 fn legacy_layout_stays_put_while_the_starter_lock_is_held() {
     let temp = tempfile::tempdir().unwrap();
     let (legacy, _) = test_layouts(temp.path());
-    let runtime_dir = legacy.state_dir.join("miyu");
+    let runtime_dir = legacy.state_dir.join("gqy");
     fs::create_dir_all(&runtime_dir).unwrap();
     let lock = OpenOptions::new()
         .create(true)

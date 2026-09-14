@@ -1,5 +1,5 @@
 FROM debian@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1
-LABEL io.miyu.distribution.owner="distribution-2026-09-14"
+LABEL io.gqy.distribution.owner="distribution-2026-09-14"
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl build-essential clang cmake pkg-config libasound2-dev \

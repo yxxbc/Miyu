@@ -410,7 +410,7 @@ pub(in crate::web) async fn set_models(
 pub(in crate::web) fn rebuild_for_config(
     agent: &mut Option<Agent>,
     config: &mut AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state_store: &StateStore,
     manager: &Arc<Mutex<ManagerState>>,
     events: &EventHub,
@@ -607,7 +607,7 @@ pub(in crate::web) fn rebuild_for_config(
 pub(in crate::web) fn config_response(
     config: &AppConfig,
     context: ContextSnapshot,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> std::result::Result<ConfigResponse, ApiError> {
     let mut redacted = config.clone();
     let mut secret_states = HashMap::new();
@@ -850,7 +850,7 @@ pub(in crate::web) fn validate_config_candidate(
 pub(in crate::web) fn config_change_requires_interrupt(
     current: &AppConfig,
     next: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     next_prompts: &PromptDocuments,
 ) -> bool {
     let Ok(previous_prompts) = read_prompt_documents(current, paths) else {

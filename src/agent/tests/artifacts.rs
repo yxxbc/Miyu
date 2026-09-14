@@ -123,7 +123,7 @@ fn tool_footprint_reads_edit_patch_headers() {
     assert!(fp.modified.contains("old.rs"));
 }
 
-/// 中转线的工具名不是 Miyu 的:claude 原生 Read/Edit/Write 用 `file_path`,
+/// 中转线的工具名不是 顾清影 的:claude 原生 Read/Edit/Write 用 `file_path`,
 /// agy 的 view_file/write_to_file 走归一化后的 `path`,codex 的 file_change
 /// 折成 `edit` + `paths` 数组。09-10 取证:活库 42 个 remote 轮 footprint 全空。
 #[test]

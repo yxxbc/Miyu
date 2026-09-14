@@ -26,14 +26,14 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-webui-links/home"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-webui-links/home"))
 RUNTIME = "/tmp/mx-wl"
-PORT = int(os.environ.get("MIYU_WL_PORT", "18411"))
+PORT = int(os.environ.get("GQY_WL_PORT", "18411"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18495"))
-SHOTS = Path(os.environ.get("MIYU_WL_SHOTS", Path.home() / ".cache" / "miyu-webui-links"))
+SHOTS = Path(os.environ.get("GQY_WL_SHOTS", Path.home() / ".cache" / "gqy-webui-links"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
 
 def api(path, body=None, method="GET"):
@@ -56,7 +56,7 @@ def upload_attachment(session_id):
     request = urllib.request.Request(
         f"{BASE}/api/attachments?session_id={session_id}", data=body, method="POST",
         headers={"Content-Type": "application/octet-stream", "Origin": BASE,
-                 "x-miyu-filename": urllib.parse.quote("todolist.md")},
+                 "x-gqy-filename": urllib.parse.quote("todolist.md")},
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
@@ -119,7 +119,7 @@ def check_dashboard_icons():
 
 def upload_clip(session_id):
     """一段一秒的 mp4。视频附件以前点了只会下载，现在应该给播放器。"""
-    clip = Path("/tmp/miyu-webui-links-clip.mp4")
+    clip = Path("/tmp/gqy-webui-links-clip.mp4")
     if not clip.exists():
         rendered = subprocess.run(
             ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
@@ -134,7 +134,7 @@ def upload_clip(session_id):
         f"{BASE}/api/attachments?session_id={session_id}", data=clip.read_bytes(),
         method="POST",
         headers={"Content-Type": "application/octet-stream", "Origin": BASE,
-                 "x-miyu-filename": urllib.parse.quote("clip.mp4")},
+                 "x-gqy-filename": urllib.parse.quote("clip.mp4")},
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
@@ -152,7 +152,7 @@ def seed_theme():
     上：它把 surface-container-lowest 定成了 #ffffff，内置主题里没有这种极值。
     只读地复制一份，沙箱怎么折腾都碰不到真配置。
     """
-    source = Path.home() / ".miyu" / "config" / "webui-theme.css"
+    source = Path.home() / ".gqy" / "config" / "webui-theme.css"
     if not source.exists():
         return False
     shutil.copy(source, HOME / "config" / "webui-theme.css")
@@ -189,7 +189,7 @@ def seed_memes():
     except ImportError:
         print("! Pillow 缺失，跳过表情包瀑布流这一步", file=sys.stderr)
         return False
-    library = HOME / "data" / "memes" / "miyu"
+    library = HOME / "data" / "memes" / "gqy"
     images = library / "images"
     images.mkdir(parents=True, exist_ok=True)
     shapes = [("tall", (120, 420), (210, 90, 160)),
@@ -216,7 +216,7 @@ def seed_memes():
             "tags": ["测试"],
         })
     (library / "index.json").write_text(
-        json.dumps({"library": "miyu", "version": 2, "memes": entries, "disabled_ids": []},
+        json.dumps({"library": "gqy", "version": 2, "memes": entries, "disabled_ids": []},
                    ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
@@ -289,8 +289,8 @@ def main():
                 "LINKTEST 随意发几个网站链接。顺便看看我这段：\n\n"
                 # 自己发的代码块也要上色：注释/字符串/变量/命令要有不同的颜色。
                 "```sh\n# 重建向量索引\n"
-                'export MIYU_HOME="/tmp/mx"\n'
-                'miyu kb embed reindex --quiet && echo "done $?"\n```\n\n'
+                'export GQY_HOME="/tmp/mx"\n'
+                'gqy kb embed reindex --quiet && echo "done $?"\n```\n\n'
                 "行内 `cargo fmt` 也该有底色，这个地址要能点："
                 "https://wiki.archlinux.org/title/Fcitx5"
             ),

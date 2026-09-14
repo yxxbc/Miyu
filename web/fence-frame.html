@@ -16,12 +16,12 @@
 addEventListener("message", (event) => {
   if (event.source !== parent) return;
   const data = event.data;
-  if (!data || data.type !== "miyu-fence-html") return;
+  if (!data || data.type !== "gqy-fence-html") return;
   document.open();
   document.write(String(data.html || ""));
   document.close();
 });
-parent.postMessage({ type: "miyu-fence-ready" }, "*");
+parent.postMessage({ type: "gqy-fence-ready" }, "*");
 </script>
 </body>
 </html>

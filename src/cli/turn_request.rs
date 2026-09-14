@@ -12,7 +12,7 @@ use crate::cli::repl::session::{
 use crate::config::{ActiveProviderModelConfig, AppConfig};
 use crate::i18n::text as t;
 use crate::ipc::{Command as IpcCommand, TurnOverrides};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::Result;
 
 /// 本回合落在哪个会话。`ephemeral` 为真时调用方用完要拆。
@@ -37,7 +37,7 @@ pub fn read_text_argument(argument: &str) -> Result<String> {
     Ok(argument.to_string())
 }
 
-/// 模型参数 → 池条目。走与 `miyu models` 同一套解析(序号/provider/model/
+/// 模型参数 → 池条目。走与 `gqy models` 同一套解析(序号/provider/model/
 /// 裸名),所以两处认的写法一致。
 pub fn resolve_model_argument(
     config: &AppConfig,
@@ -53,7 +53,7 @@ pub fn resolve_model_argument(
 }
 
 /// 覆盖类参数 → `TurnOverrides`;全空返回 None(协议里不带字段)。
-pub fn build_overrides(paths: &MiyuPaths, options: &TurnOptions) -> Result<Option<TurnOverrides>> {
+pub fn build_overrides(paths: &GqyPaths, options: &TurnOptions) -> Result<Option<TurnOverrides>> {
     let mut overrides = TurnOverrides::default();
     if let Some(model) = options.model.as_deref() {
         let config = AppConfig::load(paths)?;
@@ -92,8 +92,8 @@ pub fn build_overrides(paths: &MiyuPaths, options: &TurnOptions) -> Result<Optio
 }
 
 /// 管理面看到的会话列表:当前人格的普通+开发模式会话,不含阅后即焚。
-/// `miyu session list` 的编号与 `--session N` 用的是同一份。
-pub async fn list_managed_sessions(paths: &MiyuPaths) -> Result<Vec<SessionListEntry>> {
+/// `gqy session list` 的编号与 `--session N` 用的是同一份。
+pub async fn list_managed_sessions(paths: &GqyPaths) -> Result<Vec<SessionListEntry>> {
     let (_, data) = session_admin(
         paths,
         IpcCommand::ListSessions {
@@ -122,7 +122,7 @@ pub fn find_session<'a>(
 }
 
 /// 管理面的目标解析:编号/名字/id → 会话 id;找不到退出码 3。
-pub async fn resolve_managed_session(paths: &MiyuPaths, target: &str) -> Result<SessionListEntry> {
+pub async fn resolve_managed_session(paths: &GqyPaths, target: &str) -> Result<SessionListEntry> {
     let entries = list_managed_sessions(paths).await?;
     find_session(&entries, target)
         .cloned()
@@ -130,7 +130,7 @@ pub async fn resolve_managed_session(paths: &MiyuPaths, target: &str) -> Result<
 }
 
 pub async fn create_named_session(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     name: &str,
     mode: Option<&str>,
 ) -> Result<serde_json::Value> {
@@ -146,7 +146,7 @@ pub async fn create_named_session(
     .await?;
     data.get("session")
         .cloned()
-        .ok_or_else(|| anyhow::anyhow!("Miyu core returned an invalid response"))
+        .ok_or_else(|| anyhow::anyhow!("GQY core returned an invalid response"))
 }
 
 /// `--session/--create/--continue/--mode` → 会话。规则:
@@ -155,7 +155,7 @@ pub async fn create_named_session(
 /// - `--continue`:daemon 当前会话;传 `--mode` 报用法错误。
 /// - 都没传:阅后即焚会话,`--mode` 决定它的模式。
 pub async fn resolve_turn_session(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     options: &TurnOptions,
 ) -> Result<ResolvedSession> {
     let mode = options.mode.as_deref();
@@ -194,7 +194,7 @@ pub async fn resolve_turn_session(
             .get("session_id")
             .and_then(serde_json::Value::as_str)
             .map(str::to_string)
-            .ok_or_else(|| anyhow::anyhow!("Miyu core returned an invalid response"))?;
+            .ok_or_else(|| anyhow::anyhow!("GQY core returned an invalid response"))?;
         return Ok(ResolvedSession {
             session_id: Some(session_id),
             ephemeral: false,

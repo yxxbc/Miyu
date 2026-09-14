@@ -2,11 +2,11 @@
 //!
 //! 建临时目录、起假连接、造事件——每个测试文件都要，放一份。
 
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platforms::onebot::*;
 
-pub(super) fn test_paths(root: &std::path::Path) -> MiyuPaths {
-    MiyuPaths {
+pub(super) fn test_paths(root: &std::path::Path) -> GqyPaths {
+    GqyPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),

@@ -13,7 +13,7 @@ const SOURCE_BYTE_CAP: usize = 64 * 1024;
 /// 扫描根逐个标上所属层。按目录本身判定而不是按下标:自定义人格会多扫一层
 /// `<system>/personas/<人格>`,根的个数不固定(默认人格 4 个、自定义 5 个),
 /// 按下标取标签会越界 panic,默认人格下也会把内置层标错。
-fn labeled_roots(config: &AppConfig, paths: &MiyuPaths) -> Vec<(PathBuf, &'static str)> {
+fn labeled_roots(config: &AppConfig, paths: &GqyPaths) -> Vec<(PathBuf, &'static str)> {
     let builtin = crate::tools::builtin_scripts_dir(paths);
     let persona_system = config.active_persona_system_scripts_dir(paths);
     script_scan_roots(config, paths)
@@ -116,7 +116,7 @@ fn index_overrides(
     Ok(overrides)
 }
 
-pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &MiyuPaths) -> Result<Value> {
+pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &GqyPaths) -> Result<Value> {
     let roots = labeled_roots(config, paths);
     let dirs: Vec<&Path> = roots.iter().map(|(root, _)| root.as_path()).collect();
     let scan = scan_scripts(&dirs)?;
@@ -233,7 +233,7 @@ pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &MiyuPaths) 
 
 /// 源码预览只放行扫描根顶层里的文件:面板传回来的路径来自 overview,但仍按
 /// 「(目录, 文件名)」重新解析,不接受任意路径。
-fn resolve_previewable(config: &AppConfig, paths: &MiyuPaths, requested: &str) -> Result<PathBuf> {
+fn resolve_previewable(config: &AppConfig, paths: &GqyPaths, requested: &str) -> Result<PathBuf> {
     let roots = labeled_roots(config, paths);
     let canonical = canonical_roots(&roots);
     let path = Path::new(requested);
@@ -248,7 +248,7 @@ fn resolve_previewable(config: &AppConfig, paths: &MiyuPaths, requested: &str) -
 
 pub(crate) fn scripts_dashboard_source(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     id: &str,
     requested_path: &str,
     max_lines: usize,
@@ -292,7 +292,7 @@ fn parse_result(output: String) -> Result<Value> {
 
 pub(crate) fn scripts_dashboard_disable(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     id: &str,
 ) -> Result<Value> {
     parse_result(unregister_script(
@@ -304,7 +304,7 @@ pub(crate) fn scripts_dashboard_disable(
 
 pub(crate) fn scripts_dashboard_delete(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     id: &str,
 ) -> Result<Value> {
     parse_result(unregister_script(
@@ -318,7 +318,7 @@ pub(crate) fn scripts_dashboard_delete(
 /// 路径:文件本来就在,消失只因为 disabled 记录。
 pub(crate) fn scripts_dashboard_enable(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     id: &str,
 ) -> Result<Value> {
     let id = id.trim();
@@ -335,7 +335,7 @@ pub(crate) fn scripts_dashboard_enable(
 /// 未注册文件补描述注册:路径必须已在某个用户层里(overview 给的),就地登记。
 pub(crate) fn scripts_dashboard_register(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     requested_path: &str,
     description: &str,
     id: &str,

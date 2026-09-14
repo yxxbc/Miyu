@@ -296,13 +296,13 @@ pub(crate) struct ThinkingVariantPreferences {
 }
 
 pub(in crate::llm::openai_compatible) fn thinking_variant_preferences_file(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> PathBuf {
     paths.state_dir.join("thinking-variants.json")
 }
 
 pub(in crate::llm::openai_compatible) fn lock_thinking_variant_preferences(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> Result<File> {
     let lock_path = paths.state_dir.join("thinking-variants.lock");
     let lock = OpenOptions::new()
@@ -329,17 +329,17 @@ pub(in crate::llm::openai_compatible) fn lock_thinking_variant_preferences(
 }
 
 pub(in crate::llm::openai_compatible) fn load_thinking_variant_preferences(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> ThinkingVariantPreferences {
     ThinkingVariantPreferences::load(paths)
 }
 
 impl ThinkingVariantPreferences {
-    pub(crate) fn load(paths: &MiyuPaths) -> Self {
+    pub(crate) fn load(paths: &GqyPaths) -> Self {
         Self::load_for_update(paths).unwrap_or_default()
     }
 
-    pub(in crate::llm::openai_compatible) fn load_for_update(paths: &MiyuPaths) -> Result<Self> {
+    pub(in crate::llm::openai_compatible) fn load_for_update(paths: &GqyPaths) -> Result<Self> {
         let path = thinking_variant_preferences_file(paths);
         match std::fs::read_to_string(&path) {
             Ok(text) => serde_json::from_str(&text).with_context(|| {
@@ -387,7 +387,7 @@ impl ThinkingVariantPreferences {
         !self.changes.is_empty() || !self.provider_renames.is_empty()
     }
 
-    pub(crate) fn save(&self, paths: &MiyuPaths) -> Result<()> {
+    pub(crate) fn save(&self, paths: &GqyPaths) -> Result<()> {
         if self.changes.is_empty() && self.provider_renames.is_empty() {
             return Ok(());
         }

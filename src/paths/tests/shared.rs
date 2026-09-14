@@ -10,14 +10,14 @@ pub(super) fn test_layouts(root: &Path) -> (LegacyLayout, Layout) {
             cache_dir: root.join("legacy/cache"),
             state_dir: root.join("legacy/state"),
             documents_dir: root.join("Documents/Miyu"),
-            pictures_dirs: vec![root.join("Pictures/miyu"), root.join("Pictures/Miyu")],
+            pictures_dirs: vec![root.join("Pictures/gqy"), root.join("Pictures/Miyu")],
         },
         Layout {
-            root_dir: root.join(".miyu"),
-            config_dir: root.join(".miyu/config"),
-            data_dir: root.join(".miyu/data"),
-            cache_dir: root.join(".miyu/cache"),
-            state_dir: root.join(".miyu/state"),
+            root_dir: root.join(".gqy"),
+            config_dir: root.join(".gqy/config"),
+            data_dir: root.join(".gqy/data"),
+            cache_dir: root.join(".gqy/cache"),
+            state_dir: root.join(".gqy/state"),
         },
     )
 }

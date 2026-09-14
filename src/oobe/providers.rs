@@ -7,7 +7,7 @@
 
 use crate::config::{ActiveProviderModelConfig, AppConfig, ProviderConfig};
 use crate::default_models::OPENCODE_PROVIDER_ID;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use std::collections::HashMap;
 use std::sync::mpsc::{self, Receiver};
 use std::time::Instant;
@@ -421,7 +421,7 @@ pub(super) fn with_key(mut provider: ProviderConfig, api_key: &str) -> ProviderC
 /// 模型是同一套动作，设置界面里看到的勾选才对得上。
 pub(super) fn apply(
     config: &mut AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     mut provider: ProviderConfig,
     model: &str,
 ) {
@@ -498,7 +498,7 @@ mod tests {
     #[test]
     fn detected_cli_becomes_option_and_apply_activates() {
         let mut config = AppConfig::default();
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::GqyPaths::new().unwrap();
         let options = options(&config, |bin| bin == "claude");
         assert!(options[0].label.contains("Claude Code"));
         assert_eq!(options[0].note, "需已登录");
@@ -529,7 +529,7 @@ mod tests {
     #[test]
     fn preset_reuses_existing_entry_and_marks_model_active() {
         let mut config = AppConfig::default();
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::GqyPaths::new().unwrap();
         let deepseek = options(&config, |_| false)
             .into_iter()
             .find(|option| option.label == "DeepSeek")

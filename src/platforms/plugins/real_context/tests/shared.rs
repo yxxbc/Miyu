@@ -1,6 +1,6 @@
 //! 真实感插件测试共用的 fixture。
 
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platforms::plugins::real_context::*;
 use crate::platforms::PlatformAdapter;
 use crate::state::StateStore;
@@ -10,7 +10,7 @@ pub(super) fn test_context(
 ) -> (tempfile::TempDir, PlatformTurnContext) {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
-    let paths = MiyuPaths {
+    let paths = GqyPaths {
         root_dir: root.to_path_buf(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -137,7 +137,7 @@ impl PlatformAdapter for AvailabilityAdapter {
     }
 
     fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-        Box::pin(async { Ok("Miyu".to_string()) })
+        Box::pin(async { Ok("GQY".to_string()) })
     }
 
     fn bot_send_availability<'a>(&'a self) -> BoxFuture<'a, Result<BotSendAvailability>> {
@@ -152,7 +152,7 @@ impl PlatformAdapter for ReactionAdapter {
     }
 
     fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-        Box::pin(async { Ok("Miyu".to_string()) })
+        Box::pin(async { Ok("GQY".to_string()) })
     }
 
     fn bot_send_availability<'a>(&'a self) -> BoxFuture<'a, Result<BotSendAvailability>> {

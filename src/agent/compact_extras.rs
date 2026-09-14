@@ -40,7 +40,7 @@ pub(in crate::agent) struct CompactExtrasPolicy {
     pub read_tool_available: bool,
     /// 转录落盘目录：`state_dir/compact/<session>`。
     pub transcript_dir: PathBuf,
-    /// MIYU 根目录。人格、配置、记忆库不回灌——它们已由别的通路进上下文。
+    /// GQY 根目录。人格、配置、记忆库不回灌——它们已由别的通路进上下文。
     pub exclude_root: Option<PathBuf>,
     /// 相对路径的解析基准。
     pub workdir: PathBuf,

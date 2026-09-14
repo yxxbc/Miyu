@@ -24,11 +24,11 @@ impl ResourceKind {
     }
     fn env(self) -> &'static str {
         match self {
-            Self::Fonts => "MIYU_RENDERER_FONTS_DIR",
-            Self::Models => "MIYU_EMBEDDING_MODELS_DIR",
-            Self::Memes => "MIYU_MEMES_DIR",
-            Self::Scripts => "MIYU_SYSTEM_SCRIPTS_DIR",
-            Self::DefaultKb => "MIYU_DEFAULT_KB_DIR",
+            Self::Fonts => "GQY_RENDERER_FONTS_DIR",
+            Self::Models => "GQY_EMBEDDING_MODELS_DIR",
+            Self::Memes => "GQY_MEMES_DIR",
+            Self::Scripts => "GQY_SYSTEM_SCRIPTS_DIR",
+            Self::DefaultKb => "GQY_DEFAULT_KB_DIR",
         }
     }
     fn authoritative_override(self) -> bool {
@@ -66,7 +66,7 @@ impl ResourcePlatform {
 #[derive(Debug, Clone)]
 pub(crate) struct ResourceInputs {
     pub(crate) executable: Option<PathBuf>,
-    /// Miyu home (~/.miyu or MIYU_HOME), not the shell HOME.
+    /// GQY home (~/.gqy or GQY_HOME), not the shell HOME.
     pub(crate) home: Option<PathBuf>,
     pub(crate) overrides: BTreeMap<ResourceKind, PathBuf>,
     pub(crate) platform: ResourcePlatform,
@@ -87,8 +87,8 @@ impl ResourceInputs {
         .filter_map(|kind| std::env::var_os(kind.env()).map(|value| (kind, PathBuf::from(value))))
         .collect();
         Self {
-            executable: super::miyu_executable().ok(),
-            home: super::miyu_home_dir(),
+            executable: super::gqy_executable().ok(),
+            home: super::gqy_home_dir(),
             overrides,
             platform: ResourcePlatform::current(),
             debug: cfg!(debug_assertions),
@@ -110,10 +110,10 @@ impl ResourceInputs {
             }
         }
         if let Some(prefix) = installation_prefix(self.executable.as_deref()) {
-            paths.push(prefix.join("share/miyu").join(kind.directory()));
+            paths.push(prefix.join("share/gqy").join(kind.directory()));
         }
         if self.platform == ResourcePlatform::Linux {
-            paths.push(Path::new("/usr/share/miyu").join(kind.directory()));
+            paths.push(Path::new("/usr/share/gqy").join(kind.directory()));
             if kind == ResourceKind::Fonts {
                 paths.push(PathBuf::from("/usr/share/fonts/noto-cjk"));
             }
@@ -146,7 +146,7 @@ impl ResourceInputs {
             .or_else(|| candidates.first())
             .cloned()
             .unwrap_or_else(|| {
-                Path::new("/nonexistent/miyu-resources")
+                Path::new("/nonexistent/gqy-resources")
                     .join(kind.directory())
                     .join(child)
             })
@@ -175,7 +175,7 @@ mod distribution_resources {
     use super::*;
     fn inputs(root: &Path) -> ResourceInputs {
         ResourceInputs {
-            executable: Some(root.join("安装 prefix/bin/miyu")),
+            executable: Some(root.join("安装 prefix/bin/gqy")),
             home: Some(root.join("home")),
             overrides: BTreeMap::new(),
             platform: ResourcePlatform::Linux,
@@ -189,7 +189,7 @@ mod distribution_resources {
         let mut input = inputs(temp.path());
         input.debug = true;
         let paths = input.candidates(ResourceKind::Fonts);
-        assert_eq!(paths[0], temp.path().join("安装 prefix/share/miyu/fonts"));
+        assert_eq!(paths[0], temp.path().join("安装 prefix/share/gqy/fonts"));
         assert_eq!(
             paths.last().unwrap(),
             &input.source_root.join("assets/fonts")
@@ -205,7 +205,7 @@ mod distribution_resources {
         let paths = input.candidates(ResourceKind::Models);
         assert_eq!(paths[0], temp.path().join("override"));
         assert_eq!(paths[1], input.home.as_ref().unwrap().join("models"));
-        assert_eq!(paths[2], temp.path().join("安装 prefix/share/miyu/models"));
+        assert_eq!(paths[2], temp.path().join("安装 prefix/share/gqy/models"));
         for kind in [
             ResourceKind::Fonts,
             ResourceKind::Memes,
@@ -222,7 +222,7 @@ mod distribution_resources {
     fn release_rejects_executable_ancestor_and_cwd_source_forgery() {
         let temp = tempfile::tempdir().unwrap();
         let mut input = inputs(temp.path());
-        input.executable = Some(temp.path().join("untrusted/target/release/miyu"));
+        input.executable = Some(temp.path().join("untrusted/target/release/gqy"));
         input.source_root = temp.path().join("untrusted");
         let fake = input.source_root.join("target/src/memes/default");
         std::fs::create_dir_all(&fake).unwrap();
@@ -237,13 +237,13 @@ mod distribution_resources {
     }
     #[test]
     fn cellar_and_opt_bin_entries_use_their_own_share() {
-        for prefix in ["/opt/homebrew/Cellar/miyu/0.6.0", "/opt/homebrew/opt/miyu"] {
+        for prefix in ["/opt/homebrew/Cellar/gqy/0.6.0", "/opt/homebrew/opt/gqy"] {
             let mut input = inputs(Path::new("/test"));
             input.platform = ResourcePlatform::Macos;
-            input.executable = Some(Path::new(prefix).join("bin/miyu"));
+            input.executable = Some(Path::new(prefix).join("bin/gqy"));
             assert_eq!(
                 input.candidates(ResourceKind::Scripts),
-                vec![Path::new(prefix).join("share/miyu/scripts")]
+                vec![Path::new(prefix).join("share/gqy/scripts")]
             );
         }
     }
@@ -270,8 +270,8 @@ mod distribution_resources {
             .directory(ResourceKind::DefaultKb, Path::new(""))
             .exists());
         assert_eq!(
-            super::super::miyu_executable().unwrap(),
-            Path::new("/nonexistent/miyu-test-harness")
+            super::super::gqy_executable().unwrap(),
+            Path::new("/nonexistent/gqy-test-harness")
         );
     }
 }

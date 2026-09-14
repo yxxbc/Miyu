@@ -35,7 +35,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             } else {
                 match resolve_onebot_session(state, context, target, event) {
                     Err(error) => {
-                        tracing::warn!(target: "miyu::qq", error = %error, "{}", t("resolving the QQ session for reset failed", "解析待重置的 QQ 会话失败"));
+                        tracing::warn!(target: "gqy::qq", error = %error, "{}", t("resolving the QQ session for reset failed", "解析待重置的 QQ 会话失败"));
                         t(
                             "The conversation could not be reset. Check the daemon logs for details.",
                             "无法重置当前会话，请查看 daemon 日志。",
@@ -59,7 +59,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                             Ok(()) => match context.after_session_reset().await {
                                 Ok(()) => {
                                 tracing::info!(
-                                    target: "miyu::qq",
+                                    target: "gqy::qq",
                                     session_id = %session_id,
                                     sender_id = %context.sender_id,
                                     "{}",
@@ -73,7 +73,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                                 }
                                 Err(error) => {
                                     tracing::warn!(
-                                        target: "miyu::qq",
+                                        target: "gqy::qq",
                                         session_id = %session_id,
                                         error = %error,
                                         "{}",
@@ -92,12 +92,12 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                             )
                             .to_string(),
                             Err(PlatformSessionResetError::Unavailable) => t(
-                                "The Miyu core is unavailable, so the conversation was not reset.",
-                                "Miyu 核心当前不可用，会话未重置。",
+                                "The GQY core is unavailable, so the conversation was not reset.",
+                                "顾清影 核心当前不可用，会话未重置。",
                             )
                             .to_string(),
                             Err(PlatformSessionResetError::Internal(error)) => {
-                                tracing::warn!(target: "miyu::qq", session_id = %session_id, error = %error, "{}", t("resetting the QQ conversation failed", "重置 QQ 会话失败"));
+                                tracing::warn!(target: "gqy::qq", session_id = %session_id, error = %error, "{}", t("resetting the QQ conversation failed", "重置 QQ 会话失败"));
                                 t(
                                     "The conversation could not be reset. Check the daemon logs for details.",
                                     "无法重置当前会话，请查看 daemon 日志。",
@@ -125,8 +125,8 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                     )
                     .to_string(),
                     Err(PlatformPersonaResetError::Busy) => t(
-                        "Miyu is busy. Try again shortly.",
-                        "Miyu 正忙，请稍后重试。",
+                        "GQY is busy. Try again shortly.",
+                        "顾清影 正忙，请稍后重试。",
                     )
                     .to_string(),
                     Err(PlatformPersonaResetError::Unavailable) => t(
@@ -135,7 +135,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                     )
                     .to_string(),
                     Err(PlatformPersonaResetError::Internal(error)) => {
-                        tracing::warn!(target: "miyu::qq", %error, "{}", t("wiping the QQ persona state failed", "抹除 QQ 人格状态失败"));
+                        tracing::warn!(target: "gqy::qq", %error, "{}", t("wiping the QQ persona state failed", "抹除 QQ 人格状态失败"));
                         t(
                             "The wipe could not be completed. Check the daemon logs for details.",
                             "抹除未能完成，请查看 daemon 日志。",
@@ -154,7 +154,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             // 群/私聊里的"本会话"就是这条对话对应的那个会话 id。
             match resolve_onebot_session(state, context, target, event) {
                 Err(error) => {
-                    tracing::warn!(target: "miyu::qq", error = %error, "{}", t("resolving the QQ session for the memory reset failed", "解析待清记忆的 QQ 会话失败"));
+                    tracing::warn!(target: "gqy::qq", error = %error, "{}", t("resolving the QQ session for the memory reset failed", "解析待清记忆的 QQ 会话失败"));
                     t(
                         "The memory reset could not be completed. Check the daemon logs for details.",
                         "记忆清空未能完成，请查看 daemon 日志。",
@@ -169,7 +169,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                     {
                         Ok(summary) => summary.describe(),
                         Err(error) => {
-                            tracing::warn!(target: "miyu::qq", %error, "{}", t("resetting platform session memory failed", "平台会话记忆清空失败"));
+                            tracing::warn!(target: "gqy::qq", %error, "{}", t("resetting platform session memory failed", "平台会话记忆清空失败"));
                             t(
                                 "The memory reset could not be completed. Check the daemon logs for details.",
                                 "记忆清空未能完成，请查看 daemon 日志。",
@@ -189,7 +189,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             match crate::memory::MemoryStore::new(&context.config, &state.paths).reset_all(false) {
                 Ok(()) => t("All long-term memory erased.", "全部长期记忆已清空。").to_string(),
                 Err(error) => {
-                    tracing::warn!(target: "miyu::qq", %error, "{}", t("resetting platform memory failed", "平台记忆清空失败"));
+                    tracing::warn!(target: "gqy::qq", %error, "{}", t("resetting platform memory failed", "平台记忆清空失败"));
                     t(
                         "The memory reset could not be completed. Check the daemon logs for details.",
                         "记忆清空未能完成，请查看 daemon 日志。",
@@ -206,7 +206,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                 // 回拒绝语等于向群友广播命令的存在,还给试探者反馈;日志留痕
                 // 保住管理员排查"为什么我的命令没反应"的通路。
                 tracing::info!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     sender_id = %context.sender_id,
                     "{}",
                     t(
@@ -220,7 +220,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
             } else {
                 match resolve_onebot_session(state, context, target, event) {
                     Err(error) => {
-                        tracing::warn!(target: "miyu::qq", error = %error, "{}", t("resolving the QQ session for stop failed", "解析待停止的 QQ 会话失败"));
+                        tracing::warn!(target: "gqy::qq", error = %error, "{}", t("resolving the QQ session for stop failed", "解析待停止的 QQ 会话失败"));
                         t(
                             "The current conversation could not be stopped. Check the daemon logs for details.",
                             "无法停止当前会话，请查看 daemon 日志。",
@@ -255,7 +255,7 @@ pub(in crate::platforms::onebot) async fn execute_builtin_command(
                         .ok()
                         .and_then(Result::ok);
                         tracing::info!(
-                            target: "miyu::qq",
+                            target: "gqy::qq",
                             session_id = %session_id,
                             sender_id = %context.sender_id,
                             cancelled,
@@ -333,8 +333,8 @@ pub(in crate::platforms::onebot) fn execute_models_command(
     };
     if manager.admin_busy {
         return t(
-            "Miyu is busy with another admin operation. Try again shortly.",
-            "Miyu 正忙于其他管理操作，请稍后再试。",
+            "GQY is busy with another admin operation. Try again shortly.",
+            "顾清影 正忙于其他管理操作，请稍后再试。",
         )
         .to_string();
     }
@@ -364,7 +364,7 @@ pub(in crate::platforms::onebot) fn execute_models_command(
     next_config.platforms.upsert_model_route(route);
     if let Err(error) = next_config.save(&state.paths) {
         tracing::warn!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             error = %error,
             "{}",
             t(

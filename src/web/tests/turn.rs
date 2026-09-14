@@ -154,7 +154,7 @@ fn webui_followups_queue_into_a_running_goal_round() {
 }
 
 /// 反面：REPL 起的轮（`Owner` + `Human`）WebUI 仍旧排不进去，`create_turn`
-/// 顺着 `Ok(None)` 走到起新轮那条路，在 `session_has_runs` 上拿 409「Miyu is
+/// 顺着 `Ok(None)` 走到起新轮那条路，在 `session_has_runs` 上拿 409「GQY is
 /// busy」。跨端隔离不能被上一条顺手拆掉。
 #[test]
 fn webui_followups_still_stay_out_of_repl_turns() {

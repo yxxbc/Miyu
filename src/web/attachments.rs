@@ -192,7 +192,7 @@ pub(in crate::web) async fn upload_user_attachment(
         resolve_turn_session(&state, Some(identity.owner_key()), Some(query.session_id))
             .map_err(session_api_error)?;
     let encoded_name = headers
-        .get("x-miyu-filename")
+        .get("x-gqy-filename")
         .and_then(|value| value.to_str().ok())
         .ok_or_else(|| ApiError::new(StatusCode::BAD_REQUEST, "attachment filename is required"))?;
     let decoded_name = urlencoding::decode(encoded_name)

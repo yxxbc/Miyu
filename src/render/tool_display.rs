@@ -256,7 +256,7 @@ pub(crate) fn tool_subject(name: &str, arguments: &str) -> Option<String> {
         "WebSearch" | "ToolSearch" => string_arg(&args, &["query"]),
         "Task" | "Agent" => string_arg(&args, &["description"]),
         "SlashCommand" => string_arg(&args, &["command"]),
-        // —— agy 原生工具(antigravity 中转;入参键已在流层归一成 Miyu 的) ——
+        // —— agy 原生工具(antigravity 中转;入参键已在流层归一成 顾清影 的) ——
         "view_file" | "write_to_file" | "replace_file_content" | "list_dir" => {
             string_arg(&args, &["path"])
         }

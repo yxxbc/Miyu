@@ -1,4 +1,4 @@
-//! 空会话的画面：渐变 MIYU 艺术字、两侧稀疏的星空、周期扫光、模式行。
+//! 空会话的画面：渐变 GQY 艺术字、两侧稀疏的星空、周期扫光、模式行。
 //!
 //! 只在**会话没有任何回合**时存在。第一条消息一发它就撤，会话模式随之钉死
 //! （中途换模式 = 系统提示词换血 = 全量缓存作废）；`/new` 开出空会话它又回来。
@@ -13,7 +13,7 @@ use crate::agent::AgentMode;
 use crate::cli::repl::tail::screen::ansi::{spans_to_ansi, AnsiSpan};
 use crate::config::AppConfig;
 use crate::i18n::text as t;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::terminal::palette::{Theme, BLUE, CORAL, DIM, FAINT, GOLD};
 use crate::terminal::starfield::{
     fade, gradient_banner, segs_width, star_seg, subtitle_rule, BannerArt, Seg,
@@ -53,7 +53,7 @@ impl BannerScene {
     /// 按配置决定画不画、画哪份艺术字。`None` = 关掉了。
     pub(in crate::cli) fn load(
         config: &AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         mode: AgentMode,
     ) -> Option<Self> {
         if !config.display.banner {
@@ -557,7 +557,7 @@ mod tests {
         std::fs::write(dir.path().join(BANNER_FILE), "subtitle: MINE\nAB\nCD\n").unwrap();
         let mut config = AppConfig::default();
         config.display.banner = true;
-        let mut paths = crate::paths::MiyuPaths::new().unwrap();
+        let mut paths = crate::paths::GqyPaths::new().unwrap();
         paths.config_dir = dir.path().to_path_buf();
         let scene = BannerScene::load(&config, &paths, AgentMode::Normal).unwrap();
         assert_eq!(scene.art.subtitle, "MINE");

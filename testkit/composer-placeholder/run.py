@@ -19,13 +19,13 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("MIYU_BIN", REPO / "target" / "debug" / "miyu"))
-HOME = Path(os.environ.get("MIYU_HOME", "/tmp/miyu-cph/home"))
-WORK = Path(os.environ.get("MIYU_CPH_WORK", "/tmp/miyu-cph/work"))
-PORT = int(os.environ.get("MIYU_CPH_PORT", "18396"))
+BIN = Path(os.environ.get("GQY_BIN", REPO / "target" / "debug" / "gqy"))
+HOME = Path(os.environ.get("GQY_HOME", "/tmp/gqy-cph/home"))
+WORK = Path(os.environ.get("GQY_CPH_WORK", "/tmp/gqy-cph/work"))
+PORT = int(os.environ.get("GQY_CPH_PORT", "18396"))
 RUNTIME = "/tmp/mx-cph"
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=RUNTIME)
 
 
 def daemon(*args: str) -> subprocess.CompletedProcess:
@@ -66,8 +66,8 @@ def main() -> int:
         # ① 没有激活人格时的出厂默认。
         placeholder = snapshot["persona"]["composer_placeholder"]
         print(f"① 出厂默认: {placeholder!r}")
-        if placeholder != "给 Miyu 发消息":
-            failures.append(f"① 期望「给 Miyu 发消息」，实得 {placeholder!r}")
+        if placeholder != "给 顾清影 发消息":
+            failures.append(f"① 期望「给 顾清影 发消息」，实得 {placeholder!r}")
 
         # ② 建一个自定义人格、不配提示 → 默认跟着人格名走。
         prompts["personas"] = [{"name": "小美.md", "content": "她叫小美。"}]

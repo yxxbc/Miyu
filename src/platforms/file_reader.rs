@@ -40,7 +40,7 @@ pub(crate) fn register(
     {
         "Read a text or PDF file uploaded to the current QQ group. `file` must be a file id from the visible chat history (e.g. file_<message_id>_1). PDFs are handed to you directly when the current model can read them, and reported as a path otherwise. Compressed archives, executables, and other binary formats are rejected; videos and image files must go through vision_analyze with the same file id instead; text is capped at 128 KiB per call."
     } else {
-        "Read a text or PDF file uploaded through the current QQ/platform conversation. `file` is either a file id from the visible chat history (e.g. file_<message_id>_1) or an absolute path Miyu already downloaded under its platform_files cache. PDFs are handed to you directly when the current model can read them, and reported as a path otherwise. Compressed archives, executables, and other binary formats are rejected; videos and image files must go through vision_analyze with the same file id instead; text is capped at 128 KiB per call."
+        "Read a text or PDF file uploaded through the current QQ/platform conversation. `file` is either a file id from the visible chat history (e.g. file_<message_id>_1) or an absolute path GQY already downloaded under its platform_files cache. PDFs are handed to you directly when the current model can read them, and reported as a path otherwise. Compressed archives, executables, and other binary formats are rejected; videos and image files must go through vision_analyze with the same file id instead; text is capped at 128 KiB per call."
     };
     registry.register(
         ToolSpec::new(
@@ -211,7 +211,7 @@ fn read_platform_text(path: &Path, name: &str, size: u64) -> Result<String> {
         .as_deref()
         .is_some_and(|extension| BINARY_EXTENSIONS.contains(&extension));
     if binary_extension {
-        bail!("`{name}` is a binary or compressed format; Miyu cannot read it as text");
+        bail!("`{name}` is a binary or compressed format; GQY cannot read it as text");
     }
 
     let file = std::fs::File::open(path).with_context(|| format!("opening {}", path.display()))?;

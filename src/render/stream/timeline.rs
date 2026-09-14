@@ -20,7 +20,7 @@
 //!
 //! 全屏下是这套**可展开**的时间线（[`crate::render::blocks::enabled`]）。
 //!
-//! 不是全屏、但 stdout 是个终端的那些形态——shellhook、单次 `miyu "…"`——走同一条
+//! 不是全屏、但 stdout 是个终端的那些形态——shellhook、单次 `gqy "…"`——走同一条
 //! 时间线的**静态**版（[`StreamRenderer::timeline_static`]）：长相一样，只是没有
 //! 鼠标也没有回翻，所以没什么可展开的。每一步跑完就直接落进 scrollback，能展开的
 //! 东西（补丁 diff、命令输出的尾巴）就地印在那一步底下；live 区只留一根连线和
@@ -61,11 +61,11 @@ fn rail_prefix() -> String {
 /// 之前那套 `⚙ ✎ ▤ ⌕` 是从通用符号里凑的：粗细、基线、留白各不相同，排在一列
 /// 里参差不齐。Nerd Font 的图标是**同一套字体里画的**，一列排下来才齐。
 ///
-/// 装不了 Nerd Font 的话设 `MIYU_TUI_ASCII=1` 退回通用符号——图标好看不该是
+/// 装不了 Nerd Font 的话设 `GQY_TUI_ASCII=1` 退回通用符号——图标好看不该是
 /// 用不了的理由。
 fn nerd() -> bool {
     static NERD: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *NERD.get_or_init(|| std::env::var_os("MIYU_TUI_ASCII").is_none())
+    *NERD.get_or_init(|| std::env::var_os("GQY_TUI_ASCII").is_none())
 }
 
 /// 认不出的工具。芯片——没归到哪一类，那就是"有个东西在跑"。
@@ -1127,7 +1127,7 @@ impl StreamRenderer {
         blocks::enabled() || self.timeline_static()
     }
 
-    /// 静态时间线：不是全屏、但 stdout 是个终端（shellhook、单次 `miyu "…"`），
+    /// 静态时间线：不是全屏、但 stdout 是个终端（shellhook、单次 `gqy "…"`），
     /// 而且工具是按摘要档显示的。
     ///
     /// `live_summary` 就是「stdout 是终端」——管道里没有转轮也没有回翻，那儿

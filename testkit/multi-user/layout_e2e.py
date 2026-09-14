@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""家目录布局(阶段 6)端到端:真二进制 + 隔离 MIYU_HOME。
+"""家目录布局(阶段 6)端到端:真二进制 + 隔离 GQY_HOME。
 
-BIN=<miyu> python3 testkit/multi-user/layout_e2e.py
+BIN=<gqy> python3 testkit/multi-user/layout_e2e.py
 
 流程:
   1. 新装起 daemon(带 -p)→ 新布局:home/admin/conversation.db、标记 .home-layout-v1
   2. 建会话、跑一轮(桩模型)、写属主档案;停 daemon
-  3. `miyu layout`             → 报「家目录」
-  4. `miyu layout --rollback`  → state/conversation.db、data/identities/user-identity.md 回来;标记没了;.home-layout-off 出现
+  3. `gqy layout`             → 报「家目录」
+  4. `gqy layout --rollback`  → state/conversation.db、data/identities/user-identity.md 回来;标记没了;.home-layout-off 出现
   5. 再起 daemon                → 因为 opt-out 不自动搬;会话与回合仍在(老布局也能跑)
-  6. 停;`miyu layout --apply`  → 重新搬成家目录布局;起 daemon → 同一个会话 id、回合还在、档案还在
+  6. 停;`gqy layout --apply`  → 重新搬成家目录布局;起 daemon → 同一个会话 id、回合还在、档案还在
 """
 import json
 import os
@@ -24,15 +24,15 @@ sys.path.insert(0, str(HERE))
 import e2e  # noqa: E402
 
 BIN = Path(os.environ["BIN"]).expanduser()
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-multi-user")).expanduser() / "layout"
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-multi-user")).expanduser() / "layout"
 PORT = int(os.environ.get("PORT", "18493"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18495"))
 BASE = f"http://127.0.0.1:{PORT}"
 e2e.PORT, e2e.STUB_PORT, e2e.BASE = PORT, STUB_PORT, BASE
 HOME = OUT / "home-root"
 RUNTIME = OUT / "runtime"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME),
-           MIYU_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), MIYU_ADMIN_USER="admin")
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME),
+           GQY_SYSTEM_SCRIPTS_DIR=str(REPO / "src/scripts"), GQY_ADMIN_USER="admin")
 e2e.HOME, e2e.RUNTIME, e2e.ENV = HOME, RUNTIME, ENV
 
 results = []
@@ -96,17 +96,17 @@ def main():
 
         # 3. 状态
         code, out = cli("layout")
-        check("miyu layout 报家目录布局", code == 0 and "家目录" in out and "home/admin" in out, out.strip()[:120])
+        check("gqy layout 报家目录布局", code == 0 and "家目录" in out and "home/admin" in out, out.strip()[:120])
 
         # 4. 回滚
         code, out = cli("layout", "--rollback")
-        check("miyu layout --rollback 成功", code == 0, out.strip()[:160])
+        check("gqy layout --rollback 成功", code == 0, out.strip()[:160])
         check("回滚后会话库回 state", (HOME / "state/conversation.db").is_file() and not (HOME / "home/admin/conversation.db").exists())
         check("回滚后档案回 data/identities/user-identity.md",
               (HOME / "data/identities/user-identity.md").read_text().startswith("我是 shorin") if (HOME / "data/identities/user-identity.md").exists() else False)
         check("回滚后标记没了、opt-out 出现", not marker.exists() and (HOME / ".home-layout-off").is_file())
         code, out = cli("layout")
-        check("miyu layout 报老布局+已回滚", code == 0 and "老布局" in out and "*" in out, out.strip()[:160])
+        check("gqy layout 报老布局+已回滚", code == 0 and "老布局" in out and "*" in out, out.strip()[:160])
 
         # 5. 回滚后再起 daemon:不自动搬,数据还在
         daemon = start_daemon()
@@ -125,7 +125,7 @@ def main():
 
         # 6. 重新搬
         code, out = cli("layout", "--apply")
-        check("miyu layout --apply 成功", code == 0 and "home/admin" in out, out.strip()[:160])
+        check("gqy layout --apply 成功", code == 0 and "home/admin" in out, out.strip()[:160])
         check("apply 后标记回来、opt-out 没了", marker.is_file() and not (HOME / ".home-layout-off").exists())
         daemon = start_daemon()
         admin = e2e.Client()

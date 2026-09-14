@@ -1,4 +1,4 @@
-//! ratatui 全屏 TUI 手感演示——**沿用 Miyu 现有 REPL 的视觉语言**。
+//! ratatui 全屏 TUI 手感演示——**沿用 顾清影 现有 REPL 的视觉语言**。
 //!
 //! 复刻自 src/render/style.rs、src/cli/footer.rs、src/cli/repl/layout.rs、
 //! src/cli/inline_picker.rs、src/render/wait_spinner.rs、src/render/stream/*、
@@ -164,9 +164,9 @@ impl Job {
                     "Compiling tokio v1.38.0",
                     "Compiling ratatui v0.29.0",
                     "Compiling crossterm v0.28.1",
-                    "Compiling miyu v0.5.0 (/home/shorin/Documents/github/Miyu)",
+                    "Compiling gqy v0.5.0 (/home/shorin/Documents/github/Miyu)",
                     "warning: unused variable: `rows` --> src/cli/repl/layout.rs:212",
-                    "Compiling miyu (bin) ...",
+                    "Compiling gqy (bin) ...",
                 ];
                 let n = (secs / 2 + 1).min(all.len());
                 let mut lines = vec![
@@ -1718,8 +1718,8 @@ fn main() -> io::Result<()> {
                     }
                 }
                 Event::Mouse(m) => {
-                    if std::env::var("MIYU_DEMO_LOG").is_ok() {
-                        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(std::env::var("MIYU_DEMO_LOG").unwrap()) {
+                    if std::env::var("GQY_DEMO_LOG").is_ok() {
+                        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(std::env::var("GQY_DEMO_LOG").unwrap()) {
                             let _ = writeln!(f, "mouse {:?} col={} row={} body_h={} overlay_job={}", m.kind, m.column, m.row, app.body.height, matches!(app.overlay, Overlay::Job(_)));
                         }
                     }

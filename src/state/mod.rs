@@ -15,14 +15,14 @@ pub use migrations::DEFAULT_SESSION_ID;
 pub(crate) mod usage;
 
 /// Newest `conversation.db` schema this build can open — the gate an import
-/// checks before restoring a database written by a newer Miyu.
+/// checks before restoring a database written by a newer GQY.
 pub fn latest_schema_version() -> i64 {
     migrations::LATEST_VERSION
 }
 
 use crate::llm::{TurnTokens, Usage};
 use crate::memory_types::EvictedTurn;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -59,10 +59,10 @@ pub const USER_SESSION_KIND: &str = "user";
 /// 按人格隔离机制白拿会话/记忆/REPL 指针的分家;模式由会话的
 /// persona==DEV_PERSONA 推导,无需迁移。
 pub const DEV_PERSONA: &str = "dev";
-/// Backs a one-shot `miyu ask` / `miyu '<message>'` turn: created just before
+/// Backs a one-shot `gqy ask` / `gqy '<message>'` turn: created just before
 /// the turn, deleted right after, and invisible to every listing in between.
 pub const ASK_SESSION_KIND: &str = "ask";
-/// 唤醒对话的专属会话:不进 WebUI 列表(列表只取 user),用 `miyu voice`
+/// 唤醒对话的专属会话:不进 WebUI 列表(列表只取 user),用 `gqy voice`
 /// 命令组管理(reset / history)。
 pub const VOICE_SESSION_KIND: &str = "voice";
 
@@ -214,13 +214,13 @@ impl StateStore {
         self
     }
 
-    pub fn new(paths: &MiyuPaths) -> Result<Self> {
+    pub fn new(paths: &GqyPaths) -> Result<Self> {
         Self::new_at(paths, &paths.conversation_db_dir(), paths.artifacts_dir())
     }
 
     /// 成员自己的会话库:`home/<用户>/conversation.db`,artifact 也落他家里;
     /// 附件本体、用量账本仍在 state(机器级)。
-    pub fn open_member(paths: &MiyuPaths, username: &str) -> Result<Self> {
+    pub fn open_member(paths: &GqyPaths, username: &str) -> Result<Self> {
         let home = paths.user_home_dir(username);
         crate::paths::ensure_private_dir(&paths.homes_dir())?;
         crate::paths::ensure_private_dir(&home)?;
@@ -229,12 +229,12 @@ impl StateStore {
 
     /// 已知成员家目录时直接开他的会话库(工具侧只有 `config.member_home_dir()`
     /// 拿到的路径、没有用户名时用)。库/artifact 落点与 `open_member` 同口径。
-    pub fn open_at_home(paths: &MiyuPaths, home: &Path) -> Result<Self> {
+    pub fn open_at_home(paths: &GqyPaths, home: &Path) -> Result<Self> {
         crate::paths::ensure_private_dir(home)?;
         Self::new_at(paths, home, home.join("artifacts"))
     }
 
-    fn new_at(paths: &MiyuPaths, db_dir: &Path, artifacts_dir: PathBuf) -> Result<Self> {
+    fn new_at(paths: &GqyPaths, db_dir: &Path, artifacts_dir: PathBuf) -> Result<Self> {
         let state_dir = paths.state_dir.clone();
         let conv_db = Arc::new(ConversationDb::open_at(db_dir, &state_dir)?);
         let platform_access = shared_platform_access_index(&state_dir, &conv_db)?;
@@ -280,7 +280,7 @@ impl StateStore {
             std::fs::write(self.usage_file(), "{\n  \"requests\": 0,\n  \"prompt_tokens\": 0,\n  \"completion_tokens\": 0,\n  \"total_tokens\": 0,\n  \"conversation_tokens\": 0\n}\n")?;
         }
         if !self.profile_file().exists() {
-            std::fs::write(self.profile_file(), "# Miyu Profile\n\n")?;
+            std::fs::write(self.profile_file(), "# GQY Profile\n\n")?;
         }
         Ok(())
     }

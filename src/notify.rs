@@ -127,6 +127,6 @@ mod tests {
     fn a_missing_backend_is_silent() {
         // The point of the module: no panic, no error, no blocking, even when
         // nothing on the machine can show a notification.
-        spawn("miyu-nonexistent-notification-backend", &["x"]);
+        spawn("gqy-nonexistent-notification-backend", &["x"]);
     }
 }

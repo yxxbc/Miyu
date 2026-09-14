@@ -50,7 +50,7 @@ pub mod workspace;
 use crate::agent::AgentMode;
 use crate::config::{AppConfig, PersonaManifest};
 use crate::i18n::{is_zh, text as t};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -347,7 +347,7 @@ fn builtin_readable_group_name(group: &str) -> Option<&'static str> {
     })
 }
 
-pub fn clear_aur_review_state(paths: &MiyuPaths) -> anyhow::Result<()> {
+pub fn clear_aur_review_state(paths: &GqyPaths) -> anyhow::Result<()> {
     archlinux::aur_review::clear_aur_review_state(paths)
 }
 
@@ -462,7 +462,7 @@ impl Surface {
 /// 所以三个面的 tools 数组与合并前逐字节相同(`shape_tests` 钉着)。
 pub fn compose_registry(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     manifest: &PersonaManifest,
     surface: Surface,
 ) -> ToolRegistry {
@@ -629,13 +629,13 @@ pub fn compose_registry(
 }
 
 /// 属主面、当前人格的全量工具目录(旧 `builtin_registry`)。
-pub fn builtin_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
+pub fn builtin_registry(config: &AppConfig, paths: &GqyPaths) -> ToolRegistry {
     let manifest = PersonaManifest::load(config, paths, &config.active_persona_scope());
     compose_registry(config, paths, &manifest, Surface::owner(false))
 }
 
 /// dev persona 的工具目录:core 之上一件不挂(旧 `dev_registry`)。
-pub fn dev_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
+pub fn dev_registry(config: &AppConfig, paths: &GqyPaths) -> ToolRegistry {
     let manifest = PersonaManifest::load(config, paths, crate::state::DEV_PERSONA);
     compose_registry(config, paths, &manifest, Surface::owner(false))
 }
@@ -643,7 +643,7 @@ pub fn dev_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
 /// 不可信场所的工具面(旧 `restricted_platform_registry`):同一条流水线,
 /// 末尾按 `Trust: external` 筛。以前是一张硬编码白名单,现在权限位写在每件
 /// 工具自己的清单里(内置在 descriptions/*.json,脚本在头部)。
-pub fn restricted_platform_registry(config: &AppConfig, paths: &MiyuPaths) -> ToolRegistry {
+pub fn restricted_platform_registry(config: &AppConfig, paths: &GqyPaths) -> ToolRegistry {
     let manifest = PersonaManifest::load(config, paths, &config.active_persona_scope());
     compose_registry(config, paths, &manifest, Surface::external())
 }
@@ -651,7 +651,7 @@ pub fn restricted_platform_registry(config: &AppConfig, paths: &MiyuPaths) -> To
 pub fn register_webui_artifact_tools(
     registry: &mut ToolRegistry,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session_id: &str,
 ) {
     artifact::register_webui(
@@ -672,7 +672,7 @@ pub fn register_webui_share_tools(
 
 pub fn webui_artifact_manifest(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     session_id: &str,
 ) -> anyhow::Result<String> {
     artifact::managed_manifest(&artifact::artifacts_root(config, paths), session_id)
@@ -681,7 +681,7 @@ pub fn webui_artifact_manifest(
 pub(crate) fn rescope_platform_memory_tools(
     registry: &mut ToolRegistry,
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     context: &dyn crate::platform_types::PlatformToolContext,
     readonly: bool,
 ) {
@@ -782,7 +782,7 @@ pub fn effective_tools_loading_mode(config: &AppConfig) -> String {
 /// 2. 技能只在工具开着时注册；技能创作工具（`manage_skill`）只在 normal 模式
 ///    出现，dev 模式下模型该写代码不该写技能。
 /// 3. `ask_question` 单独由调用方决定：daemon 与 WebUI 能弹面板，一次性
-///    `miyu ask` 不能，所以它是参数而不是模式的函数。
+///    `gqy ask` 不能，所以它是参数而不是模式的函数。
 /// 4. 最后登记脚本工具的显示名——这一步要在所有注册之后，否则新注册的脚本
 ///    在渲染层会显示成原始工具名。
 ///
@@ -792,7 +792,7 @@ pub fn effective_tools_loading_mode(config: &AppConfig) -> String {
 /// 两条边（`web→cli`、`tools→cli`）一次都断掉。
 pub(crate) fn build_tool_registry(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     mode: AgentMode,
     interactive_questions: bool,
 ) -> anyhow::Result<ToolRegistry> {
@@ -975,7 +975,7 @@ mod tests {
     /// 回归:dev 模式要有看图(vision_analyze),且随 vision 插件开关走。
     #[test]
     fn dev_registry_vision_follows_plugin_switch() {
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::GqyPaths::new().unwrap();
         let mut config = crate::config::AppConfig::default();
         let names = |registry: &ToolRegistry| -> Vec<String> {
             registry
@@ -1032,8 +1032,8 @@ mod tests {
         assert!(!config.dev_scoped().memory_config().enabled);
     }
 
-    pub(super) fn test_paths(root: &std::path::Path) -> MiyuPaths {
-        MiyuPaths {
+    pub(super) fn test_paths(root: &std::path::Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -1042,7 +1042,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("config/fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("config/fish/conf.d/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),
@@ -1373,7 +1373,7 @@ mod tier_schema_probe {
     #[test]
     fn subagent_definition_includes_tier() {
         let config = crate::config::AppConfig::default();
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::GqyPaths::new().unwrap();
         let registry = super::builtin_registry(&config, &paths);
         let defs = registry.definitions();
         let subagent = defs
@@ -1396,7 +1396,7 @@ mod tier_schema_probe {
     /// every pool edit), and the tier enum carries the four current names.
     #[test]
     fn subagent_description_is_constant_and_lists_the_four_tiers() {
-        let paths = crate::paths::MiyuPaths::new().unwrap();
+        let paths = crate::paths::GqyPaths::new().unwrap();
         let bare = crate::config::AppConfig::default();
         let bare_subagent = super::builtin_registry(&bare, &paths)
             .definitions()

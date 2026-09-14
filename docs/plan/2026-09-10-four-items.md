@@ -75,7 +75,7 @@
 
 ## 5. shellhook 提问几秒后自己被取消(新加,deepseek)
 
-**现象**:shellhook(fish hook 的 `printf '%s' "$buffer" | miyu --shell-intercept --shell fish --stdin`)里工具提问,面板开着什么都不按、或只按上下键,几秒后整个回合被取消。REPL 无此现象。
+**现象**:shellhook(fish hook 的 `printf '%s' "$buffer" | gqy --shell-intercept --shell fish --stdin`)里工具提问,面板开着什么都不按、或只按上下键,几秒后整个回合被取消。REPL 无此现象。
 
 **根因**:`spawn_hangup_watchdog` 的 `terminal_hangup()` 裸 poll **stdin** 判挂断。管道写端(`printf`)一退出,stdin 常驻 `POLLHUP`;而 `question_tui::ask` 的 `QuestionSession::start` 正是看门狗的第一个调用点——面板一打开就按下「500ms 探测 + 5 秒宽限」的倒计时,到点 `std::process::exit(1)`。daemon 那边 `IpcRunGuard` 认这个客户端是一次性的(`origin_tty` 存在),断线即取消 run,回合以 `interrupted` 落库。REPL 两处都不满足:stdin 就是终端,连接也不带 `origin_tty`。
 
@@ -83,13 +83,13 @@
 
 **测具** `testkit/shellhook-question/`:`run.py` 用 `pty.openpty()` + `TIOCSCTTY` 复刻「stdin 是管道、stdout 是终端、有控制终端」这组 fd,桩模型立刻发 `ask_question`;`KEYS=arrows|answer` 控制按键。修前:面板 5.5s 后消失、客户端 `exit(1)`、daemon 日志 `one-shot client disconnected; its run was cancelled`、回合 `interrupted`。修后:面板一直在、上下键正常、回车提交后回合 `completed`、答案落进 `question_exchanges`。
 
-**顺带补的真机测具** `testkit/repl-smoke/`(deepseek 加):PTY 里跑 `miyu normal`,粘 4 行 → 回车 → 上键,`report.json` 六项全绿 = 项 1 + 项 3 通过。两个坑记在它的 README 里:裸 `miyu` 在真终端先弹模式选择再退出(要用 `miyu normal`);回复刚打完立刻按上键会被重绘吞掉(先静置 1.5 秒)。
+**顺带补的真机测具** `testkit/repl-smoke/`(deepseek 加):PTY 里跑 `gqy normal`,粘 4 行 → 回车 → 上键,`report.json` 六项全绿 = 项 1 + 项 3 通过。两个坑记在它的 README 里:裸 `gqy` 在真终端先弹模式选择再退出(要用 `gqy normal`);回复刚打完立刻按上键会被重绘吞掉(先静置 1.5 秒)。
 
 **单测**:`src/cli/tests/hangup.rs` 2 条(fd 选择逻辑;写端关闭的管道确实报 POLLHUP——记录这条真实形态,防止有人再把管道 EOF 当终端挂断)。
 
 ## 收尾清单
 
-- 全量单测:`cargo test --lib` **2109 过 / 0 失败 / 32 ignored**(日志 `~/.cache/miyu-deepseek-fulltest.log`)。
+- 全量单测:`cargo test --lib` **2109 过 / 0 失败 / 32 ignored**(日志 `~/.cache/gqy-deepseek-fulltest.log`)。
 - `cargo fmt` 已跑(仓库 fmt-clean);`node --check` 过了改动的三个 JS。
 - 五道门禁 `bash test_scripts/refactor-check.sh`:格式 / 编译 / 全量测试(**用例数 2112,基线 2088,0 失败**)/ 模型面语言(`no CJK, all JSON valid`)/ 依赖方向 全过;**文件规模那道报红,但它是存量问题**——基线停在拆分刚合入 main 时的 198,995 行,现在任何提交都比它多 30%(`cd ~/Documents/github/Miyu && python3 test_scripts/refactor_size_report.py --check` 在干净 main 上同样报 `+29.8%`)。本轮的增量是 258,338 → 259,651 行(+0.5%),没有新增越红线文件、超标文件也没变长。要修得单独重写基线。
 - **未 commit、未写 release note**(等验收)。验收后按 AGENTS.md:commit → `next-release-note.md` 追加(修复:上键历史占位符、Safari 抖动、shellhook 提问被取消;重要更新:tok/s、事实整理)→ merge。
@@ -107,7 +107,7 @@
 
 ## 验收流程
 
-前置:`cd .claude/worktrees/main-fixes-deepseek && cargo build`(web/ 与提示词都编进二进制,daemon 按 MIYU_BUILD_ID 重启)。
+前置:`cd .claude/worktrees/main-fixes-deepseek && cargo build`(web/ 与提示词都编进二进制,daemon 按 GQY_BUILD_ID 重启)。
 
 1. **项 1 + 项 3(一条命令)**:`python3 testkit/repl-smoke/run.py`,看 `report.json` 六项全绿(`placeholder_on_paste` / `reply_seen` / `footer_speed` / `placeholder_on_recall` / `raw_text_on_recall=false` / `repl_alive`)。手动版:REPL 里粘贴一段多行文本(出现 `[粘贴 1: ~N 行]` 占位符)→ 回车发出 → 按 ↑ 回忆 → 输入框应显示占位符而不是全文;再回车应原样发出全文;重启 REPL 后按 ↑ 仍应带占位符。
 2. **项 2 Safari 抖动**:`python3 testkit/webui-jitter/run.py`(要 cage + WebKitGTK + playwright chromium),看 webkit 那行 `up_moves 0 / max_lag_px` 是否与 chromium 同量级;真机 Safari 里让一段长回复流式输出,视口应平滑跟到底、不上下鬼畜。

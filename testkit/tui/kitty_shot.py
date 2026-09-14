@@ -14,7 +14,7 @@ pyte 只还原字符网格，图形协议那一段它看不见——「图有没
     cargo build --release
     testkit/kitty-image/run_headless.sh python3 testkit/tui/kitty_shot.py
 
-产物在 $OUT（默认 ~/.cache/miyu-tui-kitty）。
+产物在 $OUT（默认 ~/.cache/gqy-tui-kitty）。
 """
 
 import json
@@ -33,14 +33,14 @@ KITTY = REPO / "testkit" / "kitty-image"
 sys.path.insert(0, str(KITTY))
 import ghost_probe as probe  # noqa: E402
 
-OUT = Path(os.environ.get("OUT") or "~/.cache/miyu-tui-kitty").expanduser()
+OUT = Path(os.environ.get("OUT") or "~/.cache/gqy-tui-kitty").expanduser()
 # 绝对路径：子进程是拿 `cwd=OUT` 起的，相对路径会按 OUT 解析然后找不到，
 # 抛出来的异常还打在 kitty 窗口里、外面看不见。
-BIN = Path(os.environ.get("BIN") or (REPO / "target" / "release" / "miyu")).resolve()
+BIN = Path(os.environ.get("BIN") or (REPO / "target" / "release" / "gqy")).resolve()
 HOME = OUT / "home"
 RUN_DIR = OUT / "run"
 STUB_PORT = int(os.environ.get("STUB_PORT", "18497"))
-PORT = int(os.environ.get("MIYU_TUI_PORT", "18437"))
+PORT = int(os.environ.get("GQY_TUI_PORT", "18437"))
 STUB_LOG = OUT / "stub.jsonl"
 IMAGE = OUT / "sample.png"
 IMAGE_COLS, IMAGE_ROWS = 28, 8
@@ -124,9 +124,9 @@ def env_for():
     env = dict(os.environ)
     for key in ("XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"):
         env.pop(key, None)
-    env["MIYU_HOME"] = str(HOME)
+    env["GQY_HOME"] = str(HOME)
     env["XDG_RUNTIME_DIR"] = str(RUN_DIR)
-    env["MIYU_TUI"] = "1"
+    env["GQY_TUI"] = "1"
     return env
 
 
@@ -196,7 +196,7 @@ def main():
         stderr=subprocess.DEVNULL,
     )
     daemon = None
-    miyu = None
+    gqy = None
     try:
         if not wait_http(f"http://127.0.0.1:{STUB_PORT}/v1/models"):
             log("! 桩模型没起来")
@@ -210,7 +210,7 @@ def main():
             log("! daemon 没起来")
             return 2
 
-        miyu = subprocess.Popen([str(BIN)], env=env_for(), cwd=str(OUT))
+        gqy = subprocess.Popen([str(BIN)], env=env_for(), cwd=str(OUT))
         wait_quiet(1.5, timeout=40)
         log("首屏")
         probe.screenshot("tui-start")
@@ -242,7 +242,7 @@ def main():
             log(f"  {path}  {'有' if path.exists() else '缺'}")
         return 0
     finally:
-        for process in (miyu, daemon, stub):
+        for process in (gqy, daemon, stub):
             if process and process.poll() is None:
                 process.terminate()
                 try:

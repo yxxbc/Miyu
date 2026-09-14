@@ -13,10 +13,10 @@ pub(in crate::web) fn start_ipc_server(
     state: &DaemonState,
 ) -> Result<(crate::ipc::WebCoreLease, TokioJoinHandle<()>)> {
     let lease = ipc::acquire_web_core(&state.paths)
-        .context("another Miyu core is already running or starting")?;
+        .context("another GQY core is already running or starting")?;
     let socket_path = state.paths.ipc_socket();
     let listener = tokio::net::UnixListener::bind(&socket_path)
-        .with_context(|| format!("binding Miyu IPC socket at {}", socket_path.display()))?;
+        .with_context(|| format!("binding GQY IPC socket at {}", socket_path.display()))?;
     std::fs::set_permissions(&socket_path, std::fs::Permissions::from_mode(0o600))?;
 
     let server_state = state.clone();
@@ -29,7 +29,7 @@ pub(in crate::web) fn start_ipc_server(
                     tracing::warn!(
                         error = %error,
                         "{}",
-                        t("Miyu IPC listener stopped", "Miyu IPC 监听器已停止")
+                        t("GQY IPC listener stopped", "顾清影 IPC 监听器已停止")
                     );
                     break;
                 }
@@ -46,8 +46,8 @@ pub(in crate::web) fn start_ipc_server(
                         error = %error,
                         "{}",
                         t(
-                            "Miyu IPC connection closed with an error",
-                            "Miyu IPC 连接因错误关闭"
+                            "GQY IPC connection closed with an error",
+                            "顾清影 IPC 连接因错误关闭"
                         )
                     );
                 }
@@ -66,7 +66,7 @@ pub(in crate::web) async fn handle_ipc_connection(
         ipc::receive::<IpcRequest>(&mut stream),
     )
     .await
-    .context("timed out waiting for a Miyu IPC request")??
+    .context("timed out waiting for a GQY IPC request")??
     else {
         return Ok(());
     };
@@ -213,7 +213,7 @@ pub(in crate::web) async fn handle_ipc_connection(
             // 缺失或指向已删/已归档的会话时,一律自举一个新的本地会话。
             //
             // normal 以前在这两处都退到 `store.session_id()`——那是终端集成
-            // (shellhook)的车道。于是第一次 `miyu normal` 就把 REPL 焊在终端
+            // (shellhook)的车道。于是第一次 `gqy normal` 就把 REPL 焊在终端
             // 会话上,两边的对话混成一摊。dev 早就是自举的,normal 没跟上。
             //
             // 空名字是有意的:首条消息会自动命名(与 dev 同路)。不动
@@ -233,7 +233,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                     // 连全出自这里。原先丢掉了失败原因,只能靠翻库反推;把它
                     // 打出来,一次就能定论。
                     tracing::info!(
-                        target: "miyu::qq",
+                        target: "gqy::qq",
                         %persona,
                         target = ?target,
                         %reason,
@@ -347,7 +347,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 release_admin(&state.manager);
                 ipc::send(
                     &mut stream,
-                    &IpcFrame::error("Miyu core worker is unavailable"),
+                    &IpcFrame::error("GQY core worker is unavailable"),
                 )
                 .await?;
                 return Ok(());
@@ -381,7 +381,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                     release_admin(&state.manager);
                     ipc::send(
                         &mut stream,
-                        &IpcFrame::error("Miyu core stopped while reloading configuration"),
+                        &IpcFrame::error("GQY core stopped while reloading configuration"),
                     )
                     .await?
                 }
@@ -408,7 +408,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Miyu core worker is unavailable");
+                anyhow::bail!("GQY core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(())) => {
@@ -426,7 +426,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Miyu core stopped while resetting the conversation");
+                    anyhow::bail!("GQY core stopped while resetting the conversation");
                 }
             }
         }
@@ -452,7 +452,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                     .await?;
                 }
                 Err(PlatformPersonaResetError::Unavailable) => {
-                    anyhow::bail!("Miyu core worker is unavailable");
+                    anyhow::bail!("GQY core worker is unavailable");
                 }
                 Err(PlatformPersonaResetError::Internal(message)) => {
                     ipc::send(&mut stream, &IpcFrame::error(message)).await?;
@@ -480,7 +480,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Miyu core worker is unavailable");
+                anyhow::bail!("GQY core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(data)) => {
@@ -498,7 +498,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Miyu core stopped while undoing the conversation");
+                    anyhow::bail!("GQY core stopped while undoing the conversation");
                 }
             }
         }
@@ -524,7 +524,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Miyu core worker is unavailable");
+                anyhow::bail!("GQY core worker is unavailable");
             }
             match receiver.await {
                 Ok(Ok(data)) => {
@@ -542,7 +542,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Miyu core stopped while popping the conversation");
+                    anyhow::bail!("GQY core stopped while popping the conversation");
                 }
             }
         }
@@ -569,7 +569,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 .is_err()
             {
                 release_admin(&state.manager);
-                anyhow::bail!("Miyu core worker is unavailable");
+                anyhow::bail!("GQY core worker is unavailable");
             }
             // 摘要边生成边转发。actor 那头在回复之前就把 sender 丢了,所以
             // `recv()` 收到 None 即"事件已发完",不用和 oneshot 抢 select,
@@ -604,7 +604,7 @@ pub(in crate::web) async fn handle_ipc_connection(
                 }
                 Err(_) => {
                     release_admin(&state.manager);
-                    anyhow::bail!("Miyu core stopped while compacting the conversation");
+                    anyhow::bail!("GQY core stopped while compacting the conversation");
                 }
             }
         }
@@ -766,14 +766,14 @@ pub(in crate::web) async fn switch_session_via_actor(
         .is_err()
     {
         release_admin(&state.manager);
-        return Err("Miyu core worker is unavailable".to_string());
+        return Err("GQY core worker is unavailable".to_string());
     }
     match receiver.await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(AdminFailure::Invalid(message) | AdminFailure::Internal(message))) => Err(message),
         Err(_) => {
             release_admin(&state.manager);
-            Err("Miyu core stopped while switching sessions".to_string())
+            Err("GQY core stopped while switching sessions".to_string())
         }
     }
 }
@@ -792,12 +792,12 @@ pub(in crate::web) async fn switch_session_via_actor_reserved(
         })
         .is_err()
     {
-        return Err("Miyu core worker is unavailable".to_string());
+        return Err("GQY core worker is unavailable".to_string());
     }
     match receiver.await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(AdminFailure::Invalid(message) | AdminFailure::Internal(message))) => Err(message),
-        Err(_) => Err("Miyu core stopped while switching sessions".to_string()),
+        Err(_) => Err("GQY core stopped while switching sessions".to_string()),
     }
 }
 
@@ -920,7 +920,7 @@ pub(in crate::web) async fn handle_ipc_turn(
         .is_err()
     {
         finish_run(&state.manager, &run_id, None);
-        ipc::send(stream, &IpcFrame::error("Miyu core worker is unavailable")).await?;
+        ipc::send(stream, &IpcFrame::error("GQY core worker is unavailable")).await?;
         return Ok(());
     }
     let mut run_guard = IpcRunGuard {
@@ -988,7 +988,7 @@ pub(in crate::web) async fn handle_ipc_turn(
             ipc::send(
                 stream,
                 &IpcFrame::error(
-                    "Miyu core event history was exhausted; the reply already finished — refresh to see it",
+                    "GQY core event history was exhausted; the reply already finished — refresh to see it",
                 ),
             )
             .await?;

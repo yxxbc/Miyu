@@ -162,73 +162,73 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
         let mut html = INDEX_HTML
             .replace(
                 "href=\"/styles.css\"",
-                concat!("href=\"/styles.css?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("href=\"/styles.css?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/app.js\"",
-                concat!("src=\"/app.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/app.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/commands.js\"",
-                concat!("src=\"/commands.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/commands.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/lightbox.js\"",
-                concat!("src=\"/lightbox.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/lightbox.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/preview.js\"",
-                concat!("src=\"/preview.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/preview.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/linkcards.js\"",
-                concat!("src=\"/linkcards.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/linkcards.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/todos.js\"",
-                concat!("src=\"/todos.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/todos.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/contextpanel.js\"",
-                concat!("src=\"/contextpanel.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/contextpanel.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/selectionmenu.js\"",
-                concat!("src=\"/selectionmenu.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/selectionmenu.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/artifactchips.js\"",
-                concat!("src=\"/artifactchips.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/artifactchips.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/fencepreview.js\"",
-                concat!("src=\"/fencepreview.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/fencepreview.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/shared.js\"",
-                concat!("src=\"/shared.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/shared.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/diff.js\"",
-                concat!("src=\"/diff.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/diff.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/mapcard.js\"",
-                concat!("src=\"/mapcard.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/mapcard.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/expresscard.js\"",
-                concat!("src=\"/expresscard.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/expresscard.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "src=\"/highlight.js\"",
-                concat!("src=\"/highlight.js?v=", env!("MIYU_BUILD_ID"), "\""),
+                concat!("src=\"/highlight.js?v=", env!("GQY_BUILD_ID"), "\""),
             )
             .replace(
                 "href=\"/vendor/katex/katex.min.css\"",
                 concat!(
                     "href=\"/vendor/katex/katex.min.css?v=",
-                    env!("MIYU_BUILD_ID"),
+                    env!("GQY_BUILD_ID"),
                     "\""
                 ),
             )
@@ -236,7 +236,7 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
                 "src=\"/vendor/katex/katex.min.js\"",
                 concat!(
                     "src=\"/vendor/katex/katex.min.js?v=",
-                    env!("MIYU_BUILD_ID"),
+                    env!("GQY_BUILD_ID"),
                     "\""
                 ),
             )
@@ -244,14 +244,14 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
                 "src=\"/vendor/prism/prism.min.js\"",
                 concat!(
                     "src=\"/vendor/prism/prism.min.js?v=",
-                    env!("MIYU_BUILD_ID"),
+                    env!("GQY_BUILD_ID"),
                     "\""
                 ),
             );
         for (name, _) in DASH_SCRIPTS {
             html = html.replace(
                 &format!("src=\"/dash/{name}\""),
-                &format!("src=\"/dash/{name}?v={}\"", env!("MIYU_BUILD_ID")),
+                &format!("src=\"/dash/{name}?v={}\"", env!("GQY_BUILD_ID")),
             );
         }
         html
@@ -452,7 +452,7 @@ pub(in crate::web) async fn dash_script_asset(
 }
 
 pub(in crate::web) async fn logo_asset(headers: HeaderMap) -> Response {
-    embedded_asset(&headers, MIYU_LOGO, "image/png")
+    embedded_asset(&headers, GQY_LOGO, "image/png")
 }
 
 pub(in crate::web) async fn highlight_js_asset(headers: HeaderMap) -> Response {
@@ -504,7 +504,7 @@ pub(in crate::web) async fn mermaid_js_asset(headers: HeaderMap) -> Response {
 }
 
 pub(in crate::web) async fn wallpaper_asset(headers: HeaderMap) -> Response {
-    embedded_asset(&headers, MIYU_WALLPAPER, "image/png")
+    embedded_asset(&headers, GQY_WALLPAPER, "image/png")
 }
 
 pub(in crate::web) async fn upload_persona_asset(
@@ -685,7 +685,7 @@ pub(in crate::web) fn finish_asset_response(
 }
 
 pub(in crate::web) fn cleanup_persona_assets(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     previous: &PromptDocuments,
     current: &PromptDocuments,
 ) {
@@ -935,7 +935,7 @@ fn request_origin(headers: &HeaderMap) -> Option<String> {
 }
 
 pub(in crate::web) fn resolve_persona_asset_path(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     value: &str,
 ) -> Option<PathBuf> {
     let value = value.trim();
@@ -954,7 +954,7 @@ pub(in crate::web) fn resolve_persona_asset_path(
 }
 
 pub(in crate::web) fn managed_persona_asset_path(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     value: &str,
 ) -> Option<PathBuf> {
     let value = value.trim();
@@ -995,7 +995,7 @@ pub(in crate::web) fn persona_asset_uses_managed_namespace(value: &str) -> bool 
 }
 
 pub(in crate::web) fn validate_managed_persona_asset_file(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     path: &FilePath,
 ) -> Result<()> {
     let root_path = paths.persona_avatars_dir();

@@ -9,7 +9,7 @@
 use super::LoadedMeme;
 use crate::config::AppConfig;
 use crate::embedding::{cosine, vector_from_blob, vector_to_blob, Embedder};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::Result;
 use rusqlite::{params, Connection};
 use sha2::{Digest, Sha256};
@@ -40,7 +40,7 @@ fn text_sha(text: &str) -> String {
     hex::encode(Sha256::digest(text.as_bytes()))
 }
 
-fn vectors_db(paths: &MiyuPaths, library: &str) -> Result<PathBuf> {
+fn vectors_db(paths: &GqyPaths, library: &str) -> Result<PathBuf> {
     let dir = paths.cache_dir.join("meme-embeddings");
     std::fs::create_dir_all(&dir)?;
     Ok(dir.join(format!("{}.db", super::sanitize_library(library))))
@@ -115,7 +115,7 @@ fn load_vectors<'a>(
 /// Embed up to one batch of memes lacking a current vector; returns how many.
 async fn top_up(
     embedder: &Embedder,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     memes: &[LoadedMeme],
 ) -> Result<usize> {
@@ -158,7 +158,7 @@ async fn top_up(
 /// many were embedded.
 pub(crate) async fn reindex_library(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
 ) -> Result<usize> {
     let Some(embedder) = Embedder::from_config(config) else {
@@ -179,7 +179,7 @@ pub(crate) async fn reindex_library(
 /// when the semantic pass is unavailable. Also tops up missing vectors.
 pub(crate) async fn semantic_rank(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     memes: &[LoadedMeme],
     query: &str,
@@ -200,7 +200,7 @@ pub(crate) async fn semantic_rank(
 
 async fn semantic_rank_inner(
     embedder: &Embedder,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     library: &str,
     memes: &[LoadedMeme],
     query: &str,

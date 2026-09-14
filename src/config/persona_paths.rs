@@ -10,7 +10,7 @@ use crate::config::*;
 impl AppConfig {
     /// Dev 模式系统提示词:读 `config/dev-prompt.md`,缺失或清空回退内置
     /// 默认一行(极简原则 + 贴近训练分布的措辞,见 08-15 实验记录)。
-    pub fn dev_system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn dev_system_prompt(&self, paths: &GqyPaths) -> Result<String> {
         let path = paths.config_dir.join(DEV_PROMPT_FILE);
         match std::fs::read_to_string(&path) {
             Ok(content) if !content.trim().is_empty() => Ok(content.trim().to_string()),
@@ -18,11 +18,11 @@ impl AppConfig {
         }
     }
 
-    pub fn system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn system_prompt(&self, paths: &GqyPaths) -> Result<String> {
         self.system_prompt_for(paths, PromptAudience::Owner)
     }
 
-    pub fn system_prompt_for(&self, paths: &MiyuPaths, audience: PromptAudience) -> Result<String> {
+    pub fn system_prompt_for(&self, paths: &GqyPaths, audience: PromptAudience) -> Result<String> {
         self.system_prompt_with(paths, audience, audience.includes_user_identity())
     }
 
@@ -31,7 +31,7 @@ impl AppConfig {
     /// style-lock 那类差异,由调用方按「有没有平台上下文」决定档案进不进。
     pub fn system_prompt_with(
         &self,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         _audience: PromptAudience,
         with_user_profile: bool,
     ) -> Result<String> {
@@ -50,7 +50,7 @@ impl AppConfig {
         Ok(prompt)
     }
 
-    pub fn base_system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn base_system_prompt(&self, paths: &GqyPaths) -> Result<String> {
         let persona = self.active_persona_prompt(paths)?;
         if persona.trim().is_empty() {
             Ok(default_system_prompt())
@@ -59,7 +59,7 @@ impl AppConfig {
         }
     }
 
-    pub fn custom_system_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn custom_system_prompt(&self, paths: &GqyPaths) -> Result<String> {
         if let Some(prompt) = self
             .system_prompt
             .as_deref()
@@ -74,12 +74,12 @@ impl AppConfig {
         Ok(String::new())
     }
 
-    pub fn prompts_dir_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn prompts_dir_path(&self, paths: &GqyPaths) -> PathBuf {
         migrated_resource_path(paths, &self.prompt.prompts_dir)
             .unwrap_or_else(|| config_relative_path(paths, &self.prompt.prompts_dir))
     }
 
-    pub fn user_identity_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn user_identity_path(&self, paths: &GqyPaths) -> PathBuf {
         if relative_path_equals(&self.prompt.user_identity_file, "user-identity.md") {
             fallback_resource_file(paths, "identities", "user-identity.md")
         } else if let Some(path) = migrated_fallback_file(
@@ -96,12 +96,12 @@ impl AppConfig {
         }
     }
 
-    pub fn identities_dir_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn identities_dir_path(&self, paths: &GqyPaths) -> PathBuf {
         migrated_resource_path(paths, &self.prompt.identities_dir)
             .unwrap_or_else(|| config_relative_path(paths, &self.prompt.identities_dir))
     }
 
-    pub fn persona_path(&self, paths: &MiyuPaths, name: &str) -> PathBuf {
+    pub fn persona_path(&self, paths: &GqyPaths, name: &str) -> PathBuf {
         self.prompts_dir_path(paths).join(name)
     }
 
@@ -135,7 +135,7 @@ impl AppConfig {
             || Self::private_persona_scope(&dir).as_deref() == Some(persona)
     }
 
-    pub fn validate_persona_files(&self, paths: &MiyuPaths) -> Result<()> {
+    pub fn validate_persona_files(&self, paths: &GqyPaths) -> Result<()> {
         if self
             .prompt
             .active_persona
@@ -171,11 +171,11 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn identity_path(&self, paths: &MiyuPaths, name: &str) -> PathBuf {
+    pub fn identity_path(&self, paths: &GqyPaths, name: &str) -> PathBuf {
         self.identities_dir_path(paths).join(name)
     }
 
-    pub fn persona_memory_data_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_memory_data_dir(&self, paths: &GqyPaths, persona: &str) -> PathBuf {
         if self.private_scope_matches(persona) {
             if let Some(dir) = self.private_persona_dir() {
                 return dir;
@@ -209,7 +209,7 @@ impl AppConfig {
     /// 表情包(`data/memes/<scope>`)、图库(`pictures/album/<scope>`)、人格
     /// 脚本与技能(`<extensions>/{scripts,skills}/personas/<scope>`)全落在老
     /// 目录里,升级后看起来像数据丢了。
-    pub(crate) fn migrate_degenerate_persona_scope(&self, paths: &MiyuPaths) {
+    pub(crate) fn migrate_degenerate_persona_scope(&self, paths: &GqyPaths) {
         let Some((legacy, scope)) = self.degenerate_persona_scope_rename() else {
             return;
         };
@@ -247,14 +247,14 @@ impl AppConfig {
         }
     }
 
-    pub fn persona_memory_state_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_memory_state_dir(&self, paths: &GqyPaths, persona: &str) -> PathBuf {
         paths
             .state_dir
             .join("personas")
             .join(persona_scope_name(persona))
     }
 
-    pub fn persona_skills_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_skills_dir(&self, paths: &GqyPaths, persona: &str) -> PathBuf {
         if self.private_scope_matches(persona) {
             if let Some(dir) = self.private_persona_dir() {
                 return dir.join("skills");
@@ -266,7 +266,7 @@ impl AppConfig {
             .join(persona_scope_name(persona))
     }
 
-    pub fn persona_scripts_dir(&self, paths: &MiyuPaths, persona: &str) -> PathBuf {
+    pub fn persona_scripts_dir(&self, paths: &GqyPaths, persona: &str) -> PathBuf {
         if self.private_scope_matches(persona) {
             if let Some(dir) = self.private_persona_dir() {
                 return dir.join("scripts");
@@ -278,14 +278,14 @@ impl AppConfig {
             .join(persona_scope_name(persona))
     }
 
-    pub fn active_persona_scripts_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_scripts_dir(&self, paths: &GqyPaths) -> PathBuf {
         self.persona_scripts_dir(paths, self.prompt.active_persona.trim())
     }
 
     /// 内置(system)层的当前人格脚本目录。内置脚本装在
     /// `<system>/personas/<人格>/` 下,自定义人格的子目录不存在=天然拿不到
     /// 内置——人格门是**隐式**的,与 data 层的 personas/ 约定完全一致。
-    pub fn active_persona_system_scripts_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_system_scripts_dir(&self, paths: &GqyPaths) -> PathBuf {
         paths
             .system_scripts_dir
             .join("personas")
@@ -316,7 +316,7 @@ impl AppConfig {
         //
         // 关在配置层而不是各处加 `mode != Dev`:`memory_config()` 是全链
         // 唯一判据,MemoryStore 的读写、联想、前言、工具注册都看它。
-        // 连带:`miyu pop` 弹出的回合不再进逐出库,也就找不回来了。
+        // 连带:`gqy pop` 弹出的回合不再进逐出库,也就找不回来了。
         let uses_top_level = config.memory != MemoryConfig::default();
         let memory = if uses_top_level {
             &mut config.memory
@@ -327,19 +327,19 @@ impl AppConfig {
         config
     }
 
-    pub fn active_persona_memory_data_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_memory_data_dir(&self, paths: &GqyPaths) -> PathBuf {
         self.persona_memory_data_dir(paths, self.prompt.active_persona.trim())
     }
 
-    pub fn active_persona_memory_state_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_memory_state_dir(&self, paths: &GqyPaths) -> PathBuf {
         self.persona_memory_state_dir(paths, self.prompt.active_persona.trim())
     }
 
-    pub fn active_persona_skills_dir(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn active_persona_skills_dir(&self, paths: &GqyPaths) -> PathBuf {
         self.persona_skills_dir(paths, self.prompt.active_persona.trim())
     }
 
-    pub fn active_persona_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn active_persona_prompt(&self, paths: &GqyPaths) -> Result<String> {
         if let Some(dir) = self.private_persona_dir() {
             let path = dir.join("persona.md");
             return std::fs::read_to_string(&path)
@@ -367,7 +367,7 @@ impl AppConfig {
         }
     }
 
-    pub fn user_identity_prompt(&self, paths: &MiyuPaths) -> Result<String> {
+    pub fn user_identity_prompt(&self, paths: &GqyPaths) -> Result<String> {
         if !self.prompt.active_identity.trim().is_empty() {
             let path = self.identity_path(paths, self.prompt.active_identity.trim());
             if path.exists() {
@@ -383,7 +383,7 @@ impl AppConfig {
         Ok(String::new())
     }
 
-    pub fn system_prompt_path(&self, paths: &MiyuPaths) -> PathBuf {
+    pub fn system_prompt_path(&self, paths: &GqyPaths) -> PathBuf {
         let value = self
             .system_prompt_file
             .as_deref()

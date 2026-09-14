@@ -54,7 +54,7 @@ impl Player {
     pub fn start() -> Result<Self> {
         let (tx, rx) = mpsc::channel::<(&'static [u8], f32)>();
         std::thread::Builder::new()
-            .name("miyu-voice-cues".into())
+            .name("gqy-voice-cues".into())
             .spawn(move || {
                 // 输出流按需打开:收到第一个音效才开,连续 30s 没动静就关,
                 // 这样不说话时不挂着音频设备。

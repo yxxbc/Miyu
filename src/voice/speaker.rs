@@ -23,7 +23,7 @@ impl Speaker {
     pub fn start(on_state: Box<dyn Fn(bool) + Send>) -> Result<Self> {
         let (tx, rx) = mpsc::channel::<SpeakerCommand>();
         std::thread::Builder::new()
-            .name("miyu-voice-speaker".into())
+            .name("gqy-voice-speaker".into())
             .spawn(move || run(rx, on_state))
             .context("启动播报线程失败")?;
         Ok(Self { tx })

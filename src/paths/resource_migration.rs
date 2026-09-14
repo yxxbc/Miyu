@@ -62,14 +62,14 @@ pub(crate) fn resource_layout_entries(layout: &Layout) -> Vec<ResourceMigrationE
 
 pub(crate) fn resource_runtime_dir(layout: &Layout) -> PathBuf {
     if cfg!(test) {
-        return layout.state_dir.join("miyu");
+        return layout.state_dir.join("gqy");
     }
     match std::env::var_os("XDG_RUNTIME_DIR") {
         Some(runtime_root) => runtime_dir_for(
             Path::new(&runtime_root),
-            std::env::var_os("MIYU_HOME").as_deref().map(Path::new),
+            std::env::var_os("GQY_HOME").as_deref().map(Path::new),
         ),
-        None => layout.state_dir.join("miyu"),
+        None => layout.state_dir.join("gqy"),
     }
 }
 
@@ -99,7 +99,7 @@ pub(crate) fn resource_layout_marker_exists(layout: &Layout) -> Result<bool> {
 
 pub(crate) fn migrate_resource_layout(layout: &Layout) -> Result<()> {
     if !try_migrate_resource_layout(layout, false)? {
-        bail!("Miyu resource migration is deferred while another daemon or starter is active");
+        bail!("GQY resource migration is deferred while another daemon or starter is active");
     }
     Ok(())
 }
@@ -162,7 +162,7 @@ pub(crate) fn run_journaled_moves(
             return match recovery {
                 Ok(()) => Err(error).with_context(|| {
                     format!(
-                        "migrating Miyu resource from {} to {}",
+                        "migrating GQY resource from {} to {}",
                         entry.source.display(),
                         entry.destination.display()
                     )
@@ -230,7 +230,7 @@ pub(crate) fn preflight_entries(root: &Path, entries: &[ResourceMigrationEntry])
         let source_metadata = fs::symlink_metadata(&entry.source)?;
         if source_metadata.file_type().is_symlink() {
             bail!(
-                "Miyu resource migration refuses symbolic-link source {}",
+                "GQY resource migration refuses symbolic-link source {}",
                 entry.source.display()
             );
         }
@@ -240,7 +240,7 @@ pub(crate) fn preflight_entries(root: &Path, entries: &[ResourceMigrationEntry])
         ensure_resource_same_filesystem(&entry.source, &entry.destination)?;
         match fs::symlink_metadata(&entry.destination) {
             Ok(_) => bail!(
-                "Miyu resource migration destination already exists: {}; move or remove it and retry",
+                "GQY resource migration destination already exists: {}; move or remove it and retry",
                 entry.destination.display()
             ),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
@@ -276,11 +276,11 @@ pub(crate) fn ensure_destination_ancestors_under(root: &Path, destination: &Path
         }
         match fs::symlink_metadata(&current) {
             Ok(metadata) if metadata.file_type().is_symlink() => bail!(
-                "Miyu resource migration refuses symbolic-link destination ancestor {}",
+                "GQY resource migration refuses symbolic-link destination ancestor {}",
                 current.display()
             ),
             Ok(metadata) if !metadata.is_dir() => bail!(
-                "Miyu resource migration destination ancestor is not a directory: {}",
+                "GQY resource migration destination ancestor is not a directory: {}",
                 current.display()
             ),
             Ok(_) => {}
@@ -312,7 +312,7 @@ pub(crate) fn ensure_resource_same_filesystem(source: &Path, destination: &Path)
     };
     if source_device != destination_device {
         bail!(
-            "Miyu resource migration requires source and destination on the same filesystem: {} -> {}",
+            "GQY resource migration requires source and destination on the same filesystem: {} -> {}",
             source.display(),
             destination.display()
         );
@@ -338,7 +338,7 @@ pub(crate) fn ensure_resource_targets_do_not_overlap(
     let nested_source = parent.source.join(relative);
     if entry_exists(&nested_source)? && entry_exists(&child.source)? {
         bail!(
-            "Miyu resource migration found overlapping sources for {} and {}; remove one duplicate and retry",
+            "GQY resource migration found overlapping sources for {} and {}; remove one duplicate and retry",
             nested_source.display(),
             child.source.display()
         );
@@ -401,11 +401,11 @@ pub(crate) fn recover_migration_at(path: &Path) -> Result<()> {
     let mut journal: ResourceMigrationJournal = serde_json::from_str(&raw)
         .with_context(|| format!("parsing resource migration journal {}", path.display()))?;
     if journal.moved > journal.entries.len() {
-        bail!("invalid Miyu resource migration journal: moved count is out of range");
+        bail!("invalid GQY resource migration journal: moved count is out of range");
     }
     if let Some(index) = journal.pending {
         if index != journal.moved || index >= journal.entries.len() {
-            bail!("invalid Miyu resource migration journal: pending index is out of range");
+            bail!("invalid GQY resource migration journal: pending index is out of range");
         }
         let entry = &journal.entries[index];
         match (
@@ -418,12 +418,12 @@ pub(crate) fn recover_migration_at(path: &Path) -> Result<()> {
                 journal.pending = None;
             }
             (true, true) => bail!(
-                "cannot recover Miyu resource migration because both paths exist: {} and {}",
+                "cannot recover GQY resource migration because both paths exist: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),
             (false, false) => bail!(
-                "cannot recover Miyu resource migration because both paths are missing: {} and {}",
+                "cannot recover GQY resource migration because both paths are missing: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),
@@ -440,7 +440,7 @@ pub(crate) fn recover_migration_at(path: &Path) -> Result<()> {
             (false, true) => {
                 atomic_resource_move(&entry.destination, &entry.source).with_context(|| {
                     format!(
-                        "rolling back Miyu resource migration from {} to {}",
+                        "rolling back GQY resource migration from {} to {}",
                         entry.destination.display(),
                         entry.source.display()
                     )
@@ -448,12 +448,12 @@ pub(crate) fn recover_migration_at(path: &Path) -> Result<()> {
             }
             (true, false) => {}
             (true, true) => bail!(
-                "cannot recover Miyu resource migration because both paths exist: {} and {}",
+                "cannot recover GQY resource migration because both paths exist: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),
             (false, false) => bail!(
-                "cannot recover Miyu resource migration because both paths are missing: {} and {}",
+                "cannot recover GQY resource migration because both paths are missing: {} and {}",
                 entry.source.display(),
                 entry.destination.display()
             ),

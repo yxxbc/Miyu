@@ -2,7 +2,7 @@
 //!
 //! 语音段本身只有一个文件名,模型看不见内容。这里在建 inbound_event 之前
 //! 把它转成文字接进正文:NapCat `get_record`(要 wav)→ daemon 的语音前端
-//! (`miyu-voice`,SenseVoice)转写 → `[语音] 文本`。语音前端没开、没装、
+//! (`gqy-voice`,SenseVoice)转写 → `[语音] 文本`。语音前端没开、没装、
 //! 取不到文件、转写失败——一律静默退化成 `[语音消息]` 占位,不打扰任何人
 //! (09-05 用户裁定:缺东西应该静默)。转过的语音段从 media 里摘掉,免得
 //! 历史库里 `[语音] 文本` 后面再挂一个 `[audio id=…]`。
@@ -43,7 +43,7 @@ pub(in crate::platforms::onebot) async fn attach_voice_transcripts(
                 Ok(text) => text,
                 Err(error) => {
                     tracing::debug!(
-                        target: "miyu::qq",
+                        target: "gqy::qq",
                         error = %error,
                         file = ?media.id,
                         "{}",

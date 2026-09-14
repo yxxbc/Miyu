@@ -20,7 +20,7 @@ fn account_json(account: &crate::state::Account) -> Value {
 }
 
 /// 成员控制台该露哪些面板:私有人格按它的清单(记忆开了才有记忆面板,
-/// 插件勾了才有对应面板);用共享 Miyu 时知识库/账本仍是成员自己家里的,
+/// 插件勾了才有对应面板);用共享 顾清影 时知识库/账本仍是成员自己家里的,
 /// 记忆库与表情包库是共享的,不给。
 pub(in crate::web) fn member_dashboards(
     config: &AppConfig,
@@ -110,7 +110,7 @@ pub(in crate::web) fn identity_json(identity: &WebIdentity) -> Value {
 
 /// 某个登录者的档案文件:管理员(含只填口令的机器级管理员)是属主档案,
 /// 成员是自己家目录里的 profile.md。
-pub(in crate::web) fn profile_file_for(paths: &MiyuPaths, identity: &WebIdentity) -> PathBuf {
+pub(in crate::web) fn profile_file_for(paths: &GqyPaths, identity: &WebIdentity) -> PathBuf {
     if identity.admin {
         paths.profile_file()
     } else {
@@ -504,7 +504,7 @@ pub(in crate::web) async fn account_personas(
         &state.paths,
     )
     .into_iter()
-    // 成员的私有人格不给 Miyu 的内置配件技能,只列目录里的。
+    // 成员的私有人格不给 顾清影 的内置配件技能,只列目录里的。
     .filter(|(_, _, builtin)| !builtin)
     .map(|(name, description, _)| json!({ "id": name, "label": name, "hint": description }))
     .collect::<Vec<_>>();
@@ -791,7 +791,7 @@ pub(in crate::web) async fn account_persona_image_delete(
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(in crate::web) struct ActivePersonaRequest {
-    /// None / null = 共享 Miyu。
+    /// None / null = 共享 顾清影。
     #[serde(default)]
     pub(in crate::web) slug: Option<String>,
     /// 顺手把引导标成做完。
@@ -838,7 +838,7 @@ pub(in crate::web) async fn account_active_persona(
 }
 
 /// 切了人格,成员那些还没聊过的空会话跟着换人格;一个空的都没有就新建一条,
-/// 这样「新建了 Eris,回到聊天还是 Miyu」不会再发生(09-10 反馈)。有历史的
+/// 这样「新建了 Eris,回到聊天还是 顾清影」不会再发生(09-10 反馈)。有历史的
 /// 会话保持原人格——它们的对话是按那个人格聊出来的。
 fn retarget_member_sessions(state: &DaemonState, identity: &WebIdentity, scope: &str) {
     let owner = identity.owner_key();

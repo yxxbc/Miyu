@@ -158,10 +158,10 @@ fn admin_home_names_follow_username_rules() {
 }
 
 #[test]
-fn miyu_paths_resolve_owner_data_through_the_marker() {
+fn gqy_paths_resolve_owner_data_through_the_marker() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".miyu");
-    let paths = MiyuPaths {
+    let root = temp.path().join(".gqy");
+    let paths = GqyPaths {
         root_dir: root.clone(),
         config_dir: root.join("config"),
         config_file: root.join("config/config.jsonc"),
@@ -170,7 +170,7 @@ fn miyu_paths_resolve_owner_data_through_the_marker() {
         cache_dir: root.join("cache"),
         state_dir: root.join("state"),
         pictures_dir: root.join("home/shorin/pictures"),
-        fish_hook_file: root.join("fish/miyu.fish"),
+        fish_hook_file: root.join("fish/gqy.fish"),
         bash_hook_file: root.join("config/shell/bash-hook.sh"),
         zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
         scripts_dir: root.join("extensions/scripts"),

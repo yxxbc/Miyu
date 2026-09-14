@@ -15,10 +15,10 @@ impl Agent {
         let Some(context_window) = self.context_window() else {
             // 窗口解析失败(池里有 config 查不到的 provider,Err 被 .ok() 吞掉)
             // 会静默关闭裁剪——68 万 token 膨胀事故的候选路径之一。日志打在
-            // miyu::qq 这条 target 上:默认日志级别只有它是 INFO,打在别处等于
+            // gqy::qq 这条 target 上:默认日志级别只有它是 INFO,打在别处等于
             // 没打(08-26 实证:昨天布的观测一行都没写出来)。
             tracing::warn!(
-                target: "miyu::qq",
+                target: "gqy::qq",
                 "{}",
                 crate::i18n::text(
                     "context trim disabled: no context window could be resolved",
@@ -59,7 +59,7 @@ impl Agent {
         // 观测(08-25 膨胀取证:群会话 68 万 token 未被裁剪,归档 07:42 后
         // 静默停摆):水位越线的每次裁剪把门内数字全部留痕,零归档时告警。
         tracing::info!(
-            target: "miyu::qq",
+            target: "gqy::qq",
             total,
             trigger,
             evict_to = target,
@@ -70,7 +70,7 @@ impl Agent {
         );
         if count > 0 && turns.is_empty() {
             tracing::warn!(
-                target: "miyu::qq",
+                target: "gqy::qq",
                 planned = count,
                 "{}",
                 crate::i18n::text(

@@ -10,7 +10,7 @@ use crate::memory::*;
 
 fn session_store(
     config: &AppConfig,
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::GqyPaths,
     session: &str,
 ) -> MemoryStore {
     MemoryStore::new(config, paths).with_session_id(session)

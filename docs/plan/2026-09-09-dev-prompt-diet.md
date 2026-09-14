@@ -2,9 +2,9 @@
 
 目标：**减少 dev 模式下模型看到的一切提示词**（system 段、工具目录、逐轮注入），让模型少受与编码无关的指令干扰。不是单纯省 token——凡是「dev 里没有对象」的文本都要退场。
 
-基线提交：`1ffa72d9`，二进制 `target/release/miyu`。
+基线提交：`1ffa72d9`，二进制 `target/release/gqy`。
 
-## 一、实测基线（隔离 MIYU_HOME + 桩 LLM，抓完整请求体）
+## 一、实测基线（隔离 GQY_HOME + 桩 LLM，抓完整请求体）
 
 dev 一轮的固定开销（直连线，OpenAI 兼容协议）：
 
@@ -21,7 +21,7 @@ dev 侧的 mode reminder / style-lock / LaTeX / voice-protocol / persona-reminde
 
 工具目录拆解：描述 1,160 tok / schema 2,238 tok / JSON 壳 344 tok。schema 无水分，可省的是**整件工具**。
 
-claude-code 中转线（用户当前活跃模型 opus）：Miyu 用 `--system-prompt` 整体替换掉 CC 官方提示词，模型看到的是 CC 原生工具面 + MCP 桥挂进去的 **11 件 Miyu 工具 ≈2,890 tok**（`mcp-serve` tools/list 实测）。
+claude-code 中转线（用户当前活跃模型 opus）：顾清影 用 `--system-prompt` 整体替换掉 CC 官方提示词，模型看到的是 CC 原生工具面 + MCP 桥挂进去的 **11 件 顾清影 工具 ≈2,890 tok**（`mcp-serve` tools/list 实测）。
 
 ## 二、五项改动
 
@@ -35,7 +35,7 @@ claude-code 中转线（用户当前活跃模型 opus）：Miyu 用 `--system-pr
 | `skills/personas/default/` | ✅ 出现 |
 | `skills/`（全局） | ✅ 出现 |
 
-根因：`src/tools/mod.rs` 的 `build_tool_registry` 调 `register_skills(&mut registry, config, paths)` 传的是**未经 `dev_scoped()` 的 config**，于是 `skill_roots` 的 persona 根解析成默认人格。dev 看得见 Miyu 人格的技能（真机上是 `douyin-tiktok-dl`、`gpu-passthrough`），自己的目录反而没被扫。而 dev 又没有 `manage_skill`（authoring 仅 Normal），拿到 `load_skill` 也只能加载「怎么写 Miyu 技能」。
+根因：`src/tools/mod.rs` 的 `build_tool_registry` 调 `register_skills(&mut registry, config, paths)` 传的是**未经 `dev_scoped()` 的 config**，于是 `skill_roots` 的 persona 根解析成默认人格。dev 看得见 顾清影 人格的技能（真机上是 `douyin-tiktok-dl`、`gpu-passthrough`），自己的目录反而没被扫。而 dev 又没有 `manage_skill`（authoring 仅 Normal），拿到 `load_skill` 也只能加载「怎么写 顾清影 技能」。
 
 **做法**：`build_tool_registry` 里 `register_skills` 只对 `AgentMode::Normal` 调用。不修作用域——修好了 dev 也只是看见一个空目录。dev 要用技能，用户在 `config/dev-prompt.md` 自己写一行路径即可（那本来就是给用户编辑的文件），不进代码、不占每轮字节。
 
@@ -51,7 +51,7 @@ claude-code 中转线（用户当前活跃模型 opus）：Miyu 用 `--system-pr
 
 ### P3 search_evicted_context 条件注册（直连 −110 / 桥 −102）
 
-**依据**：`remember_evicted_turns` 的唯一上游是 `archive_and_delete_visible_turns`，其调用者只有三处——`trim_visible_context`（`agent/history.rs:82`）、`miyu pop`（`cli/pop_cmds.rs:147`）、WebUI 删轮（`web/actor/mod.rs:346`）。而 `trim_visible_context` 只在 `on_overflow="pop"` 档跑（`agent/pruning.rs:279`）。用户配置是 `compact`，compact 走摘要不写 evicted 库 → **该工具在实际配置下永远查不到东西**，还会诱导模型空跑一次。
+**依据**：`remember_evicted_turns` 的唯一上游是 `archive_and_delete_visible_turns`，其调用者只有三处——`trim_visible_context`（`agent/history.rs:82`）、`gqy pop`（`cli/pop_cmds.rs:147`）、WebUI 删轮（`web/actor/mod.rs:346`）。而 `trim_visible_context` 只在 `on_overflow="pop"` 档跑（`agent/pruning.rs:279`）。用户配置是 `compact`，compact 走摘要不写 evicted 库 → **该工具在实际配置下永远查不到东西**，还会诱导模型空跑一次。
 
 **缓存**：三条写入路径全是「删可见历史」，那一轮前缀必然断；工具面在同一轮内改（`turn_loop/mod.rs` 取 `definitions()` 之前有技能目录刷新的先例）→ 注册时机与断裂时机重合，零额外损失。
 
@@ -61,7 +61,7 @@ claude-code 中转线（用户当前活跃模型 opus）：Miyu 用 `--system-pr
 
 ### P4 BRIDGE_DUPLICATE_TOOLS 补 edit（桥 −148）
 
-原以为代价是 diff 渲染，**实测推翻**：diff 卡片走 progress 侧信道（`tools/apply_patch.rs` 发 `ToolProgressEvent::Message("__patch_preview__…")`），而桥的 progress 只转发 `Image`/`Artifact`/`PrepareForExternalOutput`（`web/bridge_progress.rs`），`Message` 直接丢弃；工具结果回程还要过 `shape_remote_output` 的 `compact_line` 压成一行。**中转线上 `mcp__miyu__edit` 本来就没有 diff**，补进去重清单零功能损失。直连线的 `edit` 保留不动。
+原以为代价是 diff 渲染，**实测推翻**：diff 卡片走 progress 侧信道（`tools/apply_patch.rs` 发 `ToolProgressEvent::Message("__patch_preview__…")`），而桥的 progress 只转发 `Image`/`Artifact`/`PrepareForExternalOutput`（`web/bridge_progress.rs`），`Message` 直接丢弃；工具结果回程还要过 `shape_remote_output` 的 `compact_line` 压成一行。**中转线上 `mcp__gqy__edit` 本来就没有 diff**，补进去重清单零功能损失。直连线的 `edit` 保留不动。
 
 **落点**：`src/llm/openai_compatible/claude_code/mod.rs` 的 `BRIDGE_DUPLICATE_TOOLS`。codex/antigravity 是否同补见「待拍板」。
 
@@ -95,7 +95,7 @@ P5 的每轮块缩减不计入上表（随会话增长）。
 
 - **P5 作废，改成「dev 不带记忆」**：不是「联想只留事实」，而是整套退场——记忆工具、联想注入、自动日记、`<associative-memory>` 前言。落点收在 `dev_scoped()` 的 `memory.enabled = false`，`memory_config()` 是全链唯一判据，一处关全链停。
 - **P3 随之作废**：`search_evicted_context` 本来就注册在 `memory::register` 里，跟着记忆一起走，不需要单独的情境判据。`Agent` 上的情境化工具机制保留，现在只服务 `load_tools`。
-- **连带**：dev 的 `miyu pop` 不再把弹出的回合写进逐出库，也就找不回来了。清理入口不受影响——`reset_all` 不看 `enabled`，关掉之前写下的旧记忆照样清得掉（已加回归用例）。
+- **连带**：dev 的 `gqy pop` 不再把弹出的回合写进逐出库，也就找不回来了。清理入口不受影响——`reset_all` 不看 `enabled`，关掉之前写下的旧记忆照样清得掉（已加回归用例）。
 - **未做**：normal 侧的 `search_evicted_context` 同样在 `compact` 档下查不到东西，本次不动；`codex`/`antigravity` 的桥去重清单是否同补 `edit` 待定（两条线各有一份常量，原生编辑工具的语义要另外核实）。
 
 ## 五、测试（AGENTS.md §5.1：先证明不修时报红）

@@ -40,7 +40,7 @@ impl OpenAiCompatibleClient {
         }
     }
 
-    pub fn from_config(config: &AppConfig, paths: &MiyuPaths) -> Result<Self> {
+    pub fn from_config(config: &AppConfig, paths: &GqyPaths) -> Result<Self> {
         crate::llm::cache_log::configure(paths, &config.cache);
         let endpoints = llm_endpoints(config, paths)?;
         let first = endpoints
@@ -78,7 +78,7 @@ impl OpenAiCompatibleClient {
     /// the shared endpoint scheduler, exactly like the main model pool.
     pub fn from_choices(
         config: &AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         choices: &[crate::config::ProviderModelChoice],
     ) -> Result<Self> {
         crate::llm::cache_log::configure(paths, &config.cache);
@@ -181,7 +181,7 @@ impl OpenAiCompatibleClient {
     /// load-balance, so the endpoint that actually answers may differ.
     pub fn from_tier(
         config: &AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         tier: crate::config::ModelTier,
     ) -> Result<TierClient> {
         let pool = config.tier_choices(tier);
@@ -221,7 +221,7 @@ impl OpenAiCompatibleClient {
     /// so every role consumer gets the same warning without repeating it.
     pub fn from_aux_role(
         config: &AppConfig,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         role: crate::config::AuxRole,
     ) -> Result<Self> {
         let Some(tier) = config.model_tiers.role_tier(role) else {
@@ -234,7 +234,7 @@ impl OpenAiCompatibleClient {
         Ok(routed.client)
     }
 
-    pub fn new(provider: &ProviderConfig, config: &AppConfig, paths: &MiyuPaths) -> Result<Self> {
+    pub fn new(provider: &ProviderConfig, config: &AppConfig, paths: &GqyPaths) -> Result<Self> {
         if !provider.enabled {
             bail!(
                 "{}: {}",
@@ -422,7 +422,7 @@ impl OpenAiCompatibleClient {
         }
     }
 
-    /// Agent 构造时声明会话模式:claude-code 的原生工具/Miyu 工具双作用域
+    /// Agent 构造时声明会话模式:claude-code 的原生工具/顾清影 工具双作用域
     /// (off/dev/normal/all)按它裁决。其他协议不受影响。
     pub fn with_claude_code_dev_mode(mut self, dev: bool) -> Self {
         self.claude_code_dev_mode = dev;

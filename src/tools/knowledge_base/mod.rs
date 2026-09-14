@@ -12,7 +12,7 @@ use store::*;
 
 use super::{ToolRegistry, ToolSpec};
 use crate::config::{AppConfig, KnowledgeBasePluginConfig};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Context, Result};
 use chrono::Local;
 use rusqlite::{params, Connection};
@@ -27,7 +27,7 @@ use tokio::process::Command;
 // 08-21 Edit/Read 统一(用户裁定):upload/edit/remove/read 四个 CRUD 工具退场,
 // 写走统一 `edit` 的 kb: 命名空间(apply_patch.rs 路由回本模块的 import_file/
 // remove,索引钩子不绕过),读走统一 `read` 的 kb: 前缀。只留语义检索。
-pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     register_readonly(registry, config.clone(), paths.clone());
     // 08-21 二次裁定:知识库写入独立成 `kb` 工具(补丁语义,域名即广告)。
     if config.plugins.knowledge_base.upload_tool_enabled {
@@ -35,7 +35,7 @@ pub fn register(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths
     }
 }
 
-pub fn register_readonly(registry: &mut ToolRegistry, config: AppConfig, paths: MiyuPaths) {
+pub fn register_readonly(registry: &mut ToolRegistry, config: AppConfig, paths: GqyPaths) {
     registry.register(ToolSpec::new(
         "search_knowledge_base",
         // 内容检索与文件名检索合并(08-17):同一个知识库的两种检索口径,
@@ -78,7 +78,7 @@ pub struct KnowledgeBase {
 }
 
 impl KnowledgeBase {
-    pub fn new(config: AppConfig, paths: MiyuPaths) -> Result<Self> {
+    pub fn new(config: AppConfig, paths: GqyPaths) -> Result<Self> {
         let root = kb_root_for(&config, &paths);
         let files_dir = root.join("files");
         let meta_db = root.join("kb_meta.db");
@@ -175,7 +175,7 @@ impl KnowledgeBase {
     }
 }
 
-async fn tool_search_readonly(args: Value, config: AppConfig, paths: MiyuPaths) -> Result<String> {
+async fn tool_search_readonly(args: Value, config: AppConfig, paths: GqyPaths) -> Result<String> {
     ensure_enabled(&config)?;
     let query = args
         .get("query")
@@ -195,7 +195,7 @@ async fn tool_search_readonly(args: Value, config: AppConfig, paths: MiyuPaths) 
         .to_string())
 }
 
-async fn tool_find_readonly(args: Value, config: AppConfig, paths: MiyuPaths) -> Result<String> {
+async fn tool_find_readonly(args: Value, config: AppConfig, paths: GqyPaths) -> Result<String> {
     ensure_enabled(&config)?;
     // 合并后统一用 query;file_name_query 保留为兼容别名。
     let query = args
@@ -219,10 +219,10 @@ async fn tool_find_readonly(args: Value, config: AppConfig, paths: MiyuPaths) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::paths::MiyuPaths;
+    use crate::paths::GqyPaths;
 
     #[test]
-    fn upload_guard_only_blocks_miyu_own_assets() {
+    fn upload_guard_only_blocks_gqy_own_assets() {
         // 正经资料照收。退回这个提交之前,这四篇全被挡在门外——正文里出现
         // config / memory / 配置 / 记忆 就够了。
         for (name, body) in [
@@ -235,10 +235,10 @@ mod tests {
                 .unwrap_or_else(|error| panic!("{name} should be accepted: {error}"));
         }
 
-        // Miyu 自己的资产仍然挡下。
+        // 顾清影 自己的资产仍然挡下。
         for name in [
             "skills/my-skill/SKILL.md",
-            "personas/miyu/persona.md",
+            "personas/gqy/persona.md",
             "config.toml",
         ] {
             assert!(
@@ -247,7 +247,7 @@ mod tests {
             );
         }
         assert!(reject_non_kb_upload(
-            "---\nname: helper\ndescription: x\nmetadata:\n  miyu.generated: \"true\"\n---\n",
+            "---\nname: helper\ndescription: x\nmetadata:\n  gqy.generated: \"true\"\n---\n",
             "",
             "notes/helper.md"
         )
@@ -256,7 +256,7 @@ mod tests {
 
     /// 09-09 实机事故留桩：数据目录搬家之后，库里那一列绝对路径就烂了。
     ///
-    /// `~/.local/share/miyu` → `~/.miyu/data` 那次老布局迁移把文件搬过去了，却
+    /// `~/.local/share/gqy` → `~/.gqy/data` 那次老布局迁移把文件搬过去了，却
     /// 没有重写 `files.path`。用户库里 6426 条记录全指着不存在的旧根，重建语义
     /// 索引时每个文件都是 `No such file or directory`，而面板上文件明明还在。
     /// 落盘位置必须由 `name` 现算——它是主键、也是相对 `files/` 的路径。
@@ -350,8 +350,8 @@ mod tests {
         assert_eq!(roots[0], roots[1], "库根跟着人格走了");
     }
 
-    pub(super) fn test_paths(root: &Path) -> MiyuPaths {
-        MiyuPaths {
+    pub(super) fn test_paths(root: &Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -360,7 +360,7 @@ mod tests {
             cache_dir: root.join("cache"),
             state_dir: root.join("state"),
             pictures_dir: root.join("pictures"),
-            fish_hook_file: root.join("fish/conf.d/miyu.fish"),
+            fish_hook_file: root.join("fish/conf.d/gqy.fish"),
             bash_hook_file: root.join("config/shell/bash-hook.sh"),
             zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
             scripts_dir: root.join("config/scripts"),

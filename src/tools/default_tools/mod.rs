@@ -26,7 +26,7 @@ pub fn register(
     registry: &mut ToolRegistry,
     allow_command_execution: bool,
     config: &crate::config::AppConfig,
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::GqyPaths,
 ) {
     register_readonly(registry, config, paths);
     register_run_command(registry, allow_command_execution);
@@ -56,7 +56,7 @@ pub fn register_run_command(registry: &mut ToolRegistry, allow_command_execution
 pub fn register_readonly(
     registry: &mut ToolRegistry,
     config: &crate::config::AppConfig,
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::GqyPaths,
 ) {
     registry.register(ToolSpec::new(
         "check_os_info",
@@ -97,7 +97,7 @@ pub fn register_readonly(
 fn read_dispatch(
     mut args: Value,
     config: &crate::config::AppConfig,
-    paths: &crate::paths::MiyuPaths,
+    paths: &crate::paths::GqyPaths,
 ) -> Result<String> {
     let path_arg = args
         .get("path")

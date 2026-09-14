@@ -15,7 +15,7 @@
        每个 code[class*=language-];我们只借它的分词器,DOM 由 highlight.js 亲手搭。 -->
   <script defer src="/vendor/prism/prism.min.js" data-manual></script>
   <script defer src="/highlight.js"></script>
-  <!-- 命令层要先于 app.js 就位:app.js 初始化时就会调 MiyuCommands.load -->
+  <!-- 命令层要先于 app.js 就位:app.js 初始化时就会调 GqyCommands.load -->
   <script defer src="/commands.js"></script>
   <script defer src="/lightbox.js"></script>
   <script defer src="/preview.js"></script>
@@ -52,7 +52,7 @@
     <aside class="sidebar" id="sidebar" aria-label="会话">
       <header class="brand-row">
         <div class="brand-identity">
-          <img src="/assets/miyu-logo.png" alt="顾清影" class="brand-avatar" id="brandAvatar">
+          <img src="/assets/gqy-logo.png" alt="顾清影" class="brand-avatar" id="brandAvatar">
           <div>
             <strong id="brandName">顾清影</strong>
             <span><i class="status-dot is-connecting" id="sidebarStatusDot"></i><span id="sidebarConnectionStatus">连接中</span></span>
@@ -119,7 +119,7 @@
           </div>
 
           <section class="blocked-state" id="blockedState" aria-labelledby="blockedTitle" hidden>
-            <img src="/assets/miyu-logo.png" alt="" aria-hidden="true">
+            <img src="/assets/gqy-logo.png" alt="" aria-hidden="true">
             <h1 id="blockedTitle">登录顾清影</h1>
             <p id="blockedMessage">输入访问密码以继续。</p>
             <form class="login-form" id="loginForm" hidden novalidate>
@@ -205,7 +205,7 @@
 
           <section class="empty-state" id="emptyState" aria-labelledby="emptyTitle" hidden>
             <div class="empty-visual" id="emptyVisual">
-              <img id="emptyBoardImage" src="/assets/miyuwallpaper.png" alt="顾清影 看板图片" decoding="async">
+              <img id="emptyBoardImage" src="/assets/gqywallpaper.png" alt="顾清影 看板图片" decoding="async">
             </div>
             <div class="empty-copy">
               <span class="empty-kicker"><i class="status-dot"></i><span id="emptyKickerName">顾清影</span></span>

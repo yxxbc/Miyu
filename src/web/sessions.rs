@@ -76,7 +76,7 @@ pub(in crate::web) fn member_current_session(
     Ok(record.session_id)
 }
 
-/// 成员新会话挂哪个人格:settings 里指着自己的私有人格就用它的 scope,否则共享 Miyu。
+/// 成员新会话挂哪个人格:settings 里指着自己的私有人格就用它的 scope,否则共享 顾清影。
 pub(in crate::web) fn member_session_persona(state: &DaemonState, owner: &str) -> String {
     let username = state
         .state_store
@@ -636,7 +636,7 @@ pub(in crate::web) fn fallback_session_id(
 }
 
 /// 普通人格 + dev 保留人格的本地会话合并,按更新时间排。WebUI 侧栏与
-/// `miyu session` 管理面共用:mode 字段(session_record_json)区分分组。
+/// `gqy session` 管理面共用:mode 字段(session_record_json)区分分组。
 pub(in crate::web) fn sessions_with_dev(
     store: &StateStore,
     persona: &str,
@@ -812,7 +812,7 @@ pub(in crate::web) async fn reset_conversation(
 /// detached on the actor's LocalSet — never blocks the turn.
 pub(in crate::web) fn spawn_session_title_refinement(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     store: &StateStore,
     events: &EventHub,
     fallback: String,
@@ -1015,7 +1015,7 @@ pub(in crate::web) fn apply_session_model_override_to(
 
 pub(in crate::web) fn build_session_agent(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     state: &StateStore,
     mode: AgentMode,
 ) -> Result<Agent> {

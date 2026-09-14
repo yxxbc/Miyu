@@ -1,14 +1,14 @@
 #!/bin/bash
 # 自定义模型（n 添加 / Tab 激活 / Enter 编辑 / d 删除）的逐屏抓图。
-# 用法: MIYU_BIN=<二进制> custom-model-shoot.sh <lang> <outdir> <home>
+# 用法: GQY_BIN=<二进制> custom-model-shoot.sh <lang> <outdir> <home>
 LANG_ARG="${1:-zh_CN.UTF-8}"
 OUT="${2:-/tmp/custom-model-shots}"
 HOME_DIR="${3:-$OUT/home}"
 mkdir -p "$OUT" "$HOME_DIR"
-BIN="${MIYU_BIN:-$(dirname "$0")/../../target/debug/miyu}"
-S=miyucm$$
+BIN="${GQY_BIN:-$(dirname "$0")/../../target/debug/gqy}"
+S=gqycm$$
 tmux kill-session -t "$S" 2>/dev/null
-tmux new-session -d -s "$S" -x 110 -y 40 "env MIYU_HOME=$HOME_DIR XDG_RUNTIME_DIR=$HOME_DIR/xdg-run MIYU_LANG=$LANG_ARG TERM=xterm-256color $BIN config"
+tmux new-session -d -s "$S" -x 110 -y 40 "env GQY_HOME=$HOME_DIR XDG_RUNTIME_DIR=$HOME_DIR/xdg-run GQY_LANG=$LANG_ARG TERM=xterm-256color $BIN config"
 cap() { sleep 0.6; tmux capture-pane -p -t "$S" > "$OUT/$1.txt"; echo "captured $1"; }
 key() { tmux send-keys -t "$S" "$@"; sleep 0.4; }
 type_text() { tmux send-keys -t "$S" -l "$1"; sleep 0.4; }

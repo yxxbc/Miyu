@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""用 pyte 在 PTY 里驱动真二进制的 `miyu oobe`，逐屏抓下来打印。
+"""用 pyte 在 PTY 里驱动真二进制的 `gqy oobe`，逐屏抓下来打印。
 
 用法: python3 drive.py [binary] [cols] [rows]
 
 抓的是「终端真正显示成什么样」，不是程序以为自己画了什么——中文宽度、两列对齐、
-滚动视口的边界都能在这里现形。跑在一个临时 MIYU_HOME 里，不碰真配置；
-MIYU_OOBE_NO_IME=1 免得反复开关真输入法。
+滚动视口的边界都能在这里现形。跑在一个临时 GQY_HOME 里，不碰真配置；
+GQY_OOBE_NO_IME=1 免得反复开关真输入法。
 
 走一遍：欢迎 → 人格（自己捏，起名）→ 功能（关一项）→ 认识你 → 终端（不装）
 → 接模型（opencode Zen，会真的联网拉目录；没网就停在报错那屏）→ Ctrl+S 跳过收尾。
@@ -16,21 +16,21 @@ import fcntl, os, pty, select, struct, sys, tempfile, termios, time
 import pyte
 
 BIN = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..", "target", "debug", "miyu"
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "target", "debug", "gqy"
 )
 COLS = int(sys.argv[2]) if len(sys.argv) > 2 else 90
 ROWS = int(sys.argv[3]) if len(sys.argv) > 3 else 34
 
-home = tempfile.mkdtemp(prefix="miyu-oobe-")
+home = tempfile.mkdtemp(prefix="gqy-oobe-")
 screen = pyte.Screen(COLS, ROWS)
 stream = pyte.ByteStream(screen)
 
 pid, fd = pty.fork()
 if pid == 0:
     os.environ["TERM"] = "xterm-256color"
-    os.environ["MIYU_HOME"] = home
-    os.environ["MIYU_OOBE_NO_IME"] = "1"
-    os.environ["MIYU_OOBE_VERBOSE"] = "1"
+    os.environ["GQY_HOME"] = home
+    os.environ["GQY_OOBE_NO_IME"] = "1"
+    os.environ["GQY_OOBE_VERBOSE"] = "1"
     os.environ["LANG"] = "zh_CN.UTF-8"
     os.execvp(BIN, [BIN, "oobe"])
 fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))

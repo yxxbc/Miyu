@@ -15,7 +15,7 @@ use ort::value::Tensor;
 use std::path::{Path, PathBuf};
 use tokenizers::Tokenizer;
 
-pub(crate) const RUNTIME_LIB_ENV: &str = "MIYU_ONNXRUNTIME_LIB";
+pub(crate) const RUNTIME_LIB_ENV: &str = "GQY_ONNXRUNTIME_LIB";
 
 #[cfg(target_os = "macos")]
 const RUNTIME_LIB_FILE: &str = "libonnxruntime.dylib";
@@ -33,8 +33,8 @@ pub(crate) fn candidate_runtime_libs() -> Vec<PathBuf> {
         .collect();
     candidate_runtime_libs_from(
         &overrides,
-        crate::paths::miyu_home_dir().as_deref(),
-        crate::paths::miyu_executable().ok().as_deref(),
+        crate::paths::gqy_home_dir().as_deref(),
+        crate::paths::gqy_executable().ok().as_deref(),
         RUNTIME_LIB_FILE,
     )
 }
@@ -50,7 +50,7 @@ fn candidate_runtime_libs_from(
         candidates.push(home.join("lib").join(filename));
     }
     if let Some(prefix) = crate::paths::resources::installation_prefix(executable) {
-        candidates.push(prefix.join("lib/miyu").join(filename));
+        candidates.push(prefix.join("lib/gqy").join(filename));
     }
     for dir in [
         "/usr/lib",
@@ -88,7 +88,7 @@ impl LocalEncoder {
                 runtime_lib.display()
             )
         })?;
-        environment.with_name("miyu").commit();
+        environment.with_name("gqy").commit();
         let tokenizer_path = model.tokenizer_path();
         let mut tokenizer = Tokenizer::from_file(&tokenizer_path)
             .map_err(|error| anyhow!("loading {}: {error}", tokenizer_path.display()))?;
@@ -244,8 +244,8 @@ mod distribution_resources {
         ];
         let paths = candidate_runtime_libs_from(
             &overrides,
-            Some(Path::new("/miyu-home")),
-            Some(Path::new("/安装 prefix/bin/miyu")),
+            Some(Path::new("/gqy-home")),
+            Some(Path::new("/安装 prefix/bin/gqy")),
             "libonnxruntime.so",
         );
         assert_eq!(
@@ -253,8 +253,8 @@ mod distribution_resources {
             &[
                 PathBuf::from("/explicit/lib.so"),
                 PathBuf::from("/ort-dylib/lib.so"),
-                PathBuf::from("/miyu-home/lib/libonnxruntime.so"),
-                PathBuf::from("/安装 prefix/lib/miyu/libonnxruntime.so"),
+                PathBuf::from("/gqy-home/lib/libonnxruntime.so"),
+                PathBuf::from("/安装 prefix/lib/gqy/libonnxruntime.so"),
             ]
         );
         assert_eq!(paths[4], Path::new("/usr/lib/libonnxruntime.so"));
@@ -287,12 +287,12 @@ mod distribution_resources {
         let paths = candidate_runtime_libs_from(
             &[],
             None,
-            Some(Path::new("/opt/homebrew/Cellar/miyu/0.6.0/bin/miyu")),
+            Some(Path::new("/opt/homebrew/Cellar/gqy/0.6.0/bin/gqy")),
             "libonnxruntime.dylib",
         );
         assert_eq!(
             paths[0],
-            Path::new("/opt/homebrew/Cellar/miyu/0.6.0/lib/miyu/libonnxruntime.dylib")
+            Path::new("/opt/homebrew/Cellar/gqy/0.6.0/lib/gqy/libonnxruntime.dylib")
         );
         assert!(paths.contains(&PathBuf::from(
             "/opt/homebrew/opt/onnxruntime/lib/libonnxruntime.dylib"

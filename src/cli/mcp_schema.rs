@@ -1,10 +1,10 @@
 //! MCP 桥对外吐的工具 schema 按上游模型方言整形。
 //!
-//! Miyu 的工具 schema 是给 OpenAI/Anthropic 线写的,那两家对 JSON Schema 来
+//! 顾清影 的工具 schema 是给 OpenAI/Anthropic 线写的,那两家对 JSON Schema 来
 //! 者不拒;Gemini 的 function declaration 校验严得多——`enum` 里有空串直接
 //! 400(`properties[site].enum[4]: cannot be empty`,09-03 antigravity 中转首跑
 //! 撞上),`type` 不能是数组,`additionalProperties`/`pattern`/`default` 这些键
-//! 不认。整形只发生在桥上、只在拉起方点名 `MIYU_MCP_SCHEMA_DIALECT=gemini`
+//! 不认。整形只发生在桥上、只在拉起方点名 `GQY_MCP_SCHEMA_DIALECT=gemini`
 //! 时——工具自己的 schema 一个字不改,别的供应商照旧。
 
 use serde_json::{json, Map, Value};

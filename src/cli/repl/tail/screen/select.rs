@@ -238,12 +238,12 @@ impl Screen {
         }
         self.selection = Some(selection);
         let text = self.selection_text(selection);
-        if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+        if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
             use std::io::Write as _;
             if let Ok(mut f) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open("/tmp/miyu-screen-trace.log")
+                .open("/tmp/gqy-screen-trace.log")
             {
                 let _ = writeln!(
                     f,

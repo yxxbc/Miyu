@@ -51,7 +51,7 @@ use crate::i18n::{is_zh, text as t};
 use crate::llm::{
     thinking_variant_options_for_model, ThinkingVariantOptions, ThinkingVariantPreferences,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platforms::commands::{self, PlatformCommandDescriptor};
 use crate::platforms::plugins::{
     active_judgement_skip_ids, apply_active_judgement_skip_editor_changes,
@@ -71,17 +71,17 @@ use std::process::Command;
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
-pub fn run(paths: &MiyuPaths) -> Result<bool> {
+pub fn run(paths: &GqyPaths) -> Result<bool> {
     // 全屏 REPL 里开设置:备用屏已经是它的,这里退了再进会闪一下 shell 画面。
     run_with(paths, !crate::cli::in_fullscreen())
 }
 
 /// 调用方自己管着备用屏(引导之后紧接着进全屏 REPL):只进不退。
-pub fn run_embedded(paths: &MiyuPaths) -> Result<bool> {
+pub fn run_embedded(paths: &GqyPaths) -> Result<bool> {
     run_with(paths, false)
 }
 
-fn run_with(paths: &MiyuPaths, owns_alt_screen: bool) -> Result<bool> {
+fn run_with(paths: &GqyPaths, owns_alt_screen: bool) -> Result<bool> {
     AppConfig::init_files(paths)?;
     crate::models_cache::try_load(paths);
     crate::models_cache::spawn_background_refresh(paths.clone());
@@ -99,7 +99,7 @@ struct TerminalSession {
 impl TerminalSession {
     fn start(owns_alt_screen: bool) -> Result<Self> {
         terminal::enable_raw_mode()?;
-        // 独立 `miyu config` 没有 REPL 的挂断看门狗;不发 SIGHUP 的断开
+        // 独立 `gqy config` 没有 REPL 的挂断看门狗;不发 SIGHUP 的断开
         // (tmux kill-pane、SSH 掉线)会让 crossterm 对 HUP fd 全速自旋。
         crate::cli::spawn_hangup_watchdog();
         let mut stdout = io::stdout();
@@ -131,7 +131,7 @@ impl TerminalSession {
 
     fn run(
         mut self,
-        paths: &MiyuPaths,
+        paths: &GqyPaths,
         mut config: AppConfig,
         mut thinking_variants: ThinkingVariantPreferences,
     ) -> Result<bool> {
@@ -154,7 +154,7 @@ impl Drop for TerminalSession {
 /// 同时在往账本追加——这是 `usage::record_usage_at` 注释里说过的跨进程竞态,
 /// 接受。账本改失败不阻断保存,配置已经落盘了。
 fn sync_usage_ledger_after_save(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     pristine_config: Option<&String>,
     config: &AppConfig,
 ) {
@@ -187,7 +187,7 @@ fn sync_usage_ledger_after_save(
 
 fn run_main_menu(
     stdout: &mut io::Stdout,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     config: &mut AppConfig,
     thinking_variants: &mut ThinkingVariantPreferences,
 ) -> Result<bool> {
@@ -244,7 +244,7 @@ fn run_main_menu(
         ];
         draw_menu(
             stdout,
-            t(" MIYU CONFIG ", " MIYU 配置 "),
+            t(" GQY CONFIG ", " GQY 配置 "),
             &options,
             selected,
             "",
@@ -311,7 +311,7 @@ fn run_main_menu(
 
 impl<'a> ProviderBrowser<'a> {
     fn new(
-        paths: &'a MiyuPaths,
+        paths: &'a GqyPaths,
         config: &'a mut AppConfig,
         thinking_variants: &'a mut ThinkingVariantPreferences,
     ) -> Self {

@@ -442,7 +442,7 @@ impl PlatformPlugin for ReplyProcessorPlugin {
                         Ok(prepared) => Ok(prepared),
                         Err(error) => {
                             tracing::warn!(
-                                target: "miyu::qq",
+                                target: "gqy::qq",
                                 error = %error,
                                 "{}",
                                 crate::i18n::text(

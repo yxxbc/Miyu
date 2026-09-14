@@ -3,7 +3,7 @@ use super::{ToolRegistry, ToolSpec};
 use crate::agent::AgentMode;
 use crate::config::{AppConfig, ModelTier};
 use crate::llm::OpenAiCompatibleClient;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -101,14 +101,14 @@ const SUBAGENT_TOOL_TIMEOUT: u64 = 120;
 #[derive(Clone)]
 struct SubagentContext {
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     tools: ToolRegistry,
 }
 
 pub fn register(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     tools: ToolRegistry,
 ) {
     let context = SubagentContext {
@@ -363,7 +363,7 @@ async fn spawn_background(
     let prompt = params.prompt.clone();
     // 后台子代理起在 tokio::spawn 的新任务上,回合的 task-local(工作区/会话/
     // 沙盒)到那儿全空了:相对路径退回 daemon 的 cwd、Landlock 失效、且
-    // mcp_bridge_config 因 try_session()=None 返回 None(claude-code 拿不到 Miyu 桥)。
+    // mcp_bridge_config 因 try_session()=None 返回 None(claude-code 拿不到 顾清影 桥)。
     // 在还处于父回合作用域的此刻抓下来,由 with_turn_scope 在 spawn 里套回去。
     let sandbox = crate::tools::sandbox::current_sandbox();
     let workspace = crate::tools::workspace::try_workspace();
@@ -744,7 +744,7 @@ fn readable_subagent_log_line_timed(message: &str, elapsed: Option<Duration>) ->
 ///
 /// 三段在一个会话里都是常量(工作目录跟着会话工作区走),多次 dev 子代理
 /// 之间前缀缓存照样命中。
-fn build_dev_system_prompt(config: &AppConfig, paths: &MiyuPaths) -> Result<String> {
+fn build_dev_system_prompt(config: &AppConfig, paths: &GqyPaths) -> Result<String> {
     let mut prompt = config.dev_system_prompt(paths)?;
     prompt.push_str("\n\n");
     prompt.push_str(&crate::agent::prompt::host_environment_for(config, paths));
@@ -1262,7 +1262,7 @@ mod tests {
     /// 差事写在流水账开头，换行折成 `\u{1}`（面板那边再拆回来）。
     #[test]
     fn prompt_header_folds_newlines() {
-        let dir = std::env::temp_dir().join(format!("miyu-prompt-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-prompt-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         write_subagent_prompt_header(&path, "  第一行\n第二行  ");
@@ -1275,7 +1275,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    fn test_paths(root: &std::path::Path) -> MiyuPaths {
+    fn test_paths(root: &std::path::Path) -> GqyPaths {
         crate::tools::tests::test_paths(root)
     }
 
@@ -1330,7 +1330,7 @@ mod tests {
     /// 也退回 daemon 的 cwd。这条钉住「抓下来再套回去」。
     #[tokio::test]
     async fn background_scope_is_carried_across_the_spawn() {
-        let workspace = std::path::PathBuf::from("/tmp/miyu-subagent-scope");
+        let workspace = std::path::PathBuf::from("/tmp/gqy-subagent-scope");
         let session: std::sync::Arc<str> = "sess_probe".into();
         let (bare, restored) = crate::tools::workspace::with_workspace(
             workspace.clone(),

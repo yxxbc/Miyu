@@ -1,4 +1,4 @@
-//! `miyu embed`：语义检索的诊断与维护。
+//! `gqy embed`：语义检索的诊断与维护。
 //!
 //! `status` 一眼看出为什么语义检索没生效（没启用/没模型/没运行库/worker 起不来），
 //! `reindex` 把当前人格记忆、当前表情库、知识库缺的向量一次补齐。
@@ -6,7 +6,7 @@
 use crate::config::{AppConfig, EmbeddingBackend};
 use crate::embedding::{installed_local_models, runtime_library, shutdown_worker, Embedder};
 use crate::memory::MemoryStore;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::tools;
 use anyhow::Result;
 use clap::{Args, Subcommand};
@@ -34,7 +34,7 @@ pub struct EmbedReindexArgs {
     pub quiet: bool,
 }
 
-pub(in crate::cli) async fn run_embed(paths: &MiyuPaths, args: EmbedArgs) -> Result<()> {
+pub(in crate::cli) async fn run_embed(paths: &GqyPaths, args: EmbedArgs) -> Result<()> {
     let config = AppConfig::load(paths)?;
     match args.command {
         EmbedCommand::Status => status(&config, paths).await,
@@ -57,7 +57,7 @@ pub(in crate::cli) async fn run_embed(paths: &MiyuPaths, args: EmbedArgs) -> Res
     }
 }
 
-async fn status(config: &AppConfig, paths: &MiyuPaths) -> Result<()> {
+async fn status(config: &AppConfig, paths: &GqyPaths) -> Result<()> {
     let embedding = &config.embedding;
     let backend = match embedding.resolved_backend() {
         EmbeddingBackend::Local => "local",
@@ -165,16 +165,16 @@ async fn status(config: &AppConfig, paths: &MiyuPaths) -> Result<()> {
     Ok(())
 }
 
-async fn reindex(config: &AppConfig, paths: &MiyuPaths, quiet: bool) -> Result<()> {
+async fn reindex(config: &AppConfig, paths: &GqyPaths, quiet: bool) -> Result<()> {
     let Some(embedder) = Embedder::from_config(config) else {
         println!("embedding is disabled or no model is available; nothing to do");
         return Ok(());
     };
-    // 看板的「重建语义索引」按钮起的正是这个命令,并经 MIYU_KB_ROOT 指定了
+    // 看板的「重建语义索引」按钮起的正是这个命令,并经 GQY_KB_ROOT 指定了
     // 某一个库(成员的 home/<user>/kb 或管理员的默认库)。那是一次**定向**重建,
     // 只该碰那个库;顺手把记忆/表情包也重嵌等于让成员触发管理员库的嵌入,
-    // 既越权又浪费。裸 `miyu kb embed reindex`(不带这个变量)仍三样全建。
-    let kb_only = std::env::var_os("MIYU_KB_ROOT").is_some_and(|value| !value.is_empty());
+    // 既越权又浪费。裸 `gqy kb embed reindex`(不带这个变量)仍三样全建。
+    let kb_only = std::env::var_os("GQY_KB_ROOT").is_some_and(|value| !value.is_empty());
     if kb_only {
         if config.plugins.knowledge_base.enabled && config.plugins.knowledge_base.embedding_enabled
         {

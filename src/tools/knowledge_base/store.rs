@@ -21,7 +21,7 @@ pub struct EditResult {
     pub(in crate::tools::knowledge_base) semantic_refreshed: bool,
 }
 
-/// 知识库只收参考资料，不收 Miyu 自己的东西（技能文件、人格提示词、配置、
+/// 知识库只收参考资料，不收 顾清影 自己的东西（技能文件、人格提示词、配置、
 /// 记忆库）。
 ///
 /// 这道闸原先是拿 `skill` / `memory` / `prompt` / `config` / `记忆` / `配置`
@@ -30,7 +30,7 @@ pub struct EditResult {
 /// 好几个数量级，而正经资料里出现这些词才是常态（09-09 用户报的就是这个：
 /// WebUI 手动上传和模型用 `kb` 写入都会被挡）。
 ///
-/// 现在只认两样不会误伤的证据：落点路径是不是 Miyu 自己的资产目录，以及正文
+/// 现在只认两样不会误伤的证据：落点路径是不是 顾清影 自己的资产目录，以及正文
 /// 是不是一份带明确标记的技能文件。正文里出现什么词一概不管。
 pub(in crate::tools) fn reject_non_kb_upload(
     content: &str,
@@ -38,15 +38,15 @@ pub(in crate::tools) fn reject_non_kb_upload(
     file_name: &str,
 ) -> Result<()> {
     let path = format!("{file_name}/{title}").to_ascii_lowercase();
-    let is_miyu_asset_path = path.split('/').any(|segment| {
+    let is_gqy_asset_path = path.split('/').any(|segment| {
         matches!(
             segment.trim(),
             "skill.md" | "skills" | "persona" | "personas" | "config.toml" | "config.json"
         )
     }) || path.contains("memory.db")
         || path.contains("conversation.db");
-    if is_miyu_asset_path {
-        bail!("that path is where Miyu keeps its own skills, persona, or config; the knowledge base only takes reference documents")
+    if is_gqy_asset_path {
+        bail!("that path is where GQY keeps its own skills, persona, or config; the knowledge base only takes reference documents")
     }
     if crate::skills::is_generated_skill(content) {
         bail!("this file is a skill definition; publish it with manage_skill instead of putting it in the knowledge base")
@@ -89,7 +89,7 @@ pub(in crate::tools::knowledge_base) fn init_semantic_db(conn: &Connection) -> R
 
 pub(in crate::tools::knowledge_base) fn kb_root(
     config: &KnowledgeBasePluginConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> PathBuf {
     let configured = config.data_dir.trim();
     if configured.is_empty() {
@@ -103,14 +103,14 @@ pub(in crate::tools::knowledge_base) fn kb_root(
 /// 管理员/终端按插件配置。
 pub(in crate::tools::knowledge_base) fn kb_root_for(
     config: &crate::config::AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
 ) -> PathBuf {
-    // 后台重建子进程(`miyu kb embed reindex`)是个不带成员身份的裸 CLI:它
+    // 后台重建子进程(`gqy kb embed reindex`)是个不带成员身份的裸 CLI:它
     // 读盘上的默认配置,member_home_dir() 一律是 None,于是会去建**默认库**,
     // 而不是发起重建那个成员的 `home/<user>/kb`——它把 done 写进默认库的进度
     // 文件,成员那份进度停在 starting,看门狗遂判「exited without indexing」。
-    // 父进程 spawn 时把真正的库根经 MIYU_KB_ROOT 传进来,这里优先认它。
-    if let Some(root) = std::env::var_os("MIYU_KB_ROOT") {
+    // 父进程 spawn 时把真正的库根经 GQY_KB_ROOT 传进来,这里优先认它。
+    if let Some(root) = std::env::var_os("GQY_KB_ROOT") {
         let root = root.to_string_lossy();
         let root = root.trim();
         if !root.is_empty() {

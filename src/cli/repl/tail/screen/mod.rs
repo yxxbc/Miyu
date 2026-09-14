@@ -193,14 +193,14 @@ pub(in crate::cli) fn rss_kb() -> u64 {
 }
 
 pub(in crate::cli) fn trace_rss(tag: &str) {
-    if std::env::var_os("MIYU_SCREEN_TRACE").is_none() {
+    if std::env::var_os("GQY_SCREEN_TRACE").is_none() {
         return;
     }
     let note = format!("{tag} rss={}\n", rss_kb());
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open("/tmp/miyu-screen-trace.log")
+        .open("/tmp/gqy-screen-trace.log")
     {
         let _ = std::io::Write::write_all(&mut file, note.as_bytes());
     }
@@ -680,12 +680,12 @@ impl Screen {
     /// 不退出 alt screen：那些组件打的是普通 ANSI，在备用屏上一样显示；
     /// 它们撑空行把画面顶上去也没关系，`resume` 会整屏重画。
     pub(in crate::cli) fn suspend(&mut self) -> Result<()> {
-        if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+        if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
             use std::io::Write as _;
             if let Ok(mut f) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open("/tmp/miyu-screen-trace.log")
+                .open("/tmp/gqy-screen-trace.log")
             {
                 let _ = writeln!(f, "suspend");
             }
@@ -722,12 +722,12 @@ impl Screen {
     /// 反过来，自己写的帧（流式输出、拖选重画）必须走 diff——每帧
     /// `Clear(All)` + 全量重绘会让光标一路闪、拖选卡到没法用。
     pub(in crate::cli) fn resume(&mut self, external: bool) {
-        if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+        if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
             use std::io::Write as _;
             if let Ok(mut f) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open("/tmp/miyu-screen-trace.log")
+                .open("/tmp/gqy-screen-trace.log")
             {
                 let _ = writeln!(f, "resume susp={}", self.suspended);
             }
@@ -775,7 +775,7 @@ impl Screen {
             return Ok(body);
         }
 
-        if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+        if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
             let note = format!(
                 "{} paint body={body} total={total} scroll={} follow={} lines={} cursor={} clear={} susp={}\n",
                 std::time::SystemTime::now()
@@ -789,7 +789,7 @@ impl Screen {
                 self.needs_clear,
                 self.suspended
             );
-            let path = std::path::Path::new("/tmp/miyu-screen-trace.log");
+            let path = std::path::Path::new("/tmp/gqy-screen-trace.log");
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -813,7 +813,7 @@ impl Screen {
         let cacheable = self.expanded.is_empty();
 
         let mut stdout = std::io::stdout();
-        if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+        if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
             queue!(
                 stdout,
                 Print(format!("\x1b]1337;paint={}\x07", self.scroll))
@@ -1009,12 +1009,12 @@ impl super::LiveReplTail {
 
         if let Event::Mouse(mouse) = event {
             let (column, row) = (mouse.column, mouse.row);
-            if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+            if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
                 use std::io::Write as _;
                 if let Ok(mut f) = std::fs::OpenOptions::new()
                     .create(true)
                     .append(true)
-                    .open("/tmp/miyu-screen-trace.log")
+                    .open("/tmp/gqy-screen-trace.log")
                 {
                     let _ = writeln!(
                         f,
@@ -1261,12 +1261,12 @@ impl super::LiveReplTail {
     /// 点在后台状态行上就开日志面板。返回真表示这一下被状态行吃掉了。
     ///
     fn open_job_overlay_at(&mut self, row: u16) -> Result<bool> {
-        if std::env::var_os("MIYU_SCREEN_TRACE").is_some() {
+        if std::env::var_os("GQY_SCREEN_TRACE").is_some() {
             use std::io::Write as _;
             if let Ok(mut f) = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open("/tmp/miyu-screen-trace.log")
+                .open("/tmp/gqy-screen-trace.log")
             {
                 let _ = writeln!(
                     f,

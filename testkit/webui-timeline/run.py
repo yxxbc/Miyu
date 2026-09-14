@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """过程时间线的真机走查:沙箱 daemon + 工具剧本桩(stub_tools.py)+ Playwright(Chromium)。
 
-    BIN=<miyu 二进制> WEB=<web 目录> python3 testkit/webui-timeline/run.py
+    BIN=<gqy 二进制> WEB=<web 目录> python3 testkit/webui-timeline/run.py
 
 web/*.js 与 styles.css 编进二进制,所以 WEB 给的是哪个目录,页面就用哪份前端——
 Playwright 拦下 index.html / app.js / styles.css 换成 WEB 里的文件,二进制本身不用重编。
@@ -30,7 +30,7 @@ Playwright 拦下 index.html / app.js / styles.css 换成 WEB 里的文件,二�
   no_times           用户消息和助手名字旁都没有时间
   toggle_off_on      设置里关掉「过程自动收起」→ 总结行藏起、全部展开;再开 → 收回
   console_clean      全程无 pageerror / console.error
-产物:~/.cache/miyu-webui-timeline/{report.json,daemon.log,*.png}
+产物:~/.cache/gqy-webui-timeline/{report.json,daemon.log,*.png}
 """
 import json
 import os
@@ -49,13 +49,13 @@ import authlib  # noqa: E402
 HERE = Path(__file__).resolve().parent
 BIN = Path(os.environ["BIN"]).expanduser()
 WEB = Path(os.environ.get("WEB", HERE.parent.parent / "web")).resolve()
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-webui-timeline")).expanduser()
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-webui-timeline")).expanduser()
 HOME = OUT / "home"
 RUNTIME = OUT / "runtime"
 PORT = int(os.environ.get("PORT", "18483"))
 STUB_PORT = int(os.environ.get("STUB_PORT", "18497"))
 BASE = f"http://127.0.0.1:{PORT}"
-ENV = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
+ENV = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME))
 
 
 def write_config():
@@ -153,7 +153,7 @@ def main():
             page.on("console", lambda m: errors.append(f"console: {m.text}") if m.type == "error" and "status of 404" not in m.text and "status of 401" not in m.text else None)
             page.route(lambda u: u.startswith(BASE) and (u.rstrip("/") == BASE or any(k in u for k in ("/app.js", "/styles.css", "/index.html"))), serve_local)
             # 思考内容收着(默认是开的):这样才能验「思考中那一行里滚思考文字」
-            page.add_init_script("try { localStorage.setItem('miyu.web.reasoningExpanded', 'false'); } catch (_) {}")
+            page.add_init_script("try { localStorage.setItem('gqy.web.reasoningExpanded', 'false'); } catch (_) {}")
             page.goto(BASE)
             authlib.ui_login(page)
             page.wait_for_selector("#composerInput:not([disabled])", timeout=20000)

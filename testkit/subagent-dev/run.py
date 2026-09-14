@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """subagent 工具黑盒实测(09-11 改名 + dev 模式)。
 
-`miyu tool-call subagent '<json>'` 在 daemon 不在时本地执行同一条工具路径,
+`gqy tool-call subagent '<json>'` 在 daemon 不在时本地执行同一条工具路径,
 子代理的请求全落到桩 LLM 上——模型实际看到的系统提示词与工具面就是取证。
 
 判据:
@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-MIYU = Path(os.environ.get("BIN") or REPO / "target" / "debug" / "miyu")
+GQY = Path(os.environ.get("BIN") or REPO / "target" / "debug" / "gqy")
 BASE = Path(__file__).resolve().parent
 OUT = BASE / "out"
 HOME = BASE / "home"
@@ -77,11 +77,11 @@ def build_home():
 
 def env():
     e = dict(os.environ)
-    e["MIYU_HOME"] = str(HOME)
+    e["GQY_HOME"] = str(HOME)
     for key in (
-        "MIYU_DIRECT",
-        "MIYU_SESSION",
-        "MIYU_TURN_MODE",
+        "GQY_DIRECT",
+        "GQY_SESSION",
+        "GQY_TURN_MODE",
         "XDG_CACHE_HOME",
         "XDG_CONFIG_HOME",
         "XDG_DATA_HOME",
@@ -94,7 +94,7 @@ def env():
 
 def cli(args, timeout=180):
     proc = subprocess.run(
-        [str(MIYU), *args],
+        [str(GQY), *args],
         env=env(),
         cwd=str(WORK),
         capture_output=True,
@@ -111,8 +111,8 @@ def stub_records():
 
 
 def main():
-    if not MIYU.exists():
-        print(f"缺少二进制 {MIYU}，先 cargo build")
+    if not GQY.exists():
+        print(f"缺少二进制 {GQY}，先 cargo build")
         return 1
     build_home()
     stub_env = dict(os.environ)

@@ -1,4 +1,4 @@
-//! 单次远端回合（`miyu "问题"` 这种用法）。
+//! 单次远端回合（`gqy "问题"` 这种用法）。
 //!
 //! 和 [`super::interactive`] 共用同一套 IPC 事件流，但生命周期完全不同：跑完
 //! 就退，不进 REPL 循环，也就不需要活动区与输入编辑那一整套。
@@ -8,7 +8,7 @@ use crate::cli::repl::tail::*;
 use crate::cli::*;
 
 pub(in crate::cli) async fn try_run_remote_chat(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     mut live: Option<&mut LiveReplTail>,
     message: &str,
     show_reasoning: Option<bool>,
@@ -25,7 +25,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
         // ensure_daemon also restarts a daemon left over from an older build.
         // Re-resolve paths because that shutdown may complete legacy layout migration.
         ipc::ensure_daemon(paths, None).await?;
-        Some(MiyuPaths::new()?)
+        Some(GqyPaths::new()?)
     };
     let paths = refreshed_paths.as_ref().unwrap_or(paths);
     let mut stream = if direct_mode_requested() {
@@ -67,12 +67,12 @@ pub(in crate::cli) async fn try_run_remote_chat(
     )
     .await?;
     let Some(first) = ipc::receive::<IpcFrame>(&mut stream).await? else {
-        bail!("Miyu core closed the connection before accepting the turn");
+        bail!("GQY core closed the connection before accepting the turn");
     };
     let run_id = match first {
         IpcFrame::Accepted { run_id, .. } => run_id,
         IpcFrame::Error { message, .. } => bail!("{message}"),
-        _ => bail!("Miyu core returned an invalid response"),
+        _ => bail!("GQY core returned an invalid response"),
     };
     let mut turn_id: Option<String> = None;
 
@@ -394,7 +394,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
                 live.apply_renderer_frame(&mut renderer)?;
             }
             handoff_raw!();
-            bail!("Miyu core disconnected during the turn");
+            bail!("GQY core disconnected during the turn");
         };
         let IpcFrame::Event { kind, data, .. } = frame else {
             if let IpcFrame::Error { message, .. } = frame {
@@ -607,7 +607,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
                 notify_if_unfocused(
                     &config,
                     live.as_deref().map(|live| live.editor.focused),
-                    t("Miyu is waiting on you", "Miyu 在等你回答"),
+                    t("GQY is waiting on you", "顾清影 在等你回答"),
                     // 问题正文同样不外泄，理由同上。
                     t("waiting for you", "正在等待处理"),
                 );
@@ -843,7 +843,7 @@ pub(in crate::cli) async fn try_run_remote_chat(
         notify_if_unfocused(
             &config,
             focused,
-            t("Miyu finished replying", "Miyu 回复完成"),
+            t("GQY finished replying", "顾清影 回复完成"),
             // 正文不往通知里放：桌面通知是给**别人也可能看见的屏幕**发的，
             // 而且回复本身在窗口里就摆着，通知只需要说"该回来看了"。
             t("waiting for you", "正在等待处理"),

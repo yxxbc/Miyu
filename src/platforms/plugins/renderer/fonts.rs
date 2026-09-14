@@ -26,7 +26,7 @@ pub(in crate::platforms::plugins::renderer) const CODE_FONT_FILE: &str =
 pub(in crate::platforms::plugins::renderer) const EMOJI_FONT_FILE: &str = "NotoColorEmoji.ttf";
 
 pub(in crate::platforms::plugins::renderer) const RENDERER_FONTS_ENV: &str =
-    "MIYU_RENDERER_FONTS_DIR";
+    "GQY_RENDERER_FONTS_DIR";
 
 pub(in crate::platforms::plugins::renderer) fn renderer_fonts_dir() -> Result<PathBuf> {
     let candidates =
@@ -46,7 +46,7 @@ fn renderer_fonts_dir_from(candidates: &[PathBuf]) -> Result<PathBuf> {
         .collect::<Vec<_>>()
         .join(", ");
     bail!(
-        "renderer font is missing; install {CJK_FONT_FILE} in /usr/share/miyu/fonts or set {RENDERER_FONTS_ENV} (searched: {searched})"
+        "renderer font is missing; install {CJK_FONT_FILE} in /usr/share/gqy/fonts or set {RENDERER_FONTS_ENV} (searched: {searched})"
     )
 }
 

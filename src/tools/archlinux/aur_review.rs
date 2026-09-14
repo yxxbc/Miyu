@@ -2,7 +2,7 @@
 //! 审查状态落盘到 state_dir,install 只认「审过且用户在后续回复里确认」。
 
 use super::required;
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::tools::{ToolRegistry, ToolSpec};
 use anyhow::{bail, Context, Result};
 use flate2::read::GzDecoder;
@@ -20,7 +20,7 @@ const FETCH_TIMEOUT_SECONDS: u64 = 120;
 const INSTALL_TIMEOUT_SECONDS: u64 = 900;
 const MAKEPKG_TIMEOUT_SECONDS: u64 = 1800;
 
-pub(super) fn register(registry: &mut ToolRegistry, paths: MiyuPaths) {
+pub(super) fn register(registry: &mut ToolRegistry, paths: GqyPaths) {
     let review_paths = paths.clone();
     registry.register(ToolSpec::new(
         "review_aur_package",
@@ -43,7 +43,7 @@ pub(super) fn register(registry: &mut ToolRegistry, paths: MiyuPaths) {
     ).writes());
 }
 
-async fn review_aur_package(args: Value, paths: MiyuPaths) -> Result<String> {
+async fn review_aur_package(args: Value, paths: GqyPaths) -> Result<String> {
     let package = required(&args, "package")?;
     validate_package_name(&package)?;
     let metadata = fetch_aur_metadata(&package).await?;
@@ -75,7 +75,7 @@ async fn review_aur_package(args: Value, paths: MiyuPaths) -> Result<String> {
     )
 }
 
-async fn install_aur_package(args: Value, paths: MiyuPaths) -> Result<String> {
+async fn install_aur_package(args: Value, paths: GqyPaths) -> Result<String> {
     let package = required(&args, "package")?;
     if args.get("user_confirmed").and_then(Value::as_bool) != Some(true) {
         bail!("AUR install requires explicit user confirmation after review: {package}")
@@ -217,7 +217,7 @@ async fn install_with_helper(helper: &str, package: &str) -> Result<Value> {
     Ok(command_result(helper, output))
 }
 
-async fn install_with_makepkg_fallback(package: &str, paths: &MiyuPaths) -> Result<Value> {
+async fn install_with_makepkg_fallback(package: &str, paths: &GqyPaths) -> Result<Value> {
     let metadata = fetch_aur_metadata(package).await?;
     let root = paths.cache_dir.join("aur-install").join(package);
     if root.exists() {
@@ -419,7 +419,7 @@ fn heuristic_risk(files: &[Value]) -> Value {
     json!({"level": level, "findings": findings})
 }
 
-pub(crate) fn clear_aur_review_state(paths: &MiyuPaths) -> Result<()> {
+pub(crate) fn clear_aur_review_state(paths: &GqyPaths) -> Result<()> {
     let path = aur_review_state_path(paths);
     if path.exists() {
         std::fs::remove_file(path)?;
@@ -428,7 +428,7 @@ pub(crate) fn clear_aur_review_state(paths: &MiyuPaths) -> Result<()> {
 }
 
 fn record_review_state(
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     package: &str,
     risk: &Value,
     install_allowed: bool,
@@ -449,11 +449,11 @@ fn record_review_state(
     Ok(())
 }
 
-fn review_state_for_package(paths: &MiyuPaths, package: &str) -> Result<Option<Value>> {
+fn review_state_for_package(paths: &GqyPaths, package: &str) -> Result<Option<Value>> {
     Ok(load_review_state(paths)?.get(package).cloned())
 }
 
-fn record_install_confirmation(paths: &MiyuPaths, package: &str) -> Result<()> {
+fn record_install_confirmation(paths: &GqyPaths, package: &str) -> Result<()> {
     let mut state = load_review_state(paths)?;
     let Some(entry) = state.get_mut(package) else {
         bail!("AUR package must be reviewed before install: {package}")
@@ -467,7 +467,7 @@ fn record_install_confirmation(paths: &MiyuPaths, package: &str) -> Result<()> {
     Ok(())
 }
 
-fn load_review_state(paths: &MiyuPaths) -> Result<Value> {
+fn load_review_state(paths: &GqyPaths) -> Result<Value> {
     let path = aur_review_state_path(paths);
     if !path.exists() {
         return Ok(json!({}));
@@ -475,7 +475,7 @@ fn load_review_state(paths: &MiyuPaths) -> Result<Value> {
     Ok(serde_json::from_str(&std::fs::read_to_string(path)?)?)
 }
 
-fn aur_review_state_path(paths: &MiyuPaths) -> PathBuf {
+fn aur_review_state_path(paths: &GqyPaths) -> PathBuf {
     paths.state_dir.join("aur-review-state.json")
 }
 
@@ -547,8 +547,8 @@ mod tests {
         assert!(record_install_confirmation(&paths, "foo").is_err());
     }
 
-    fn test_paths(state_dir: PathBuf) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(state_dir: PathBuf) -> GqyPaths {
+        GqyPaths {
             root_dir: PathBuf::new(),
             config_dir: PathBuf::new(),
             config_file: PathBuf::new(),

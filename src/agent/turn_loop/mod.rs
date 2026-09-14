@@ -95,10 +95,10 @@ impl Agent {
                     }
                     Ok(Ok((None, _))) => {}
                     Ok(Err(error)) => {
-                        tracing::warn!(error = %error, "failed to refresh Miyu script tools")
+                        tracing::warn!(error = %error, "failed to refresh GQY script tools")
                     }
                     Err(error) => {
-                        tracing::warn!(error = %error, "Miyu script refresh worker stopped")
+                        tracing::warn!(error = %error, "GQY script refresh worker stopped")
                     }
                 }
             }
@@ -125,10 +125,10 @@ impl Agent {
                         }
                         Ok(Ok((None, _, _))) => {}
                         Ok(Err(error)) => {
-                            tracing::warn!(error = %error, "failed to refresh Miyu skill catalog")
+                            tracing::warn!(error = %error, "failed to refresh GQY skill catalog")
                         }
                         Err(error) => {
-                            tracing::warn!(error = %error, "Miyu skill catalog worker stopped")
+                            tracing::warn!(error = %error, "GQY skill catalog worker stopped")
                         }
                     }
                 }

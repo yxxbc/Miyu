@@ -7,10 +7,10 @@
 
 会花真实模型的额度(整理器走 memory_organizer 档位的池)。
 
-    BIN=~/.local/bin/miyu TAG=before python3 testkit/memory-quality/replay.py
-    BIN=target/debug/miyu   TAG=after  python3 testkit/memory-quality/replay.py
+    BIN=~/.local/bin/gqy TAG=before python3 testkit/memory-quality/replay.py
+    BIN=target/debug/gqy   TAG=after  python3 testkit/memory-quality/replay.py
 
-环境变量:SRC_HOME(默认 ~/.miyu)、PERSONA(默认 default)、DIARIES(取最近多少条
+环境变量:SRC_HOME(默认 ~/.gqy)、PERSONA(默认 default)、DIARIES(取最近多少条
 短期日记重置为未整理,默认 42 = 3 批)、WAIT(等整理秒数,默认 240)。
 """
 
@@ -24,14 +24,14 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BIN = Path(os.environ.get("BIN", REPO / "target" / "debug" / "miyu")).expanduser()
-SRC_HOME = Path(os.environ.get("SRC_HOME", "~/.miyu")).expanduser()
+BIN = Path(os.environ.get("BIN", REPO / "target" / "debug" / "gqy")).expanduser()
+SRC_HOME = Path(os.environ.get("SRC_HOME", "~/.gqy")).expanduser()
 PERSONA = os.environ.get("PERSONA", "default")
 TAG = os.environ.get("TAG", "run")
 DIARIES = int(os.environ.get("DIARIES", "42"))
 WAIT = int(os.environ.get("WAIT", "240"))
 PORT = int(os.environ.get("PORT", "18461"))
-OUT = Path(os.environ.get("OUT", "~/.cache/miyu-memory-quality")).expanduser() / TAG
+OUT = Path(os.environ.get("OUT", "~/.cache/gqy-memory-quality")).expanduser() / TAG
 HOME = OUT / "home"
 RUNTIME = OUT / "run"
 
@@ -82,7 +82,7 @@ def main():
     con.close()
     print(f"· 重置 {len(ids)} 条日记为未整理;库里已有事实 {len(before_ids)} 条", flush=True)
 
-    env = dict(os.environ, MIYU_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME), MIYU_LOG_REQUESTS="1")
+    env = dict(os.environ, GQY_HOME=str(HOME), XDG_RUNTIME_DIR=str(RUNTIME), GQY_LOG_REQUESTS="1")
     daemon = subprocess.Popen([str(BIN), "__daemon", "--port", str(PORT)], env=env, cwd=str(HOME),
                               stdout=(OUT / "daemon.log").open("w"), stderr=subprocess.STDOUT)
     try:

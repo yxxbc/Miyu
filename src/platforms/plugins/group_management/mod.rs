@@ -69,7 +69,7 @@ impl GroupManagementPlugin {
         let settings = settings(&context)?;
         let query_enabled = settings.enable_tool || settings.enable_kick_tool;
         if context.conversation.kind != ConversationKind::Group {
-            // 群聊之外只给 Miyu 管理员留跨群查询入口（group_id 必填）
+            // 群聊之外只给 顾清影 管理员留跨群查询入口（group_id 必填）
             if query_enabled && context.is_admin {
                 self.register_history_query(registry, context);
             }
@@ -203,7 +203,7 @@ impl GroupManagementPlugin {
     ) {
         registry.register(ToolSpec::new(
             "qq_group_manage_history_query",
-            "Query QQ group management records (mute/kick/title). view=events lists individual actions newest-first; view=stats aggregates per member (ban_count, kick_count, total mute duration). Miyu admins may pass group_id to query another group; group_id is required outside that group's chat.",
+            "Query QQ group management records (mute/kick/title). view=events lists individual actions newest-first; view=stats aggregates per member (ban_count, kick_count, total mute duration). GQY admins may pass group_id to query another group; group_id is required outside that group's chat.",
             history_query_schema(),
             move |args| {
                 let context = context.clone();
@@ -427,7 +427,7 @@ impl GroupManagementPlugin {
             }
             if member_gone {
                 tracing::warn!(
-                    target: "miyu::qq",
+                    target: "gqy::qq",
                     user_id,
                     error = %error,
                     "{}",
@@ -644,7 +644,7 @@ impl PlatformPlugin for Arc<GroupManagementPlugin> {
             // 事实簿记必须先于"自己干的不重复记"那道早退:谁离开了群跟谁动的手
             // 无关,而踢人核验的权威判据正是这份台账。
             //
-            // 08-30 取证:Miyu 自己踢人时 operator_id 就是她自己,整条
+            // 08-30 取证:顾清影 自己踢人时 operator_id 就是她自己,整条
             // group_decrease 通知在下面那行被丢掉,台账永远拿不到数据。于是
             // kick_one 的核验轮询 6 次全落空、退到成员表兜底,而 NapCat 那边
             // 成员缓存还没刷新——核验判"人还在",报出假失败。核验是 08-24 加
@@ -938,7 +938,7 @@ mod tests {
 #[cfg(test)]
 mod removal_ledger_tests {
     use super::*;
-    use crate::paths::MiyuPaths;
+    use crate::paths::GqyPaths;
     use crate::platforms::{PlatformAdapter, PlatformConversation, PlatformTurnContext};
     use crate::state::StateStore;
     use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
@@ -954,12 +954,12 @@ mod removal_ledger_tests {
         }
 
         fn bot_display_name<'a>(&'a self) -> futures_util::future::BoxFuture<'a, Result<String>> {
-            Box::pin(async { Ok("Miyu".to_string()) })
+            Box::pin(async { Ok("GQY".to_string()) })
         }
     }
 
     fn group_context(root: &std::path::Path) -> PlatformTurnContext {
-        let paths = MiyuPaths {
+        let paths = GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -1023,7 +1023,7 @@ mod removal_ledger_tests {
         }
     }
 
-    /// Miyu 自己踢人时,移除台账也必须记上。
+    /// 顾清影 自己踢人时,移除台账也必须记上。
     ///
     /// 台账是踢人核验唯一的权威判据:NapCat 踢成功也返回
     /// `status=failed, retcode=100`(违反 OneBot v11),核验靠"这个人还在不在群
@@ -1041,7 +1041,7 @@ mod removal_ledger_tests {
             &scope, "70001"
         ));
 
-        // operator == 机器人自己:正是 Miyu 执行踢人时收到的那种通知。
+        // operator == 机器人自己:正是 顾清影 执行踢人时收到的那种通知。
         let event = decrease_event(&context.conversation, "70001", "10000");
         plugin.observe_inbound(&context, &event).await.unwrap();
 

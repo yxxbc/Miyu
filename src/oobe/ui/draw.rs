@@ -1,4 +1,4 @@
-//! 把一屏画到 ratatui 的帧上：开场是一片星空里凝聚出 MIYU；其余各屏是
+//! 把一屏画到 ratatui 的帧上：开场是一片星空里凝聚出 GQY；其余各屏是
 //! 渐变 banner + 横向进度轨 + 渐变细线 + 正文 + 紧贴正文的按键条。
 //!
 //! 三条反抖动铁律（都是实际踩出来的）：
@@ -73,7 +73,7 @@ pub(in crate::oobe) fn draw(frame: &mut Frame, app: &mut App) {
     let mut head: Vec<Line> = Vec::new();
 
     if welcome {
-        // ── 开场：一片星空，MIYU 从中间凝聚出来 ──
+        // ── 开场：一片星空，GQY 从中间凝聚出来 ──
         let sw = (bcols + STAR_PAD_X * 2)
             .min(tw.saturating_sub(2))
             .max(bcols);

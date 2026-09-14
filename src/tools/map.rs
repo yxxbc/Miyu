@@ -30,7 +30,7 @@ use anyhow::{bail, Context, Result};
 use serde_json::{json, Value};
 
 /// Nominatim 的使用条款要求带一个能联系上的 User-Agent。
-const OSM_USER_AGENT: &str = "Miyu/0.5 (personal assistant; https://github.com/yxxbc/Miyu)";
+const OSM_USER_AGENT: &str = "GQY/0.5 (personal assistant; https://github.com/yxxbc/Miyu)";
 
 pub fn register(registry: &mut ToolRegistry, config: MapPluginConfig) {
     registry.register(

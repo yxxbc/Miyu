@@ -37,7 +37,7 @@ class BundleTests(unittest.TestCase):
             folder=self.packages/asset['id'];folder.mkdir(parents=True)
             binary=folder/asset['filename'];binary.write_bytes(('test fixture '+asset['id']).encode())
             hashes[asset['id']]=sha256_file(binary)
-            license_root='share/licenses/miyu-voice/' if asset['component']=='voice' else 'share/licenses/miyu/'
+            license_root='share/licenses/gqy-voice/' if asset['component']=='voice' else 'share/licenses/gqy/'
             build_id,component=asset['build_id'],asset['component']
             binaries[asset['id']]=hashlib.sha256((build_id+component).encode()).hexdigest()
             evidence={'build_id':build_id,'component':component,
@@ -50,7 +50,7 @@ class BundleTests(unittest.TestCase):
                 'rustc':'rustc '+manifest['toolchain']['rust']+' (fixture)\n', 'offline':True,
                 'command':['cargo','build','--release','--frozen','--target',
                     manifest['builds'][build_id]['target'],'--bin',
-                    'miyu-voice' if component=='voice' else 'miyu',
+                    'gqy-voice' if component=='voice' else 'gqy',
                     '--config','source.crates-io.replace-with="vendored-sources"',
                     '--config','source.vendored-sources.directory="/inputs/vendor"']}
             if component=='voice':evidence['command']+=['--features','voice']
@@ -60,7 +60,7 @@ class BundleTests(unittest.TestCase):
                 'source_snapshot_sha256':manifest['source_snapshot_sha256'],
                 'files':[{'path':license_root+'LICENSE','type':'file','size':7,
                           'sha256':hashlib.sha256(b'license').hexdigest()},
-                    {'path':'bin/'+('miyu-voice' if component=='voice' else 'miyu'),
+                    {'path':'bin/'+('gqy-voice' if component=='voice' else 'gqy'),
                      'type':'file','size':42,'sha256':binaries[asset['id']]}]})
         for target in manifest['targets']:
             folder=self.reports/target;folder.mkdir(parents=True)
@@ -70,7 +70,7 @@ class BundleTests(unittest.TestCase):
             for asset_id in {c['asset_id'] for c in checks}:
                 component=next(a['component'] for a in manifest['assets'] if a['id']==asset_id)
                 results[asset_id]={'asset_id':asset_id,'binary_sha256':binaries[asset_id],
-                    'version':('miyu-voice' if component=='voice' else 'miyu')+' 0.6.0',
+                    'version':('gqy-voice' if component=='voice' else 'gqy')+' 0.6.0',
                     'files_verified':2,'host_path':'/private/test/home', 'api_key':'fixture-secret'}
                 if component=='core':results[asset_id]['provider_live']={
                     'type':'done','text':'Hello from the test fixture.', 'provider_id':'opencodego',

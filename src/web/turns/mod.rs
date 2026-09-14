@@ -159,7 +159,7 @@ pub(in crate::web) async fn redo_turn(
         if manager.admin_blocks_session(&session_id) || manager.session_has_runs(&session_id) {
             return Err(ApiError::new(
                 StatusCode::CONFLICT,
-                "Miyu is busy in this conversation",
+                "GQY is busy in this conversation",
             ));
         }
         manager.active_runs.insert(
@@ -248,7 +248,7 @@ pub(in crate::web) fn web_followup_audience(run: &RunInfo) -> PromptAudience {
 ///
 /// 返回 `Ok(None)` = 这个会话没有可排队的轮（没有跑着的轮，或跑的是 REPL 起
 /// 的轮），调用方照常走起新轮的路——那条路上的 `session_has_runs` 会给出
-/// 409「Miyu is busy」，跨端隔离不变。
+/// 409「GQY is busy」，跨端隔离不变。
 ///
 /// 目标续轮也走排队：它是机器自己开的轮，人开口该优先，而不是撞一个 409 让人
 /// 重发。回合循环在每个工具边界都会取排队的输入。续轮的 audience 是 `Owner`，
@@ -266,7 +266,7 @@ pub(in crate::web) fn queue_into_running_session(
         // 判「会话在不在跑」必须和 create_turn 的 busy 闸同一个真相源(管理器的
         // active_runs),否则回合刚起、run 已进 active_runs 但会话库还没落「运行中」的
         // 那一瞬发 followup,这里读库=没在跑→返回 None→create_turn 读管理器=在跑→
-        // 直接报「Miyu is busy」(#11「我明明发的是 followup,代码运行顺序错了吧」的真凶)。
+        // 直接报「GQY is busy」(#11「我明明发的是 followup,代码运行顺序错了吧」的真凶)。
         // active_runs 是全局的、按 session_id 建索引,成员会话同样认得,不必再盯分库。
         if !manager.session_has_runs(session_id) {
             return Ok(None);
@@ -356,7 +356,7 @@ pub(in crate::web) async fn create_turn(
         if manager.admin_blocks_session(&session_id) || manager.session_has_runs(&session_id) {
             return Err(ApiError::new(
                 StatusCode::CONFLICT,
-                "Miyu is busy in this conversation",
+                "GQY is busy in this conversation",
             ));
         }
         manager.active_runs.insert(

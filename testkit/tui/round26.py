@@ -12,7 +12,7 @@
     cargo build
     python3 testkit/tui/round26.py
 
-复用 `run.py` 的沙箱与 PTY 辅助。产物在 ~/.cache/miyu-tui-smoke/round26-*.txt。
+复用 `run.py` 的沙箱与 PTY 辅助。产物在 ~/.cache/gqy-tui-smoke/round26-*.txt。
 """
 
 import json
@@ -368,7 +368,7 @@ def scenario_links(report):
     saved_env = h.ENV
     h.ENV = dict(h.ENV, PATH=f"{fakebin}:{os.environ.get('PATH', '')}")
     stub, daemon, tui, master, sink = start({
-        "STUB_REPLY": "See [Miyu docs](https://example.com/miyu-doc) and https://example.org/bare done.",
+        "STUB_REPLY": "See [GQY docs](https://example.com/miyu-doc) and https://example.org/bare done.",
     })
     try:
         os.write(master, h.PROMPT.encode())
@@ -384,10 +384,10 @@ def scenario_links(report):
         save("links", screen)
         raw = bytes(sink)
         report["r26_07_painter_emits_osc8"] = b"\x1b]8;;https://example.com/miyu-doc" in raw
-        row = next((i for i, l in enumerate(screen) if "Miyu docs" in l), None)
+        row = next((i for i, l in enumerate(screen) if "GQY docs" in l), None)
         report["r26_07_markdown_link_title_shown"] = row is not None
         if row is not None:
-            column = screen[row].index("Miyu docs") + 2
+            column = screen[row].index("GQY docs") + 2
             h.click(master, sink, column, row, quiet=0.3, timeout=2.0)
             time.sleep(0.5)
             opened = log.read_text(encoding="utf-8") if log.exists() else ""

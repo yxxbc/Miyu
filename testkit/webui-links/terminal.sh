@@ -6,7 +6,7 @@
 # 「标题 (地址)」整行成链、file:// 也算链接），拿同一段正文去量，两边给出不同
 # 结果时一眼看得见。
 #
-# 不花额度。沙箱 MIYU_HOME + 独立 XDG_RUNTIME_DIR，碰不到生产 daemon
+# 不花额度。沙箱 GQY_HOME + 独立 XDG_RUNTIME_DIR，碰不到生产 daemon
 # （AGENTS §5.4：普通 CLI 的未知子命令会把参数当对话发给生产 daemon）。
 #
 #     bash testkit/webui-links/terminal.sh
@@ -15,19 +15,19 @@
 set -u
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
-export MIYU_HOME=${MIYU_HOME:-/tmp/miyu-term-links/home}
+export GQY_HOME=${GQY_HOME:-/tmp/gqy-term-links/home}
 export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR_OVERRIDE:-/tmp/mx-term}
 # 真 PTY 里跑：OSC 8 的能力判定看 TERM，dumb/linux 下是**故意**不发的。
 export TERM=xterm-256color
-BIN=${MIYU_BIN:-$REPO/target/debug/miyu}
+BIN=${GQY_BIN:-$REPO/target/debug/gqy}
 STUB_PORT=${STUB_PORT:-18497}
-OUT=/tmp/miyu-term-links/out.raw
+OUT=/tmp/gqy-term-links/out.raw
 
-rm -rf /tmp/miyu-term-links "$XDG_RUNTIME_DIR"
-mkdir -p "$MIYU_HOME/config" "$XDG_RUNTIME_DIR"
+rm -rf /tmp/gqy-term-links "$XDG_RUNTIME_DIR"
+mkdir -p "$GQY_HOME/config" "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
-cat > "$MIYU_HOME/config/config.jsonc" <<JSON
+cat > "$GQY_HOME/config/config.jsonc" <<JSON
 {
   "active_provider": "stub",
   "active_provider_models": [{ "provider_id": "stub", "model": "stub-model" }],
@@ -85,7 +85,7 @@ check("「标题 (地址)」的标题上了链接色",
 check("标题和地址挂同一个 OSC 8 目标",
       any(url.startswith("https://arxiv.org/html/2506.11578v3") for url in targets),
       " ".join(sorted(set(targets))))
-check("file:// 也成链", any(url.startswith("file:///home/mac/.miyu") for url in targets))
+check("file:// 也成链", any(url.startswith("file:///home/mac/.gqy") for url in targets))
 check("md 链接的原文没漏出来", "](https://" not in raw and "](file://" not in raw)
 check("行内代码里的地址没被上链接色",
       f"{INLINE_CODE}https://example.com/inside-code{RESET}" in raw)

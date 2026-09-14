@@ -20,7 +20,7 @@
  * 流式期间:svg 围栏闭合就画(blob URL 按源码缓存,每帧重建也不重新解码);html / mermaid
  * 推迟到回合结束那次重画——流式每帧整段重建,iframe 会跟着一帧一重载。
  */
-window.MiyuFencePreview = (() => {
+window.GqyFencePreview = (() => {
   const FRAME_URL = "/fence-frame.html";
   const MIN_HEIGHT = 80;
   const MAX_HEIGHT = 720;
@@ -51,7 +51,7 @@ window.MiyuFencePreview = (() => {
   // 高度上报附在正文末尾一起写进去。它与模型写的脚本同处一个文档,数字不可信,
   // 父页面只拿来夹在 [MIN, MAX] 里定高,不做别的。
   const HEIGHT_REPORTER =
-    "<script>(()=>{const post=()=>parent.postMessage({type:'miyu-fence-height'," +
+    "<script>(()=>{const post=()=>parent.postMessage({type:'gqy-fence-height'," +
     "height:Math.ceil(document.documentElement.scrollHeight)},'*');" +
     "new ResizeObserver(post).observe(document.documentElement);addEventListener('load',post);post();})()<\/script>";
 
@@ -88,13 +88,13 @@ window.MiyuFencePreview = (() => {
       const frame = [...document.querySelectorAll("iframe.fence-frame")]
         .find((item) => item.contentWindow === event.source);
       if (!frame) return;
-      if (data.type === "miyu-fence-ready") {
+      if (data.type === "gqy-fence-ready") {
         const source = frameSources.get(frame);
         if (source === undefined) return;
         // 目标只能写 "*":不透明源没有可写的 targetOrigin。送出去的就是这段围栏本身,
         // 框里的脚本本来就拿得到,不构成额外泄露。
-        event.source.postMessage({ type: "miyu-fence-html", html: source + HEIGHT_REPORTER }, "*");
-      } else if (data.type === "miyu-fence-height") {
+        event.source.postMessage({ type: "gqy-fence-html", html: source + HEIGHT_REPORTER }, "*");
+      } else if (data.type === "gqy-fence-height") {
         const height = Number(data.height);
         if (!Number.isFinite(height)) return;
         frame.style.height = `${Math.round(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, height)))}px`;
@@ -151,7 +151,7 @@ window.MiyuFencePreview = (() => {
       "try{if(!window.mermaid)throw new Error('mermaid 库没加载上');" +
       // suppressErrorRendering:语法错时 mermaid 默认往 body 塞一张「炸弹」SVG,和下面的报错原文重复。
       "mermaid.initialize({startOnLoad:false,securityLevel:'strict',suppressErrorRendering:true,theme:'base',themeVariables:c.themeVariables,fontFamily:c.themeVariables.fontFamily});" +
-      "const r=await mermaid.render('miyu-mermaid',c.source);document.getElementById('out').innerHTML=r.svg;}" +
+      "const r=await mermaid.render('gqy-mermaid',c.source);document.getElementById('out').innerHTML=r.svg;}" +
       "catch(e){err.hidden=false;err.textContent='Mermaid 渲染失败:'+(e&&e.message||e);}})()<\/script>" +
       "</body></html>";
   }

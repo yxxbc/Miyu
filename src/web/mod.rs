@@ -14,7 +14,7 @@ use crate::llm::{
 use crate::memory::{
     MemoryAccess, MemoryOrganizer, MemoryOrganizerHandle, MemoryOrigin, MemoryStore,
 };
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::question::{self, QuestionAnswers};
 // daemon 运行时的共享状态已下沉到 runtime：web 只是它的消费者之一，IPC 与
 // 平台适配是另外两个。放在 web 里会让平台层反过来依赖 HTTP 服务。
@@ -296,8 +296,8 @@ static KATEX_FONTS: &[(&str, &[u8])] = &[
 // 多背 7.2 MiB。降到 256×256 和 1280×720（2x DPR 仍有富余）后纹理 3.7 MiB。
 // 原图留在 `pics/` 不动：README、终端演示、外部链接还在引用。
 // 重新生成见 `scripts/gen_web_assets.py`。
-const MIYU_LOGO: &[u8] = include_bytes!("../../web/assets/miyu-logo.png");
-const MIYU_WALLPAPER: &[u8] = include_bytes!("../../web/assets/miyuwallpaper.png");
+const GQY_LOGO: &[u8] = include_bytes!("../../web/assets/gqy-logo.png");
+const GQY_WALLPAPER: &[u8] = include_bytes!("../../web/assets/gqywallpaper.png");
 
 impl From<QueuedPrompt> for SafeQueuedPrompt {
     fn from(prompt: QueuedPrompt) -> Self {
@@ -333,7 +333,7 @@ impl From<UserAttachment> for SafeUserAttachment {
 
 impl DaemonState {
     pub(crate) fn for_test_with_actor(
-        paths: MiyuPaths,
+        paths: GqyPaths,
         web_port: u16,
     ) -> Result<(Self, std::thread::JoinHandle<Result<()>>)> {
         let state_store = StateStore::new(&paths)?;

@@ -1,5 +1,5 @@
 use crate::config::{AppConfig, KnowledgeBasePluginConfig, MemoryConfig};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 // 只要主体身份这一个纯数据类型，不需要整个平台运行时。
 use crate::platform_types::PlatformPrincipal;
 use anyhow::{bail, Context, Result};
@@ -50,7 +50,7 @@ pub struct MemoryStore {
     writer_principal: Option<String>,
     writer_display_name: String,
     /// 写入时盖在行上的会话标记，`reset_session` 按它只清本会话产生的记忆。
-    /// 空串 = 这条写入路径不知道自己属于哪个会话（`miyu memory remember`、
+    /// 空串 = 这条写入路径不知道自己属于哪个会话（`gqy memory remember`、
     /// 后台整理），那些行只能被 `reset_all` 清掉。
     session_id: String,
     data_db: PathBuf,
@@ -320,7 +320,7 @@ pub(crate) struct LongDiaryDraft {
 }
 
 impl MemoryStore {
-    pub fn new(config: &AppConfig, paths: &MiyuPaths) -> Self {
+    pub fn new(config: &AppConfig, paths: &GqyPaths) -> Self {
         let data_dir = config.active_persona_memory_data_dir(paths).join("memory");
         let state_dir = config.active_persona_memory_state_dir(paths).join("memory");
         Self {

@@ -9,7 +9,7 @@ use crate::clipboard::write_image_cache_file;
 use crate::config::{AppConfig, PrintImagePluginConfig};
 use crate::i18n::text as t;
 use crate::llm::{ChatMessage, OpenAiCompatibleClient};
-use crate::paths::MiyuPaths;
+use crate::paths::GqyPaths;
 use crate::platform_types::{
     PlatformContextFileRef, PlatformContextImageRef, PlatformFileDownload, PlatformImageData,
 };
@@ -33,7 +33,7 @@ use tokio::process::Command;
 pub fn register(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     register_analyze: bool,
 ) {
     if !register_analyze {
@@ -63,7 +63,7 @@ pub fn register(
 pub fn register_scoped_local(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     allowed_images: Vec<PathBuf>,
 ) {
     register_scoped(
@@ -81,7 +81,7 @@ pub fn register_scoped_local(
 pub fn register_scoped_platform(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     allowed_images: Vec<PathBuf>,
     context_images: Vec<PlatformContextImageRef>,
     context_files: Vec<PlatformContextFileRef>,
@@ -104,7 +104,7 @@ pub fn register_scoped_platform(
 fn register_scoped(
     registry: &mut ToolRegistry,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     allowed_images: Vec<PathBuf>,
     context_images: Vec<PlatformContextImageRef>,
     context_files: Vec<PlatformContextFileRef>,
@@ -313,7 +313,7 @@ mod batch_tests {
     }
 }
 
-async fn analyze_image(args: Value, config: AppConfig, paths: MiyuPaths) -> Result<String> {
+async fn analyze_image(args: Value, config: AppConfig, paths: GqyPaths) -> Result<String> {
     if let Some(targets) = batch_targets(&args) {
         if let Some(output) = try_inline_targets(&config, &targets)? {
             return Ok(output);
@@ -329,7 +329,7 @@ async fn analyze_image(args: Value, config: AppConfig, paths: MiyuPaths) -> Resu
     analyze_image_one(args, config, paths).await
 }
 
-async fn analyze_image_one(args: Value, config: AppConfig, paths: MiyuPaths) -> Result<String> {
+async fn analyze_image_one(args: Value, config: AppConfig, paths: GqyPaths) -> Result<String> {
     let vision = &config.plugins.vision;
     if !vision.enabled {
         bail!("vision plugin is disabled")
@@ -491,7 +491,7 @@ pub(crate) fn local_video_data_url(value: &str, mime: &str) -> Result<String> {
 
 pub async fn analyze_video_url_with_prompt(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     video_url: &str,
     prompt: &str,
 ) -> Result<String> {
@@ -523,7 +523,7 @@ pub async fn analyze_video_url_with_prompt(
 
 /// 视频模型路由:显式 video_provider_id/video_model 优先;否则在启用的多模态
 /// 模型里挑 models.dev 标了 video 输入能力的;都没有给出可操作的报错。
-fn video_client(config: &AppConfig, paths: &MiyuPaths) -> Result<OpenAiCompatibleClient> {
+fn video_client(config: &AppConfig, paths: &GqyPaths) -> Result<OpenAiCompatibleClient> {
     let vision = &config.plugins.vision;
     let provider_id = vision.video_provider_id.trim();
     let model = vision.video_model.trim();
@@ -562,14 +562,14 @@ fn video_client(config: &AppConfig, paths: &MiyuPaths) -> Result<OpenAiCompatibl
     // 支持视频的模型选进多模态池——用户按提示去翻 vision 配置,查了一圈才发现
     // 池子根本是空的(08-27)。
     bail!(
-        "no video-capable model available: either add a model whose input modalities include \"video\" to the active multimodal model pool (miyu config → 配置多模态模型), or set plugins.vision.video_provider_id/video_model to one (e.g. glm-5.3-flash, or ox-alpha-free on an OpenRouter-compatible relay)"
+        "no video-capable model available: either add a model whose input modalities include \"video\" to the active multimodal model pool (gqy config → 配置多模态模型), or set plugins.vision.video_provider_id/video_model to one (e.g. glm-5.3-flash, or ox-alpha-free on an OpenRouter-compatible relay)"
     )
 }
 
 async fn analyze_scoped_image(
     args: Value,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     state: Arc<ScopedVisionState>,
 ) -> Result<String> {
     if let Some(targets) = batch_targets(&args) {
@@ -588,7 +588,7 @@ async fn analyze_scoped_image(
 async fn analyze_scoped_image_one(
     args: Value,
     config: AppConfig,
-    paths: MiyuPaths,
+    paths: GqyPaths,
     state: Arc<ScopedVisionState>,
 ) -> Result<String> {
     let image = args
@@ -683,7 +683,7 @@ async fn analyze_scoped_image_one(
 /// 路由,其余扩展名明确拒绝(文本请用 read_platform_file)。
 async fn analyze_platform_cache_file(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     path: &Path,
     prompt: &str,
 ) -> Result<String> {
@@ -711,7 +711,7 @@ async fn analyze_platform_cache_file(
 
 pub async fn analyze_local_image_with_prompt(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     image: &Path,
     prompt: &str,
 ) -> Result<String> {
@@ -721,7 +721,7 @@ pub async fn analyze_local_image_with_prompt(
 
 pub async fn analyze_image_url_with_prompt(
     config: &AppConfig,
-    paths: &MiyuPaths,
+    paths: &GqyPaths,
     image_url: &str,
     prompt: &str,
 ) -> Result<String> {
@@ -939,7 +939,7 @@ fn local_video_data_url_check(value: &str) -> Result<()> {
     Ok(())
 }
 
-fn vision_client(config: &AppConfig, paths: &MiyuPaths) -> Result<OpenAiCompatibleClient> {
+fn vision_client(config: &AppConfig, paths: &GqyPaths) -> Result<OpenAiCompatibleClient> {
     // An explicit global vision provider preserves its existing precedence.
     // Platform turns with a conversation override clear that single-provider
     // field in their private config clone, exposing the full routed pool here.
@@ -1095,7 +1095,7 @@ mod tests {
         }
 
         fn bot_display_name<'a>(&'a self) -> BoxFuture<'a, Result<String>> {
-            Box::pin(async { Ok("Miyu".to_string()) })
+            Box::pin(async { Ok("GQY".to_string()) })
         }
 
         fn message_images<'a>(
@@ -1112,8 +1112,8 @@ mod tests {
         }
     }
 
-    fn test_paths(root: &Path) -> MiyuPaths {
-        MiyuPaths {
+    fn test_paths(root: &Path) -> GqyPaths {
+        GqyPaths {
             root_dir: root.to_path_buf(),
             config_dir: root.join("config"),
             config_file: root.join("config/config.jsonc"),
@@ -1135,7 +1135,7 @@ mod tests {
     #[test]
     fn scoped_registration_binds_image_generation_even_without_vision() {
         let temp = tempfile::tempdir().unwrap();
-        let paths = crate::paths::MiyuPaths {
+        let paths = crate::paths::GqyPaths {
             root_dir: temp.path().to_path_buf(),
             config_dir: temp.path().join("config"),
             config_file: temp.path().join("config/config.jsonc"),
