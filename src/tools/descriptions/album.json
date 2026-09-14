@@ -25,7 +25,7 @@
       "tags": {
         "type": "array",
         "items": { "type": "string" },
-        "description": "For save: tags for later search, e.g. [\"persona\", \"立绘\"]."
+        "description": "For save: tags for later search, e.g. [\"persona\", \"portrait\"]."
       },
       "query": {
         "type": "string",
@@ -51,5 +51,5 @@
   "always_loaded": false,
   "load_policy": "group",
   "groups": ["images"],
-  "stub_example": "{\"action\":\"search\",\"query\":\"立绘\"}"
+  "stub_example": "{\"action\":\"search\",\"query\":\"portrait\"}"
 }

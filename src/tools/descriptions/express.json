@@ -11,7 +11,7 @@
       },
       "company": {
         "type": "string",
-        "description": "Optional carrier: a code (shunfeng, yuantong, zhongtong, jd) or a Chinese name (顺丰). Detected from the number when omitted."
+        "description": "Optional carrier code or name, e.g. shunfeng, yuantong, zhongtong, jd. Detected from the number when omitted."
       },
       "phone": {
         "type": "string",

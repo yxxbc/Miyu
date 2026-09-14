@@ -167,6 +167,7 @@ pub enum AuxRole {
     /// WebUI session title refinement from the first user message.
     SessionTitle,
     /// Background diary → long-term memory distillation (memory organizer).
+    MemoryOrganizer,
     /// WebUI selected-text menu: explain / translate the selection.
     SelectionAssist,
 }
