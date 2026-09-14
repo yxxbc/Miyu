@@ -114,6 +114,23 @@
 5. 完整性检查 + 计数核对
 
 ### P7 安装切换
+**⚠ 阻塞（2026-09-14 预演发现）**：`~/.gqy` **已经存在**，不是本轮测试建的——文件时间 2026-08-16 至 08-24，含 `config.jsonc`、`gqy.2026-08-*.log`、剪贴板图片缓存、zsh hook 等（18M、85 文件），像是 8 月一次以 GQY 为名的旧安装。**可能有用户数据，不得擅自删除**；需用户决定（建议先整体改名归档为 `~/.gqy-old-<日期>` 再迁移）。
+  - 细节：内含 22 会话 / 105 轮、11 个供应商配置、表情包库 gqy、身份文件 Black Cat.md；`~/.zshrc:467-469` 仍 source 其中的 `zsh-hook.zsh`（调 `gqy --shell-intercept`）；LaunchAgent `com.gqy.qq-tunnel` 只是 autossh 反向隧道 8300→gqy-server，与数据目录无关
+  - **用户决定：移到废纸篓**（Finder 删除，清空前可恢复）
+  - 迁移后需用新 gqy **重新生成 zsh hook**（`~/.zshrc` 的 hook 块指向 `~/.gqy/config/shell/zsh-hook.zsh`，迁移后该文件不存在，`[ -r ]` 守卫会跳过）
+- 旁注（非本次原因）：`src/tools/scripts/tests/index.rs:382`、`tests/mod.rs:17`、`src/tools/jobs/tests/shared.rs:26`、`src/config/tests/provider.rs:1008` 在测试里直接调 `GqyPaths::new()`（随后覆盖字段），存在碰真家目录的隐患，后续可改用临时目录
+
+**执行顺序（关键：迁移前绝不能启动 gqy，否则它会建出空的 `~/.gqy`，迁移脚本守卫会拒绝）**
+1. release 构建完成：`target/release/gqy`、`target/release/gqy-voice`
+2. 装二进制（只拷文件，不运行）：`cp target/release/gqy target/release/gqy-voice ~/.cargo/bin/`
+   - ☑ `gqy` 已装（release 10m41s、63M、`gqy 0.6.0`、只依赖系统库）☑ `gqy-voice` 已装（6m15s、24M、只依赖系统库）
+   - 下一步交给用户：第 3、4 步（停 miyu daemon → 预演 → `--apply`）
+3. 用户：`miyu daemon stop`
+4. 用户：`bash ~/.miyu/bin-backup/migrate-to-gqy.sh`（预演，核对计数）→ `bash ~/.miyu/bin-backup/migrate-to-gqy.sh --apply`
+5. 旧二进制挪进备份：`~/.cargo/bin/miyu`、`miyu-voice` → `~/.gqy/bin-backup/`；删 `~/.cargo/share/miyu`
+6. 重新生成 zsh hook：`gqy zsh-init`（覆盖 `~/.gqy/config/shell/zsh-hook.zsh` 并刷新 `~/.zshrc` 的 hook 块；旧 `~/.gqy` 已进废纸篓）
+7. `gqy daemon start` → P8 验收
+- 状态：旧 `~/.gqy` 已移到废纸篓；迁移脚本预演仅剩「旧 miyu daemon 在运行」提示
 - ☐ 安装 `~/.cargo/bin/gqy`、`gqy-voice`，移除旧 `miyu`、`miyu-voice`（旧的留备份）
 - ☑ 资源目录 `~/.cargo/share/gqy` 已预装（字体 29M、模型 23M、改名后的内置脚本 748K，无表情包）；旧 `~/.cargo/share/miyu` 待切换后删除
 - ☐ 用户执行 P6 脚本 ☐ 重装 shell hook（清掉旧 miyu hook）☐ `gqy daemon start`
