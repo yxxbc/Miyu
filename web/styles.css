@@ -6034,8 +6034,9 @@ body[data-color-scheme="matugen"] .tool-card.is-command {
     bottom: 0;
     left: 0;
     width: auto;
-    max-height: 78vh;
+    max-height: min(78vh, 78dvh);
     border-radius: calc(var(--radius) * 2) calc(var(--radius) * 2) 0 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
     animation: ctx-sheet-in 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
   .ctx-pop::before {
@@ -6124,6 +6125,7 @@ body[data-color-scheme="matugen"] .tool-card.is-command {
   min-height: 0;
   padding: 10px 12px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   scrollbar-color: var(--line-strong) transparent;
   scrollbar-width: thin;
 }
@@ -6204,8 +6206,9 @@ body[data-color-scheme="matugen"] .tool-card.is-command {
     bottom: 0 !important;
     left: 0 !important;
     width: auto !important;
-    max-height: 70vh !important;
+    max-height: min(70vh, 70dvh) !important;
     border-radius: calc(var(--radius) * 2) calc(var(--radius) * 2) 0 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }
 .composer-info .ctx-ring {
@@ -11635,13 +11638,19 @@ body.is-login .login-form { width: min(100%, 380px); padding: 22px; }
 }
 .map-detail-count { flex: 1; color: var(--text-soft); font-size: var(--fs-meta); }
 
-.map-detail-body { min-height: 0; overflow-y: auto; }
+.map-detail-body { min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .map-detail-body .map-viewport { height: min(52vh, 460px); }
 
 @media (max-width: 640px) {
   .map-viewport { height: 220px; }
   .map-detail-overlay { padding: 0; }
-  .map-detail { max-height: 100vh; height: 100%; border-radius: 0; }
+  .map-detail {
+    max-height: var(--app-height, 100dvh);
+    height: 100%;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* ── 快递卡片 ─────────────────────────────────────────────────────────
