@@ -529,8 +529,13 @@ pub(in crate::web) async fn list_jobs_http(
     State(state): State<DaemonState>,
     headers: HeaderMap,
 ) -> std::result::Result<Response, ApiError> {
-    require_auth(&headers, &state)?;
-    Ok(Json(json!({ "jobs": tools::jobs::overview() })).into_response())
+    let identity = require_identity(&headers, &state)?;
+    // 注册表是全进程一份;成员只拿到自己名下会话的任务(job_access.rs)。
+    let jobs = tools::jobs::overview()
+        .into_iter()
+        .filter(|job| job_visible_to(&state, &identity, job.session_id.as_deref()))
+        .collect::<Vec<_>>();
+    Ok(Json(json!({ "jobs": jobs })).into_response())
 }
 
 /// 后台子代理到目前为止的原始进度标记流,网页端刷新后据它回放子过程时间线(#9)。
@@ -539,7 +544,8 @@ pub(in crate::web) async fn job_trace_http(
     headers: HeaderMap,
     Path(job_id): Path<String>,
 ) -> std::result::Result<Response, ApiError> {
-    require_auth(&headers, &state)?;
+    let identity = require_identity(&headers, &state)?;
+    require_job_access(&state, &identity, &job_id)?;
     let trace = tools::jobs::job_trace(&job_id);
     Ok(Json(json!({ "job_id": job_id, "trace": trace })).into_response())
 }
@@ -549,7 +555,8 @@ pub(in crate::web) async fn job_log_http(
     headers: HeaderMap,
     Path(job_id): Path<String>,
 ) -> std::result::Result<Response, ApiError> {
-    require_auth(&headers, &state)?;
+    let identity = require_identity(&headers, &state)?;
+    require_job_access(&state, &identity, &job_id)?;
     // 后台命令没有实时进度流,输出只在日志文件里;展开那行时拉尾巴看。
     match tools::jobs::job_log_tail(&job_id, 64 * 1024) {
         Some((text, running)) => {
@@ -565,6 +572,8 @@ pub(in crate::web) async fn stop_job_http(
     Path(job_id): Path<String>,
 ) -> std::result::Result<Response, ApiError> {
     require_mutation(&headers, &state)?;
+    let identity = require_identity(&headers, &state)?;
+    require_job_access(&state, &identity, &job_id)?;
     tools::jobs::stop_job(&job_id)
         .await
         .map_err(|error| ApiError::new(StatusCode::NOT_FOUND, safe_error_message(&error)))?;
