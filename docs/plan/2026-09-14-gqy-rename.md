@@ -56,8 +56,8 @@
 |---|---|---|
 | P0 | 写本交接文档 + 记忆指针 | ☑ |
 | P1 | 处理 D13（两批未提交修复） | ☑ |
-| P2 | 源码：顾清影成为默认人格（§五.P2） | ☐ |
-| P3 | 源码：logo GQY、默认头像看板、删内置表情包、修脚本面板 | ☐ |
+| P2 | 源码：顾清影成为默认人格（§五.P2） | ☑ |
+| P3 | 源码：logo GQY、默认头像看板、删内置表情包、修脚本面板 | ☑ |
 | P4 | 源码：全量改名 miyu→gqy（含命令、目录、环境变量、crate、打包、文档） | ☐ |
 | P5 | 构建 + 全量测试（重新生成工具注册表夹具） | ☐ |
 | P6 | 写数据迁移脚本（桌面备份、~/.miyu→~/.gqy、默认人格迁移） | ☐ |
@@ -67,21 +67,24 @@
 ## 五、各阶段细节
 
 ### P2 顾清影成为默认人格
-- ☐ `src/prompts/miyu.md` 内容换成 `~/.miyu/data/prompts/顾清影.md`（改名阶段文件名随之改为 `gqy.md`，同步 `build.rs`）
-- ☐ `miyu.hint.md` 换成 §三.4 的蒸馏提醒正文；`miyu-dialogs.md` 清空（顾清影无预设对话）
-- ☐ `src/cli/setup.rs:98,100` 默认人格标签、OOBE 相关文案
-- ☐ `src/token_estimate.rs:107` include 路径
+- ☑ `src/prompts/miyu.md` 内容换成 `~/.miyu/data/prompts/顾清影.md`（原样照搬；文件名 P4 改 `gqy.md`，同步 `build.rs`）
+- ☑ `miyu.hint.md` 换成 §三.4 的蒸馏提醒正文；`miyu-dialogs.md` 清空（顾清影无预设对话）；`persona_hint.rs` 两个依赖内置对话条数的测试改为不绑定内容
+- ☑ `src/cli/setup.rs:98,100` 默认人格标签 → 顾清影（内置默认）/ GQY (built-in default)；OOBE 其余文案随 P4 文案替换
+- ☐ `src/token_estimate.rs:107` include 路径（文件名未改，P4 随改名处理）
+- 备注：Miyu 原内置提示词里的工具规则（来源标注、开发委派子代理、删除前确认等）顾清影.md 没有，本次未合入，待用户决定
 
 ### P3 身份素材与小修
-- ☐ logo：`BANNER_UNICODE` / `BANNER_ASCII` 画成 GQY，副标题不改
-- ☐ `web/assets` 默认头像、看板换成 §三.5 两张（文件名改名阶段改 gqy-*）
-- ☐ 删除 `src/memes/miyu/`；`library_for_persona` 默认回退改为新库名；清理 `packaging/common/assets.json` 中 memes 条目的 `miyu/index.json` 必需文件、相关测试（`src/tools/memes/mod.rs:280,397`）
-- ☐ `dashboard.rs` 层级标签按根目录本身判定，不按下标
+- ☑ logo：`BANNER_UNICODE`（27×6）/ `BANNER_ASCII`（21×5）画成 GQY，副标题不改
+- ☑ `web/assets/miyu-logo.png`、`miyuwallpaper.png` 换成 §三.5 两张（文件名 P4 改 gqy-*）
+- ☑ 删除 `src/memes/miyu/`（37 文件）；`library_for_persona` 默认回退 `"miyu"`→`"gqy"`（`tool_plugins.rs:743`）及测试 `memes/mod.rs:397`；`packaging/common/assets.json` 删去 memes 条目
+- ☑ `dashboard.rs`：`labeled_roots` 按目录本身标层，`directories` 按真实目录输出
+- 注意（P7）：用户数据里默认人格表情包目录应为 `data/memes/gqy`；`~/.cargo/share/miyu/memes` 已无内置库
 
 ### P4 全量改名（机械替换后靠编译器兜底）
 - 规则见 D5。建议顺序：文件/目录改名（`git mv`）→ 标识符（`MiyuPaths` 等）→ 环境变量 → 路径与命令字符串 → 文案（按行判断是否含中文决定 GQY / 顾清影）→ 文档（含历史文档，D6）
 - 必改清单：Cargo.toml 包名与两个 `[[bin]]`、`Cargo.lock`（去掉 `--locked` 构建一次刷新）、`~/.miyu`→`~/.gqy`、`MIYU_*`→`GQY_*`、`state/miyu/core.sock`、shell hook 标记与 `fish/conf.d/miyu.fish`、MCP 服务名、`clientInfo.name`、`window.Miyu*`、`packaging/**`、`.github`、README / AGENTS.md / docs
 - 注意：工具描述有「不含中文」的测试规则（commit 69ae92ba），英文里只能写 GQY
+- web 前端待一起改的硬编码：`web/settings-schema.js:2167`（人格模式选项值 `"miyu"`/「内置 Miyu」，与后端 route persona mode 同步改）、`web/settings.js:2403,2499`（同上）、`web/app.js:10563`（登录用户名占位 `miyu`→`gqy`）
 - ☐ 文件/目录改名 ☐ 标识符 ☐ 环境变量 ☐ 路径/命令/协议字符串 ☐ 文案 ☐ 文档 ☐ 打包/CI
 
 ### P5 构建与测试
@@ -106,3 +109,4 @@
 
 - 2026-09-14 P0：写本文档；D1–D12 已确认，D13 待用户澄清。
 - 2026-09-14 P1：D13 = 本地提交不推送。两批修复分别提交（Mac RLIMIT、迁移补全），均**未跑测试**，留待 P5 一并验证。
+- 2026-09-14 P2+P3：默认人格内容换成顾清影、logo GQY、默认头像看板、删内置 Miyu 表情包、脚本面板越界修复。仅 rustfmt 检查，**未编译未测试**。

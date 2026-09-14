@@ -394,7 +394,7 @@ mod tests {
     #[test]
     fn current_library_follows_persona_mapping() {
         let mut config = AppConfig::default();
-        assert_eq!(current_persona_library(&config), "miyu");
+        assert_eq!(current_persona_library(&config), "gqy");
         config.prompt.active_persona = "Custom Persona.md".to_string();
         config.plugins.memes.persona_libraries.insert(
             config.active_persona_scope(),

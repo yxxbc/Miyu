@@ -461,14 +461,15 @@ mod tests {
         assert!(manual_hint(&config, &paths, "default").is_none());
     }
 
-    /// 内置对话示范可完整解析:条数不写死(内容会被编辑),只保证
-    /// 首对精确、全部成对非空。
+    /// 内置对话示范可完整解析:条数不写死(内容会被编辑),只保证全部成对
+    /// 非空。顾清影作为默认人格时没有预设对话(09-14),内置文件为空也要成立。
     #[test]
     fn embedded_miyu_dialogs_parse_into_pairs() {
-        let pairs = parse_dialogs(&crate::prompts::default_miyu_dialogs());
-        assert!(pairs.len() >= 12);
-        assert_eq!(pairs[0].0, "问个事，现在兼容层玩终末地咋样？");
-        assert_eq!(pairs[0].1, "挺好的，帧数表现完全原生");
+        let raw = crate::prompts::default_miyu_dialogs();
+        let pairs = parse_dialogs(&raw);
+        if raw.trim().is_empty() {
+            assert!(pairs.is_empty());
+        }
         assert!(pairs
             .iter()
             .all(|(user, assistant)| !user.is_empty() && !assistant.is_empty()));
@@ -479,7 +480,10 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let paths = test_paths(temp.path());
         let config = AppConfig::default();
-        assert!(load_dialogs(&config, &paths, "default").len() >= 12);
+        assert_eq!(
+            load_dialogs(&config, &paths, "default").len(),
+            parse_dialogs(&crate::prompts::default_miyu_dialogs()).len()
+        );
         assert!(load_dialogs(&config, &paths, "custom").is_empty());
         // 空文件 = 显式停用。
         let path = dialogs_path(&config, &paths, "default");

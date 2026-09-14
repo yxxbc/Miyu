@@ -105,30 +105,6 @@
       "type": "file"
     },
     {
-      "id": "memes",
-      "source_root": "source",
-      "source": "src/memes",
-      "destination": "share/miyu/memes",
-      "mode": "0644",
-      "component": "core",
-      "type": "tree",
-      "include": [
-        "*.json",
-        "*.jpg",
-        "*.jpeg",
-        "*.png",
-        "*.gif",
-        "*.webp"
-      ],
-      "exclude": [],
-      "required_files": [
-        "miyu/index.json"
-      ],
-      "indexes": [
-        "miyu/index.json"
-      ]
-    },
-    {
       "id": "scripts",
       "source_root": "source",
       "source": "src/scripts",

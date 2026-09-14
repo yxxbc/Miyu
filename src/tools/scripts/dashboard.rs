@@ -10,21 +10,44 @@ use crate::tools::scripts::*;
 
 const SOURCE_LINE_CAP: usize = 400;
 const SOURCE_BYTE_CAP: usize = 64 * 1024;
-const LAYER_LABELS: [&str; 4] = ["builtin", "builtin-persona", "global", "persona"];
+/// 扫描根逐个标上所属层。按目录本身判定而不是按下标:自定义人格会多扫一层
+/// `<system>/personas/<人格>`,根的个数不固定(默认人格 4 个、自定义 5 个),
+/// 按下标取标签会越界 panic,默认人格下也会把内置层标错。
+fn labeled_roots(config: &AppConfig, paths: &MiyuPaths) -> Vec<(PathBuf, &'static str)> {
+    let builtin = crate::tools::builtin_scripts_dir(paths);
+    let persona_system = config.active_persona_system_scripts_dir(paths);
+    script_scan_roots(config, paths)
+        .into_iter()
+        .map(|root| {
+            let label = if root == paths.system_scripts_dir || root == builtin {
+                "builtin"
+            } else if root == persona_system {
+                "builtin-persona"
+            } else if root == paths.scripts_dir {
+                "global"
+            } else {
+                "persona"
+            };
+            (root, label)
+        })
+        .collect()
+}
 
-fn canonical_roots(roots: &[PathBuf]) -> Vec<Option<PathBuf>> {
-    roots.iter().map(|root| root.canonicalize().ok()).collect()
+fn canonical_roots(roots: &[(PathBuf, &'static str)]) -> Vec<(Option<PathBuf>, &'static str)> {
+    roots
+        .iter()
+        .map(|(root, label)| (root.canonicalize().ok(), *label))
+        .collect()
 }
 
 /// 文件直接躺在哪个扫描根里。后扫的层优先:persona 目录在 global 目录之下。
-fn layer_of(canonical: &[Option<PathBuf>], path: &Path) -> &'static str {
+fn layer_of(canonical: &[(Option<PathBuf>, &'static str)], path: &Path) -> &'static str {
     let parent = path.parent().and_then(|parent| parent.canonicalize().ok());
     canonical
         .iter()
-        .enumerate()
         .rev()
-        .find(|(_, root)| root.is_some() && **root == parent)
-        .map(|(index, _)| LAYER_LABELS[index])
+        .find(|(root, _)| root.is_some() && *root == parent)
+        .map(|(_, label)| *label)
         .unwrap_or("unknown")
 }
 
@@ -94,8 +117,8 @@ fn index_overrides(
 }
 
 pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &MiyuPaths) -> Result<Value> {
-    let roots = script_scan_roots(config, paths);
-    let dirs: Vec<&Path> = roots.iter().map(PathBuf::as_path).collect();
+    let roots = labeled_roots(config, paths);
+    let dirs: Vec<&Path> = roots.iter().map(|(root, _)| root.as_path()).collect();
     let scan = scan_scripts(&dirs)?;
     let layers = user_layers(config, paths);
     let canonical = canonical_roots(&roots);
@@ -189,10 +212,10 @@ pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &MiyuPaths) 
         "ok": true,
         "persona": config.active_persona_scope(),
         "directories": {
-            "builtin": roots[0].display().to_string(),
-            "builtin_persona": roots[1].display().to_string(),
-            "global": roots[2].display().to_string(),
-            "persona": roots[3].display().to_string(),
+            "builtin": crate::tools::builtin_scripts_dir(paths).display().to_string(),
+            "builtin_persona": config.active_persona_system_scripts_dir(paths).display().to_string(),
+            "global": paths.scripts_dir.display().to_string(),
+            "persona": config.active_persona_scripts_dir(paths).display().to_string(),
         },
         "counts": {
             "registered": scripts.len(),
@@ -211,7 +234,7 @@ pub(crate) fn scripts_dashboard_overview(config: &AppConfig, paths: &MiyuPaths) 
 /// 源码预览只放行扫描根顶层里的文件:面板传回来的路径来自 overview,但仍按
 /// 「(目录, 文件名)」重新解析,不接受任意路径。
 fn resolve_previewable(config: &AppConfig, paths: &MiyuPaths, requested: &str) -> Result<PathBuf> {
-    let roots = script_scan_roots(config, paths);
+    let roots = labeled_roots(config, paths);
     let canonical = canonical_roots(&roots);
     let path = Path::new(requested);
     if !path.is_file() {

@@ -740,7 +740,7 @@ impl MemesPluginConfig {
                 .persona_libraries
                 .get("default")
                 .cloned()
-                .unwrap_or_else(|| "miyu".to_string());
+                .unwrap_or_else(|| "gqy".to_string());
         }
         let persona = persona_scope_name(persona);
         self.persona_libraries

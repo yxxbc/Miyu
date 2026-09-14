@@ -95,9 +95,9 @@ pub(in crate::cli) fn terminal_bell_fallback() {
     }
 }
 
-pub(in crate::cli) const DEFAULT_PERSONA_LABEL_ZH: &str = "Miyu（内置默认）";
+pub(in crate::cli) const DEFAULT_PERSONA_LABEL_ZH: &str = "顾清影（内置默认）";
 
-pub(in crate::cli) const DEFAULT_PERSONA_LABEL_EN: &str = "Miyu (built-in default)";
+pub(in crate::cli) const DEFAULT_PERSONA_LABEL_EN: &str = "GQY (built-in default)";
 
 pub(in crate::cli) fn list_persona_files(
     paths: &MiyuPaths,
