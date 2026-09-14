@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  聊天正文 ```html 围栏的沙箱宿主(web/fencepreview.js)。本身是个空壳:父页面 postMessage
+  把正文送进来,document.write 替换整份文档。CSP 由后端按 artifact html 那条给
+  (src/web/assets.rs fence_frame_asset),iframe 另带 sandbox="allow-scripts allow-modals"。
+  document.open 会清掉这里注册的监听,写进去的内容拿不到第二次替换文档的入口。
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<script>
+"use strict";
+addEventListener("message", (event) => {
+  if (event.source !== parent) return;
+  const data = event.data;
+  if (!data || data.type !== "miyu-fence-html") return;
+  document.open();
+  document.write(String(data.html || ""));
+  document.close();
+});
+parent.postMessage({ type: "miyu-fence-ready" }, "*");
+</script>
+</body>
+</html>

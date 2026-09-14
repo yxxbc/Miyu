@@ -1779,7 +1779,9 @@ window.MiyuSettings = (() => {
   const AUX_ROLES = [
     { key: "session_title", label: "会话标题", fallback: "lite" },
     { key: "memory_organizer", label: "日记整理", fallback: "lite" },
-    { key: "deep_research", label: "深度研究", fallback: "standard" }
+    { key: "deep_research", label: "深度研究", fallback: "standard" },
+    // 聊天正文选中文字右键「解释 / 翻译」(2026-09-14,web/selectionmenu.js)。
+    { key: "selection_assist", label: "划词解释 / 翻译", fallback: "lite" }
   ];
 
   function auxRolesCard() {

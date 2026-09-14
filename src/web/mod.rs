@@ -26,12 +26,15 @@ mod bridge_progress;
 mod bridge_question;
 mod commands_api;
 mod config_api;
+mod context_panel;
+mod selection_menu;
 mod dashboards;
 mod dto;
 mod event_map;
 mod goal_driver;
 mod link_preview;
 mod member_persona;
+mod job_access;
 mod ownership;
 mod persona;
 mod prompt_files;
@@ -66,6 +69,8 @@ use bridge_progress::*;
 use bridge_question::*;
 use commands_api::*;
 use config_api::*;
+use context_panel::*;
+use selection_menu::*;
 use dashboards::affection::*;
 use dashboards::album::*;
 use dashboards::kb::*;
@@ -80,6 +85,7 @@ use event_map::*;
 use goal_driver::*;
 use ipc_server::*;
 use map_api::*;
+use job_access::*;
 use ownership::*;
 use persona::*;
 use prompt_files::*;
@@ -163,6 +169,15 @@ const LIGHTBOX_JS: &str = include_str!("../../web/lightbox.js");
 const PREVIEW_JS: &str = include_str!("../../web/preview.js");
 const LINKCARDS_JS: &str = include_str!("../../web/linkcards.js");
 const TODOS_JS: &str = include_str!("../../web/todos.js");
+// 上下文圆环点开的分项弹窗(2026-09-14)。
+const CONTEXT_PANEL_JS: &str = include_str!("../../web/contextpanel.js");
+// 聊天正文选中文字的右键菜单(2026-09-14)。
+const SELECTION_MENU_JS: &str = include_str!("../../web/selectionmenu.js");
+// 回复气泡底部的产物 chip(2026-09-14 webui-delivery §5)。
+const ARTIFACT_CHIPS_JS: &str = include_str!("../../web/artifactchips.js");
+// ```svg / ```html 围栏预览与它的沙箱宿主页(2026-09-14 webui-delivery §9)。
+const FENCE_PREVIEW_JS: &str = include_str!("../../web/fencepreview.js");
+const FENCE_FRAME_HTML: &str = include_str!("../../web/fence-frame.html");
 // 代码块语法高亮:只用 Prism 的分词器,上色的 DOM 由这个文件亲手搭。
 const HIGHLIGHT_JS: &str = include_str!("../../web/highlight.js");
 // 文件分享面板:独立文件,与 artifact 演示区无关。
@@ -188,6 +203,11 @@ const KATEX_CSS: &str = include_str!("../../web/vendor/katex/katex.min.css");
 //     | gzip -9 -n > web/vendor/echarts/echarts.min.js.gz
 // `-n` 不能少——带上文件名和时间戳的话每次压出来的字节都不一样,构建就不可复现了。
 const ECHARTS_JS_GZ: &[u8] = include_bytes!("../../web/vendor/echarts/echarts.min.js.gz");
+// Mermaid 12.0.0(vendored,MIT):聊天正文 ```mermaid 围栏在沙箱 iframe 里画图用的
+// (web/fencepreview.js)。同样存 gzip(5.6MB → 1.6MB),更新照 echarts 那条命令换包名:
+//   curl -sL https://cdn.jsdelivr.net/npm/mermaid@<版本>/dist/mermaid.min.js \
+//     | gzip -9 -n > web/vendor/mermaid/mermaid.min.js.gz
+const MERMAID_JS_GZ: &[u8] = include_bytes!("../../web/vendor/mermaid/mermaid.min.js.gz");
 static KATEX_FONTS: &[(&str, &[u8])] = &[
     (
         "KaTeX_AMS-Regular.woff2",

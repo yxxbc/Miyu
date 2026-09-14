@@ -315,6 +315,11 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         .route("/preview.js", get(preview_js_asset))
         .route("/linkcards.js", get(linkcards_js_asset))
         .route("/todos.js", get(todos_js_asset))
+        .route("/contextpanel.js", get(contextpanel_js_asset))
+        .route("/selectionmenu.js", get(selectionmenu_js_asset))
+        .route("/artifactchips.js", get(artifactchips_js_asset))
+        .route("/fencepreview.js", get(fencepreview_js_asset))
+        .route("/fence-frame.html", get(fence_frame_asset))
         .route("/highlight.js", get(highlight_js_asset))
         // artifact 的沙箱 iframe 也来这里取库,而它是不透明源——浏览器会为此强制
         // 发 OPTIONS 预检,所以每条都得配一个 options 分支,漏一条那个库就加载不上。
@@ -337,6 +342,10 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
         .route(
             "/vendor/echarts/echarts.min.js",
             get(echarts_js_asset).options(vendor_preflight),
+        )
+        .route(
+            "/vendor/mermaid/mermaid.min.js",
+            get(mermaid_js_asset).options(vendor_preflight),
         )
         .route("/api/media", get(media_stream))
         // WebUI 链接卡片:元数据与缩略图都由 daemon 代抓,浏览器不直连第三方
@@ -617,6 +626,12 @@ pub(in crate::web) fn router(state: DaemonState) -> Router {
             "/api/sessions/{session_id}/context",
             get(session_context_http),
         )
+        .route(
+            "/api/sessions/{session_id}/context/breakdown",
+            get(session_context_breakdown_http),
+        )
+        .route("/api/selection/assist", post(selection_assist_http))
+        .route("/api/selection/web-search", get(selection_web_search_http))
         .route(
             "/api/sessions/{session_id}/poppable",
             get(poppable_turns_http),

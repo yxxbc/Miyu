@@ -167,13 +167,16 @@ pub enum AuxRole {
     MemoryOrganizer,
     /// The `deep_research` tool's researcher/reviewer loop.
     DeepResearch,
+    /// WebUI selected-text menu: explain / translate the selection.
+    SelectionAssist,
 }
 
 impl AuxRole {
-    pub const ALL: [Self; 3] = [
+    pub const ALL: [Self; 4] = [
         Self::SessionTitle,
         Self::MemoryOrganizer,
         Self::DeepResearch,
+        Self::SelectionAssist,
     ];
 
     /// Config key under `model_tiers.roles`.
@@ -182,6 +185,7 @@ impl AuxRole {
             Self::SessionTitle => "session_title",
             Self::MemoryOrganizer => "memory_organizer",
             Self::DeepResearch => "deep_research",
+            Self::SelectionAssist => "selection_assist",
         }
     }
 
@@ -190,7 +194,7 @@ impl AuxRole {
     /// fresh install behaves exactly as before.
     pub fn default_tier(&self) -> ModelTier {
         match self {
-            Self::SessionTitle => ModelTier::Lite,
+            Self::SessionTitle | Self::SelectionAssist => ModelTier::Lite,
             // 整理器要在几十条已有记忆里判断重复、矛盾、归属和可见性,是记忆
             // 系统里最吃判断力的一步;放最便宜的池产出的是通用知识大杂烩(09-10
             // 真实库取证:123 条里六成是技术问答全文)。

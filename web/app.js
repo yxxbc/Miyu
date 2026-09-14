@@ -1764,11 +1764,12 @@
       elements.contextRing.style.strokeDashoffset = `${(circ * (1 - percent / 100)).toFixed(2)}`;
     }
     if (elements.contextTrack) {
-      elements.contextTrack.setAttribute("aria-valuenow", String(Math.round(percent)));
-      elements.contextTrack.setAttribute("aria-label", windowSize ? `上下文使用 ${Math.round(percent)}%` : `上下文 ${formatInteger(tokens)} tokens`);
+      elements.contextTrack.setAttribute("aria-label", windowSize ? `上下文使用 ${Math.round(percent)}%,点击查看分项` : `上下文 ${formatInteger(tokens)} tokens,点击查看分项`);
       elements.contextTrack.classList.toggle("is-high", percent >= 75 && percent < 90);
       elements.contextTrack.classList.toggle("is-critical", percent >= 90);
     }
+    // 分项弹窗开着时跟着重算,换了会话就关掉(contextpanel.js)。
+    window.MiyuContextPanel?.contextChanged();
   }
 
   // 输入框下方信息行的「每秒 toks」「累计」:取最新一轮的样本,回合结束/round_usage 时更新。
@@ -4274,6 +4275,10 @@
     flushPlain(text.length);
   }
 
+  /// 正在画流式中间态。围栏预览据此把 html 这类「重建一次就重载一次」的活性预览推迟到
+  /// 回合结束那次重画——流式每帧整段重建,iframe 会一帧一闪。
+  let markdownStreaming = false;
+
   function codeBlock(language, codeText, settled = true) {
     const wrapper = document.createElement("div");
     wrapper.className = "code-block";
@@ -4293,6 +4298,10 @@
     window.MiyuHighlight?.paint(code, language, codeText, settled);
     pre.appendChild(code);
     wrapper.append(toolbar, pre);
+    // ```svg / ```html 围栏闭合后画成图,块头加「预览 / 源码」(fencepreview.js)。
+    if (settled) {
+      window.MiyuFencePreview?.decorate({ wrapper, toolbar, pre, language, source: codeText, streaming: markdownStreaming });
+    }
     return wrapper;
   }
 
@@ -4509,6 +4518,14 @@
     return -1;
   }
 
+  const ALERT_TYPES = {
+    note: { icon: "circle-alert", label: "Note" },
+    tip: { icon: "lightbulb", label: "Tip" },
+    important: { icon: "sparkles", label: "Important" },
+    warning: { icon: "triangle-alert", label: "Warning" },
+    caution: { icon: "triangle-alert", label: "Caution" },
+  };
+
   function renderMarkdown(container, source) {
     const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n");
     const fragment = document.createDocumentFragment();
@@ -4623,7 +4640,40 @@
           index += 1;
         }
         const blockquote = document.createElement("blockquote");
-        appendInline(blockquote, quoteLines.join("\n"));
+        const alertMatch = quoteLines[0]?.match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i);
+        if (alertMatch) {
+          const kind = alertMatch[1].toLowerCase();
+          blockquote.className = `markdown-alert markdown-alert-${kind}`;
+          const title = document.createElement("p");
+          title.className = "markdown-alert-title";
+          const cfg = ALERT_TYPES[kind];
+          if (cfg?.icon) {
+            title.appendChild(createIcon(cfg.icon, "markdown-alert-icon"));
+          }
+          const label = document.createElement("span");
+          label.textContent = cfg?.label || alertMatch[1];
+          title.appendChild(label);
+          blockquote.appendChild(title);
+          if (alertMatch[2].trim()) {
+            quoteLines[0] = alertMatch[2];
+          } else {
+            quoteLines.shift();
+            while (quoteLines.length > 0 && !quoteLines[0].trim()) {
+              quoteLines.shift();
+            }
+          }
+        }
+        const cleanedLines = quoteLines.map((l) => l.replace(/^#{1,6}\s+(.+)$/, "**$1**"));
+        if (alertMatch) {
+          if (cleanedLines.length > 0) {
+            const content = document.createElement("div");
+            content.className = "markdown-alert-content";
+            appendInline(content, cleanedLines.join("\n"));
+            blockquote.appendChild(content);
+          }
+        } else {
+          appendInline(blockquote, cleanedLines.join("\n"));
+        }
         fragment.appendChild(blockquote);
         continue;
       }
@@ -5133,9 +5183,7 @@
     state.artifactSourceCache.delete(artifact.id);
     state.selectedArtifactId = artifact.id;
     state.artifactMode = defaultArtifactMode(artifact);
-    state.artifactZoom = 1;
-    state.artifactPanX = 0;
-    state.artifactPanY = 0;
+    resetArtifactImageView();
     elements.artifactToggleButton.hidden = false;
     if (autoOpen && layoutViewportWidth() > 760) setArtifactWorkspaceOpen(true);
     else if (!state.artifactOpen) elements.artifactToggleButton.classList.add("has-new-artifact");
@@ -5521,59 +5569,137 @@
     return "FILE";
   }
 
+  const ARTIFACT_ZOOM_MAX = 4;
+
+  function artifactImageTransform() {
+    return `translate(${state.artifactPanX}px, ${state.artifactPanY}px) scale(${state.artifactZoom})`;
+  }
+
+  /// 缩放 / 平移归零,并作废 renderArtifactWorkspace 的「同一视图不重建」记号——
+  /// 否则状态归零了、画面上的图还停在旧变换里。
+  function resetArtifactImageView() {
+    state.artifactZoom = 1;
+    state.artifactPanX = 0;
+    state.artifactPanY = 0;
+    delete elements.artifactView.dataset.renderKey;
+  }
+
+  /// 指针在 stage 里的布局坐标。clientX 与 getBoundingClientRect 都是屏上像素,
+  /// `.app-shell` 带 `zoom: var(--ui-scale)`,差值除 UI_SCALE 才和 offsetLeft 同一套单位。
+  function artifactStagePoint(stage, event) {
+    const rect = stage.getBoundingClientRect();
+    return {
+      x: visualPixelsToLayout(event.clientX - rect.left),
+      y: visualPixelsToLayout(event.clientY - rect.top)
+    };
+  }
+
+  /// 以 anchor(stage 内布局坐标,缺省取 stage 中心)为不动点缩放。
+  ///
+  /// 原点在图的左上角(styles.css `transform-origin: 0 0`),屏上位置 = 图框 + pan + zoom·q。
+  /// 让 anchor 下那个 q 缩放前后不动,就是 pan' = pan + (anchor − 图框 − pan)·(1 − 新/旧)。
+  /// 以前原点是 `center top`、滚轮不补偿 pan:放大时图往下长,指针下的内容跑开——todo 里的「错位」。
+  function zoomArtifactImage(nextZoom, anchor = null) {
+    const stage = elements.artifactView.querySelector(".artifact-image-stage");
+    const image = stage?.querySelector("img");
+    const previous = state.artifactZoom || 1;
+    const zoom = Math.min(ARTIFACT_ZOOM_MAX, Math.max(1, Number(nextZoom) || 1));
+    if (zoom <= 1) {
+      state.artifactPanX = 0;
+      state.artifactPanY = 0;
+    } else if (stage && image) {
+      const point = anchor || { x: stage.clientWidth / 2, y: stage.clientHeight / 2 };
+      const ratio = 1 - zoom / previous;
+      state.artifactPanX += (point.x - image.offsetLeft - state.artifactPanX) * ratio;
+      state.artifactPanY += (point.y - image.offsetTop - state.artifactPanY) * ratio;
+    }
+    state.artifactZoom = zoom;
+    if (image) {
+      image.style.transform = artifactImageTransform();
+      stage.classList.toggle("is-zoomed", zoom > 1);
+    }
+    updateArtifactImageControls();
+  }
+
   function renderArtifactImage(artifact) {
     const stage = document.createElement("div");
     stage.className = "artifact-image-stage";
     const image = document.createElement("img");
     image.src = artifact.url;
     image.alt = artifact.name;
-    const applyTransform = () => {
-      image.style.transform = `translate(${state.artifactPanX}px, ${state.artifactPanY}px) scale(${state.artifactZoom})`;
-      stage.classList.toggle("is-zoomed", state.artifactZoom > 1);
-    };
-    applyTransform();
+    image.draggable = false;
+    image.style.transform = artifactImageTransform();
+    stage.classList.toggle("is-zoomed", state.artifactZoom > 1);
     stage.addEventListener("wheel", (event) => {
       event.preventDefault();
-      const nextZoom = Math.min(4, Math.max(0.25, state.artifactZoom * (event.deltaY < 0 ? 1.12 : 0.89)));
-      state.artifactZoom = nextZoom;
-      if (nextZoom <= 1) {
-        state.artifactZoom = 1;
-        state.artifactPanX = 0;
-        state.artifactPanY = 0;
-      }
-      applyTransform();
-      updateArtifactImageControls();
+      zoomArtifactImage(state.artifactZoom * (event.deltaY < 0 ? 1.12 : 0.89), artifactStagePoint(stage, event));
     }, { passive: false });
+    // 双击:适应 ↔ 原始尺寸,以双击点为锚。图本身比面板小(适应即原始)时放大两倍,不然双击没反应。
+    stage.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      if (state.artifactZoom > 1) {
+        zoomArtifactImage(1);
+        return;
+      }
+      const actual = image.offsetWidth ? image.naturalWidth / image.offsetWidth : 0;
+      zoomArtifactImage(actual > 1.05 ? actual : 2, artifactStagePoint(stage, event));
+    });
+
+    // 平移。位移只除 UI_SCALE、**不除 zoom**:transform 是 translate() 在 scale() 前,
+    // translate 不被放大(docs/plan/2026-09-14/webui-delivery.md §1 验证推理)。
+    let pan = null;
+    let frame = 0;
+    const applyPan = () => {
+      frame = 0;
+      if (!pan) return;
+      state.artifactPanX = pan.originX + visualPixelsToLayout(pan.clientX - pan.startX);
+      state.artifactPanY = pan.originY + visualPixelsToLayout(pan.clientY - pan.startY);
+      image.style.transform = artifactImageTransform();
+    };
     stage.addEventListener("pointerdown", (event) => {
       if (state.artifactZoom <= 1 || event.button !== 0) return;
       event.preventDefault();
       stage.classList.add("is-dragging");
       stage.setPointerCapture(event.pointerId);
-      stage.dataset.panStartX = String(event.clientX);
-      stage.dataset.panStartY = String(event.clientY);
-      stage.dataset.panOriginX = String(state.artifactPanX);
-      stage.dataset.panOriginY = String(state.artifactPanY);
+      pan = {
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: state.artifactPanX,
+        originY: state.artifactPanY,
+        clientX: event.clientX,
+        clientY: event.clientY
+      };
     });
+    // 高回报率鼠标一帧能来好几次 pointermove:只记最新坐标,每帧写一次 transform。
     stage.addEventListener("pointermove", (event) => {
-      if (!stage.classList.contains("is-dragging")) return;
-      state.artifactPanX = Number(stage.dataset.panOriginX)
-        + visualPixelsToLayout(event.clientX - Number(stage.dataset.panStartX));
-      state.artifactPanY = Number(stage.dataset.panOriginY)
-        + visualPixelsToLayout(event.clientY - Number(stage.dataset.panStartY));
-      applyTransform();
+      if (!pan) return;
+      pan.clientX = event.clientX;
+      pan.clientY = event.clientY;
+      if (!frame) frame = window.requestAnimationFrame(applyPan);
     });
-    const finishPan = () => stage.classList.remove("is-dragging");
+    const finishPan = () => {
+      if (!pan) return;
+      // 还没画的最后一帧当场补上,松手的位置就是停下的位置。
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        applyPan();
+      }
+      pan = null;
+      stage.classList.remove("is-dragging");
+    };
     stage.addEventListener("pointerup", finishPan);
     stage.addEventListener("pointercancel", finishPan);
+    // 捕获被抢走(系统手势、弹窗、元素被移出文档)时不会有 up/cancel,不听这条就卡在拖拽态。
+    stage.addEventListener("lostpointercapture", finishPan);
     stage.appendChild(image);
     return stage;
   }
 
   function updateArtifactImageControls() {
-    const isImage = state.artifacts.find((item) => item.id === state.selectedArtifactId)?.kind === "image";
-    if (!isImage) return;
-    elements.artifactImageZoomOutButton.disabled = state.artifactZoom <= 0.25;
-    elements.artifactImageZoomInButton.disabled = state.artifactZoom >= 4;
+    const artifact = state.artifacts.find((item) => item.id === state.selectedArtifactId);
+    if (!(artifact?.kind === "image" || artifact?.mime?.startsWith("image/"))) return;
+    elements.artifactImageZoomOutButton.disabled = state.artifactZoom <= 1;
+    elements.artifactImageZoomInButton.disabled = state.artifactZoom >= ARTIFACT_ZOOM_MAX;
   }
 
   async function loadArtifactSource(artifact) {
@@ -5807,9 +5933,7 @@
       button.addEventListener("click", () => {
         state.selectedArtifactId = item.id;
         state.artifactMode = defaultArtifactMode(item);
-        state.artifactZoom = 1;
-        state.artifactPanX = 0;
-        state.artifactPanY = 0;
+        resetArtifactImageView();
         closeArtifactResourceMenu();
         renderArtifactWorkspace();
       });
@@ -5842,9 +5966,7 @@
       const next = state.artifacts.at(-1);
       state.selectedArtifactId = next?.id || null;
       state.artifactMode = defaultArtifactMode(next);
-      state.artifactZoom = 1;
-      state.artifactPanX = 0;
-      state.artifactPanY = 0;
+      resetArtifactImageView();
     }
     if (!state.artifacts.length) {
       closeArtifactResourceMenu();
@@ -5880,8 +6002,8 @@
     elements.artifactPreviewButton.parentElement.hidden = !(canPreview && canSource);
     elements.artifactImageActions.hidden = !showPicture;
     elements.artifactImageExternalButton.href = showPicture ? artifact.url : "";
-    elements.artifactImageZoomOutButton.disabled = !showPicture || state.artifactZoom <= 0.25;
-    elements.artifactImageZoomInButton.disabled = !showPicture || state.artifactZoom >= 4;
+    elements.artifactImageZoomOutButton.disabled = !showPicture || state.artifactZoom <= 1;
+    elements.artifactImageZoomInButton.disabled = !showPicture || state.artifactZoom >= ARTIFACT_ZOOM_MAX;
     elements.artifactPreviewButton.hidden = !canPreview;
     elements.artifactSourceButton.hidden = !canSource;
     elements.artifactPreviewButton.classList.toggle("active", state.artifactMode === "preview");
@@ -5895,12 +6017,21 @@
     elements.artifactMaximizeButton.title = state.artifactMaximized ? "退出全屏" : "全屏显示";
     elements.artifactMaximizeButton.setAttribute("aria-label", elements.artifactMaximizeButton.title);
     renderArtifactResourceMenu(artifact);
+    // 同一份内容、同一视图就不重建。回合同步、全屏切换都会走到这里,以前每次都整块重建:
+    // 拖图拖到一半 stage 被换掉(像「错位」)、HTML iframe 重载丢交互状态。
+    // 要强制重建(缩放归零、换了内容)的地方删掉这个记号,见 resetArtifactImageView。
+    const renderKey = `${artifact.id}|${state.artifactMode}|${artifact.url}|${artifact.updated_at || ""}`;
+    if (elements.artifactView.dataset.renderKey === renderKey && elements.artifactView.childElementCount) return;
+    elements.artifactView.dataset.renderKey = renderKey;
     const token = ++state.artifactRenderToken;
     elements.artifactView.replaceChildren(artifactLoadingNode());
     const render = state.artifactMode === "source"
       ? renderArtifactSource(artifact, token)
       : renderArtifactPreview(artifact, token);
-    render.catch((error) => renderArtifactFailure(error, token));
+    render.catch((error) => {
+      if (token === state.artifactRenderToken) delete elements.artifactView.dataset.renderKey;
+      renderArtifactFailure(error, token);
+    });
   }
 
   async function copySelectedArtifact() {
@@ -5940,18 +6071,36 @@
   function changeArtifactImageZoom(delta) {
     const artifact = state.artifacts.find((item) => item.id === state.selectedArtifactId);
     if (!artifact || !(artifact.kind === "image" || artifact.mime.startsWith("image/"))) return;
-    state.artifactZoom = Math.min(4, Math.max(0.25, (state.artifactZoom || 1) + delta));
-    if (state.artifactZoom <= 1) {
-      state.artifactZoom = 1;
-      state.artifactPanX = 0;
-      state.artifactPanY = 0;
-    }
-    const image = elements.artifactView.querySelector(".artifact-image-stage > img");
-    if (image) {
-      image.style.transform = `translate(${state.artifactPanX}px, ${state.artifactPanY}px) scale(${state.artifactZoom})`;
-      image.closest(".artifact-image-stage")?.classList.toggle("is-zoomed", state.artifactZoom > 1);
-    }
-    updateArtifactImageControls();
+    zoomArtifactImage((state.artifactZoom || 1) + delta);
+  }
+
+  /// 键盘 `+` / `-` / `0`:只在图片预览开着、焦点不在输入控件里时生效,
+  /// 焦点落在侧栏或页面空白处才接——在聊天正文里敲 0 不该把图复位。
+  function handleArtifactImageKey(event) {
+    if (!state.artifactOpen || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest("input, textarea, select, [contenteditable]")) return;
+    if (target && target !== document.body && !elements.artifactWorkspace.contains(target)) return;
+    if (!elements.artifactView.querySelector(".artifact-image-stage")) return;
+    if (event.key === "+" || event.key === "=") zoomArtifactImage(state.artifactZoom * 1.25);
+    else if (event.key === "-" || event.key === "_") zoomArtifactImage(state.artifactZoom * 0.8);
+    else if (event.key === "0") zoomArtifactImage(1);
+    else return;
+    event.preventDefault();
+  }
+
+  function artifactChipOptions() {
+    return {
+      normalize: (source) => normalizeArtifact(source, source?.kind || "file"),
+      typeLabel: artifactTypeLabel,
+      iconName: artifactIconName,
+      iconSlot: makeIconSlot,
+      // registerArtifact 会把它从 dismissed 里拿出来,在资源菜单里「移除」过的也能再调出。
+      onOpen: (artifact) => {
+        registerArtifact(artifact);
+        setArtifactWorkspaceOpen(true);
+      }
+    };
   }
 
   function validAssetDimension(value) {
@@ -6542,6 +6691,8 @@
     // tool_flow 里就是一个调用,这里遇到它就用第 N 个 exchange 顶替那张裸工具卡。
     questionExchanges = [],
     assets = [],
+    // 这一轮产出的 artifact,画成气泡底部的 chip(artifactchips.js)。
+    artifacts = [],
     timestamp = null,
     tokenTotal = 0,
     tokenPrompt = 0,
@@ -6644,6 +6795,7 @@
     procLineBreak(blocks);
     assistantContent.appendChild(blocks);
     assistantContent.classList.toggle("is-slim", !blocks.querySelector(WIDE_BLOCK_SELECTOR));
+    window.MiyuArtifactChips?.sync(assistantContent, artifacts, artifactChipOptions());
     article.append(header, assistantContent);
 
     const meta = document.createElement("div");
@@ -6844,6 +6996,7 @@
     const assistantContent = String(turn?.assistant_content || "");
     const assistantReasoning = String(turn?.assistant_reasoning || "");
     const assets = turn?.status === "running" ? [] : (Array.isArray(turn?.assets) ? turn.assets : []);
+    const artifacts = turn?.status === "running" ? [] : (Array.isArray(turn?.artifacts) ? turn.artifacts : []);
     const stashedFinal = takeStash("final");
     if (stashedFinal) {
       stashedFinal.classList.toggle("is-muted", turn?.active_context === false);
@@ -6855,6 +7008,7 @@
       && (assistantContent.trim()
         || assistantReasoning.trim()
         || assets.length
+        || artifacts.length
         || persistedToolRounds.length
         || persistedExchanges.length)
     ) {
@@ -6866,6 +7020,7 @@
         providerId: turn?.provider_id,
         model: turn?.model,
         assets,
+        artifacts,
         timestamp: turn?.assistant_timestamp,
         tokenTotal: turn?.token_total,
         tokenPrompt: turn?.token_prompt,
@@ -7528,11 +7683,32 @@
     return patched;
   }
 
+  /// 流式中间态的渲染入口:打上 markdownStreaming,围栏预览据此推迟活性内容。
+  /// 原文挂在元素上,回合结束时 rerenderLiveHtmlFences 按它补画一次。
+  function renderStreamingMarkdown(block) {
+    block.element.__liveRaw = block.raw;
+    markdownStreaming = true;
+    try {
+      renderMarkdown(block.element, stabilizeStreamingMarkdown(block.raw));
+    } finally {
+      markdownStreaming = false;
+    }
+  }
+
+  /// 流式期间 ```html / ```mermaid 围栏只占位(见 codeBlock),回合结束补画成沙箱预览。
+  /// 只重画含这两种围栏的块:其余块流式结果与终稿同构,不必再换一遍 DOM。
+  function rerenderLiveHtmlFences(live) {
+    for (const element of live.blocks?.querySelectorAll(".live-text-block") || []) {
+      const raw = element.__liveRaw;
+      if (typeof raw === "string" && /^\s*```\s*(html?|mermaid)\s*$/im.test(raw)) renderMarkdown(element, raw);
+    }
+  }
+
   function scheduleMarkdownRender(block) {
     if (block.renderFrame) return;
     block.renderFrame = window.requestAnimationFrame(() => {
       block.renderFrame = null;
-      renderMarkdown(block.element, stabilizeStreamingMarkdown(block.raw));
+      renderStreamingMarkdown(block);
       contentAdded(block.element);
     });
   }
@@ -7558,7 +7734,7 @@
     live.assistantText += text;
     live.copyButton.hidden = !live.assistantText.trim();
     if (startsText) {
-      renderMarkdown(live.currentText.element, stabilizeStreamingMarkdown(live.currentText.raw));
+      renderStreamingMarkdown(live.currentText);
       promoteTypingIndicator(live);
     } else {
       scheduleMarkdownRender(live.currentText);
@@ -8532,6 +8708,12 @@
         const index = live.artifacts.findIndex((item) => String(item?.id) === artifact.id);
         if (index >= 0) live.artifacts[index] = artifact;
         else live.artifacts.push(artifact);
+        // 实时回合同样画到气泡底部,与刷新后 createAssistantMessage 那份同构。
+        const liveContent = live.article?.querySelector(".assistant-content");
+        if (liveContent) {
+          window.MiyuArtifactChips?.sync(liveContent, live.artifacts, artifactChipOptions());
+          syncBubbleWidth(live.article);
+        }
         if (!tool.artifactPreview) {
           tool.artifactPreview = document.createElement("button");
           tool.artifactPreview.type = "button";
@@ -9846,6 +10028,12 @@
     clearPreparingTool(live);
     clearTypingIndicator(live);
     finalizeLiveReasoning(live);
+    if (live.currentText?.renderFrame) {
+      window.cancelAnimationFrame(live.currentText.renderFrame);
+      live.currentText.renderFrame = null;
+      live.currentText.element.__liveRaw = live.currentText.raw;
+    }
+    rerenderLiveHtmlFences(live);
     procLineBreak(live.blocks);
     setLiveEndpoint(live, data?.provider_id, data?.model);
     removeLiveStopButton(live);
@@ -12693,10 +12881,42 @@
     elements.sidebarSettingsButton.addEventListener("click", (event) => openSettings(event.currentTarget));
     elements.artifactToggleButton.addEventListener("click", () => setArtifactWorkspaceOpen(!state.artifactOpen));
     elements.artifactCloseButton.addEventListener("click", () => setArtifactWorkspaceOpen(false));
+    // 上下文圆环 → 分项弹窗(contextpanel.js)。压缩成功后的重拉与 /compact 命令同一条路。
+    window.MiyuContextPanel?.mount({
+      trigger: elements.contextTrack,
+      pop: document.getElementById("contextPop"),
+      dock: elements.composerDock,
+      apiRequest,
+      formatTokens,
+      toLayout: visualPixelsToLayout,
+      uiScale: () => UI_SCALE,
+      getSessionId: () => state.viewSessionId || state.currentSessionId,
+      getContext: () => ({ tokens: state.context?.tokens, window: state.context?.window }),
+      isRunning: () => conversationRunning(),
+      onCompacted: async (sessionId) => {
+        if (state.viewSessionId && state.viewSessionId !== state.currentSessionId) {
+          await loadSessionView(state.viewSessionId, { quiet: true });
+        } else {
+          await loadBootstrap();
+        }
+        refreshSessionContext(sessionId);
+      },
+    });
+    // 聊天正文选中文字的右键菜单(selectionmenu.js)。
+    window.MiyuSelectionMenu?.mount({
+      root: elements.chatScroll,
+      composer: elements.composerInput,
+      resizeComposer,
+      apiRequest,
+      renderMarkdown,
+      getSessionId: () => state.viewSessionId || state.currentSessionId,
+      toast: showToast,
+    });
     elements.artifactPreviewButton.addEventListener("click", () => setArtifactMode("preview"));
     elements.artifactSourceButton.addEventListener("click", () => setArtifactMode("source"));
     elements.artifactImageZoomOutButton.addEventListener("click", () => changeArtifactImageZoom(-0.25));
     elements.artifactImageZoomInButton.addEventListener("click", () => changeArtifactImageZoom(0.25));
+    document.addEventListener("keydown", handleArtifactImageKey);
     elements.artifactCopyButton.addEventListener("click", copySelectedArtifact);
     elements.artifactMaximizeButton.addEventListener("click", toggleArtifactMaximized);
     elements.artifactTitleButton.addEventListener("click", (event) => {

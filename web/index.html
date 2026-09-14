@@ -21,6 +21,10 @@
   <script defer src="/preview.js"></script>
   <script defer src="/linkcards.js"></script>
   <script defer src="/todos.js"></script>
+  <script defer src="/contextpanel.js"></script>
+  <script defer src="/selectionmenu.js"></script>
+  <script defer src="/artifactchips.js"></script>
+  <script defer src="/fencepreview.js"></script>
   <script defer src="/shared.js"></script>
   <script defer src="/diff.js"></script>
   <script defer src="/mapcard.js"></script>
@@ -284,20 +288,22 @@
             <span class="composer-info-spacer"></span>
             <span class="composer-speed" id="composerSpeed" hidden><span class="k">每秒</span> <b id="composerSpeedValue">--</b> <span class="k">toks</span></span>
             <span class="composer-cumulative" id="composerCumulative" hidden><span class="k">累计</span> <b id="composerCumulativeValue">--</b></span>
-            <div class="composer-context" id="contextTrack" role="progressbar" aria-label="上下文使用情况" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" title="上下文使用">
+            <button type="button" class="composer-context" id="contextTrack" aria-haspopup="dialog" aria-expanded="false" aria-controls="contextPop" aria-label="上下文使用情况,点击查看分项" title="查看上下文分项">
               <svg class="ctx-ring" viewBox="0 0 24 24" aria-hidden="true">
                 <circle class="ctx-ring-bg" cx="12" cy="12" r="9"></circle>
                 <circle class="ctx-ring-fg" cx="12" cy="12" r="9" id="contextRing"></circle>
               </svg>
               <span class="ctx-nums"><span class="k">上下文</span> <span id="contextNumbers">-- / --</span></span>
               <i id="contextBar" hidden></i>
-            </div>
+            </button>
           </div>
           <!-- 模型菜单挂在 dock 上而不是 form 里：`.composer` 为了圆角开了
                overflow: hidden，菜单在它里面会被裁成半截。定位由
                positionModelMenu() 按按钮实际位置算。 -->
           <div class="model-menu" id="modelMenu" role="menu" aria-label="选择模型" hidden></div>
           <div class="model-level-menu" id="modelLevelMenu" role="radiogroup" aria-label="思考程度" hidden></div>
+          <!-- 上下文分项弹窗:同一个原因挂在 dock 上,内容由 contextpanel.js 画。 -->
+          <section class="ctx-pop" id="contextPop" role="dialog" aria-label="上下文分项" hidden></section>
         </footer>
       </section>
 

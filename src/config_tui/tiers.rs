@@ -29,6 +29,7 @@ pub(in crate::config_tui) fn aux_role_label(role: AuxRole) -> &'static str {
         AuxRole::SessionTitle => t("Session title", "会话标题"),
         AuxRole::MemoryOrganizer => t("Diary organizer", "日记整理"),
         AuxRole::DeepResearch => t("Deep research", "深度研究"),
+        AuxRole::SelectionAssist => t("Selection explain", "划词解释"),
     }
 }
 

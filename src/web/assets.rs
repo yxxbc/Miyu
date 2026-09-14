@@ -189,6 +189,22 @@ pub(in crate::web) async fn index_asset(headers: HeaderMap) -> Response {
                 concat!("src=\"/todos.js?v=", env!("MIYU_BUILD_ID"), "\""),
             )
             .replace(
+                "src=\"/contextpanel.js\"",
+                concat!("src=\"/contextpanel.js?v=", env!("MIYU_BUILD_ID"), "\""),
+            )
+            .replace(
+                "src=\"/selectionmenu.js\"",
+                concat!("src=\"/selectionmenu.js?v=", env!("MIYU_BUILD_ID"), "\""),
+            )
+            .replace(
+                "src=\"/artifactchips.js\"",
+                concat!("src=\"/artifactchips.js?v=", env!("MIYU_BUILD_ID"), "\""),
+            )
+            .replace(
+                "src=\"/fencepreview.js\"",
+                concat!("src=\"/fencepreview.js?v=", env!("MIYU_BUILD_ID"), "\""),
+            )
+            .replace(
                 "src=\"/shared.js\"",
                 concat!("src=\"/shared.js?v=", env!("MIYU_BUILD_ID"), "\""),
             )
@@ -297,6 +313,66 @@ pub(in crate::web) async fn todos_js_asset(headers: HeaderMap) -> Response {
         TODOS_JS.as_bytes(),
         "application/javascript; charset=utf-8",
     )
+}
+
+pub(in crate::web) async fn contextpanel_js_asset(headers: HeaderMap) -> Response {
+    embedded_asset(
+        &headers,
+        CONTEXT_PANEL_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
+}
+
+pub(in crate::web) async fn selectionmenu_js_asset(headers: HeaderMap) -> Response {
+    embedded_asset(
+        &headers,
+        SELECTION_MENU_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
+}
+
+pub(in crate::web) async fn artifactchips_js_asset(headers: HeaderMap) -> Response {
+    embedded_asset(
+        &headers,
+        ARTIFACT_CHIPS_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
+}
+
+pub(in crate::web) async fn fencepreview_js_asset(headers: HeaderMap) -> Response {
+    embedded_asset(
+        &headers,
+        FENCE_PREVIEW_JS.as_bytes(),
+        "application/javascript; charset=utf-8",
+    )
+}
+
+/// 聊天正文 ```html 围栏的沙箱宿主页(web/fence-frame.html)。
+///
+/// 不走 `embedded_asset`:那条会盖上主页面的 CSP(`script-src 'self'`),宿主页的内联脚本
+/// 和围栏里的内联脚本都跑不起来。这里给 artifact html 同一条策略——脚本放开、出站全掐,
+/// 再补一条 `frame-ancestors` 只许本机页面嵌它。页面本身不含任何数据,正文由父页面
+/// postMessage 送进来,所以不查登录。
+pub(in crate::web) async fn fence_frame_asset(headers: HeaderMap) -> Response {
+    let mut response = FENCE_FRAME_HTML.into_response();
+    let policy = artifact_csp("html", &headers).map(|policy| match request_origin(&headers) {
+        Some(origin) => format!("{policy}; frame-ancestors {origin}"),
+        None => policy,
+    });
+    let response_headers = response.headers_mut();
+    response_headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("text/html; charset=utf-8"),
+    );
+    response_headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    response_headers.insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    response_headers.insert(REFERRER_POLICY, HeaderValue::from_static("no-referrer"));
+    // 策略拼不成合法头值(理论上 request_origin 已按白名单卡过)就退回全禁,宁可画不出来。
+    let policy = policy
+        .and_then(|policy| HeaderValue::from_str(&policy).ok())
+        .unwrap_or_else(|| HeaderValue::from_static("sandbox; default-src 'none'"));
+    response_headers.insert(CONTENT_SECURITY_POLICY, policy);
+    response
 }
 
 pub(in crate::web) async fn shared_js_asset(headers: HeaderMap) -> Response {
@@ -421,6 +497,10 @@ pub(in crate::web) async fn katex_font_asset(
 
 pub(in crate::web) async fn echarts_js_asset(headers: HeaderMap) -> Response {
     vendor_gzip_asset(&headers, ECHARTS_JS_GZ, "text/javascript; charset=utf-8")
+}
+
+pub(in crate::web) async fn mermaid_js_asset(headers: HeaderMap) -> Response {
+    vendor_gzip_asset(&headers, MERMAID_JS_GZ, "text/javascript; charset=utf-8")
 }
 
 pub(in crate::web) async fn wallpaper_asset(headers: HeaderMap) -> Response {
