@@ -53,10 +53,7 @@ pub(crate) fn conversation_key(
 }
 
 /// 会话清单:每个 (账号, 类型, 会话) 的消息数、首末时间、撤回数;附库文件大小。
-pub(crate) fn dashboard_conversations(
-    paths: &GqyPaths,
-    account_id: Option<&str>,
-) -> Result<Value> {
+pub(crate) fn dashboard_conversations(paths: &GqyPaths, account_id: Option<&str>) -> Result<Value> {
     let path = db_path(paths);
     let db_bytes = std::fs::metadata(&path).map(|meta| meta.len()).unwrap_or(0)
         + std::fs::metadata(path.with_extension("sqlite3-wal"))

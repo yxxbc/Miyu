@@ -58,8 +58,8 @@
 | P1 | 处理 D13（两批未提交修复） | ☑ |
 | P2 | 源码：顾清影成为默认人格（§五.P2） | ☑ |
 | P3 | 源码：logo GQY、默认头像看板、删内置表情包、修脚本面板 | ☑ |
-| P4 | 源码：全量改名 miyu→gqy（含命令、目录、环境变量、crate、打包、文档） | ☐ |
-| P5 | 构建 + 全量测试（重新生成工具注册表夹具） | ☐ |
+| P4 | 源码：全量改名 miyu→gqy（含命令、目录、环境变量、crate、打包、文档） | ☑ |
+| P5 | 构建 + 全量测试（重新生成工具注册表夹具） | ☑ |
 | P6 | 写数据迁移脚本（桌面备份、~/.miyu→~/.gqy、默认人格迁移） | ☐ |
 | P7 | 用户执行迁移脚本；安装 gqy / gqy-voice；重装 shell hook；启动 daemon | ☐ |
 | P8 | 验收：人格、脚本、图库、会话、语义检索、TUI logo、WebUI | ☐ |
@@ -97,9 +97,15 @@
 - ☑ 文件/目录改名 ☑ 标识符 ☑ 环境变量 ☑ 路径/命令/协议字符串 ☑ 文案 ☑ 文档 ☑ 打包/CI（脚本一次完成：697 修改、19 改名；待抽查与手修后提交）
 
 ### P5 构建与测试
-- ☐ `cargo build`（先不带 `--locked` 刷新 lock）☐ `cargo test --lib` 全绿 ☐ `cargo test write_registry_shape_fixture -- --ignored` 重生夹具后复测 ☐ release 构建 `gqy` 与 `--features voice --bin gqy-voice`
+- ☑ `cargo test --lib --no-run`（不带 `--locked`，刷新 Cargo.lock）：**0 错误**，唯一警告是 debug 链接器 `__eh_frame` 过大（改名前就有）☐ `cargo test --lib` 全绿 ☐ `cargo test write_registry_shape_fixture -- --ignored` 重生夹具后复测 ☐ release 构建 `gqy` 与 `--features voice --bin gqy-voice`
 
 ### P6 数据迁移脚本（写到 `~/.miyu/bin-backup/migrate-to-gqy.sh`，由用户执行）
+- ☑ 脚本已写（默认预演，`--apply` 执行）。☐ 用户预演 ☐ 用户执行
+- 实测库内 scope 分布（写脚本时）：顾清影 `persona-a37fae32f007` 会话 44 / 绑定 5 / 表情包引用 3 / 指针 2；旧 Miyu `default` 会话 7 / 绑定 3 / 指针 2
+- **陷阱**：`sessions.session_id` 有一行 id 就叫 `default`（88 轮），`app_state` 里有 2 个 value 是 `default`——它们是**会话 id 不是 scope**，脚本只改 `sessions.persona`、`platform_session_bindings.persona`、`platform_meme_refs.library` 与 `*_session_persona:<scope>` 的 key
+- 默认人格表情包库名是 `gqy`（不是 `default`），表情包引用 library 与目录 `data/memes/gqy` 都按它；图库、人格脚本目录用 scope `default`
+- `config.jsonc`：`active_persona`（第 494 行 `顾清影.md`）、`persona_libraries` 为空；shell rc 与 LaunchAgents 无 miyu 引用 → **不需要重装 hook**；`state/miyu` 运行时目录归档
+- **用户侧脚本也要改**（不在仓库里，P4 碰不到）：`iching_divination.py`、`afu_scale.py` 读 `MIYU_ARGS_JSON`（后者还写死 `~/.miyu/data/health`），全局 `macos_news` 读 `MIYU_ARGS_JSON`、`MIYU_SCRIPT_CACHE_DIR`。脚本第 5b 步对 `extensions/{scripts,skills}` 做 `MIYU_`→`GQY_`、`~/.miyu`→`~/.gqy`；桌面备份含整个 `extensions/`
 1. 停旧 daemon（`miyu daemon stop`），确认无进程
 2. 桌面备份：`~/Desktop/顾清影数据备份-<时间>/`，含 §三.10 全部内容 + 整个 `conversation.db(-wal,-shm)` + `config.jsonc`
 3. `mv ~/.miyu ~/.gqy`；改写 `config.jsonc` 与 `artifact_assets.source_key` 里的 `/.miyu/` → `/.gqy/`
@@ -109,7 +115,7 @@
 
 ### P7 安装切换
 - ☐ 安装 `~/.cargo/bin/gqy`、`gqy-voice`，移除旧 `miyu`、`miyu-voice`（旧的留备份）
-- ☐ 资源目录 `~/.cargo/share/miyu` → `~/.cargo/share/gqy`（字体/模型/脚本，**不含**已删的 miyu 表情包）
+- ☑ 资源目录 `~/.cargo/share/gqy` 已预装（字体 29M、模型 23M、改名后的内置脚本 748K，无表情包）；旧 `~/.cargo/share/miyu` 待切换后删除
 - ☐ 用户执行 P6 脚本 ☐ 重装 shell hook（清掉旧 miyu hook）☐ `gqy daemon start`
 
 ### P8 验收
@@ -121,3 +127,4 @@
 - 2026-09-14 P1：D13 = 本地提交不推送。两批修复分别提交（Mac RLIMIT、迁移补全），均**未跑测试**，留待 P5 一并验证。
 - 2026-09-14 P2+P3：默认人格内容换成顾清影、logo GQY、默认头像看板、删内置 Miyu 表情包、脚本面板越界修复。仅 rustfmt 检查，**未编译未测试**。
 - 2026-09-14 P4：脚本全量替换（706 文件内容、19 文件改名）。抽查通过：Cargo 包名/两个 bin、build.rs 引 gqy*.md、`default_gqy_*`、`~/.gqy`/`GQY_HOME`、hook 标记、MCP 服务名 gqy。手修 3 类误伤：`src/tools/alarm.rs` 英文工具描述里的「顾清影」→ GQY（字面量含中文示例被误判）；README `cd GQY` → `cd miyu-agent`；`src/web/turns/mod.rs`、`src/web/tests/turn.rs` 注释里引用的「顾清影 is busy」→「GQY is busy」。**未编译**，下一步 P5。
+- 2026-09-14 P5：编译 0 错误。首轮测试 2333 过 / 6 败，均为改名或本轮改动的连带：config_tui 3 个（输入字面量含中文被改成顾清影、期望值字面量无中文被改成 GQY，统一为顾清影）；pm 1 个（`shorin/miyu-bangumi` 被仓库名保护、期望值被改名，示例包统一为 gqy-bangumi）；脚本面板 1 个（P3 把 `personas/default` 标成了 builtin，原义是 builtin-persona，已按原义修正）；工具注册表夹具（描述文字变化，已重生成）。复测 2338 过 / 1 败（`config_tui/tests/plugins.rs:207` 同类：`vec!["晚安", "GQY"]` → 顾清影）。另：改名后标识符变短，28 个文件需 `cargo fmt` 重排折行，已统一格式化（fmt 共动 34 文件）。第三轮：**2339 过 / 0 败**，`cargo fmt --check` 通过。随后开始 release 构建 gqy 与 gqy-voice。

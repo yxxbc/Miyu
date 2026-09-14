@@ -88,11 +88,7 @@ async fn args_json_env_mirrors_stdin() {
     let scripts_dir = temp.path().join("scripts");
     std::fs::create_dir_all(&scripts_dir).unwrap();
     let script = scripts_dir.join("echo-env");
-    std::fs::write(
-        &script,
-        "#!/bin/sh\nprintf '%s|' \"$GQY_ARGS_JSON\"\ncat\n",
-    )
-    .unwrap();
+    std::fs::write(&script, "#!/bin/sh\nprintf '%s|' \"$GQY_ARGS_JSON\"\ncat\n").unwrap();
     executable(&script);
 
     let out = super::super::run_script(

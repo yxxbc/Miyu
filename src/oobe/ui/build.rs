@@ -264,10 +264,7 @@ pub(super) fn build(app: &App, cx: &Cx) -> View {
         Screen::ShellHook => {
             sticky.push(cx.bold("终端集成"));
             sticky.push(nil());
-            body.push(cx.txt(
-                "装上之后在终端直接打字就能问，不用敲 gqy。",
-                theme.dim(DIM),
-            ));
+            body.push(cx.txt("装上之后在终端直接打字就能问，不用敲 gqy。", theme.dim(DIM)));
             body.push(nil());
             let base = body.len();
             for (index, (shell, installed)) in app.shells.iter().enumerate() {

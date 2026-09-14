@@ -11,7 +11,11 @@ use crate::web::*;
 
 /// 纯判定。`session_owner` 是任务所属会话的归属键(管理员 = 空串,成员 = 账号 id);
 /// 任务没有会话、或会话查不到归属时为 None。
-pub(in crate::web) fn job_allowed(admin: bool, owner_key: &str, session_owner: Option<&str>) -> bool {
+pub(in crate::web) fn job_allowed(
+    admin: bool,
+    owner_key: &str,
+    session_owner: Option<&str>,
+) -> bool {
     if admin {
         return true;
     }

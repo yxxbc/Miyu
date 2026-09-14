@@ -12,16 +12,17 @@ const SOURCE_LINE_CAP: usize = 400;
 const SOURCE_BYTE_CAP: usize = 64 * 1024;
 /// 扫描根逐个标上所属层。按目录本身判定而不是按下标:自定义人格会多扫一层
 /// `<system>/personas/<人格>`,根的个数不固定(默认人格 4 个、自定义 5 个),
-/// 按下标取标签会越界 panic,默认人格下也会把内置层标错。
+/// 按下标取标签会越界 panic。`builtin` 是 system 顶层(平台共享),内置脚本
+/// 所在的 `personas/default` 与自定义人格的 system 目录都是 `builtin-persona`。
 fn labeled_roots(config: &AppConfig, paths: &GqyPaths) -> Vec<(PathBuf, &'static str)> {
     let builtin = crate::tools::builtin_scripts_dir(paths);
     let persona_system = config.active_persona_system_scripts_dir(paths);
     script_scan_roots(config, paths)
         .into_iter()
         .map(|root| {
-            let label = if root == paths.system_scripts_dir || root == builtin {
+            let label = if root == paths.system_scripts_dir {
                 "builtin"
-            } else if root == persona_system {
+            } else if root == builtin || root == persona_system {
                 "builtin-persona"
             } else if root == paths.scripts_dir {
                 "global"

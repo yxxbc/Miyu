@@ -130,7 +130,10 @@ pub(in crate::web) async fn map_tile(
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "tile out of range"));
     }
     let Some(url) = upstream_url(&provider, z, x, y) else {
-        return Err(ApiError::new(StatusCode::BAD_REQUEST, "unknown tile provider"));
+        return Err(ApiError::new(
+            StatusCode::BAD_REQUEST,
+            "unknown tile provider",
+        ));
     };
 
     let ttl = std::time::Duration::from_secs(config.tile_ttl_hours.saturating_mul(3600));
@@ -201,9 +204,10 @@ fn tile_response(bytes: Vec<u8>) -> Response {
         .insert(CONTENT_TYPE, HeaderValue::from_static("image/png"));
     // 浏览器侧只缓存一小时:磁盘那层才是真正的缓存,这里短一点,改了 TTL
     // 或换了源之后不用等浏览器自己过期。
-    response
-        .headers_mut()
-        .insert(CACHE_CONTROL, HeaderValue::from_static("private, max-age=3600"));
+    response.headers_mut().insert(
+        CACHE_CONTROL,
+        HeaderValue::from_static("private, max-age=3600"),
+    );
     response
         .headers_mut()
         .insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));

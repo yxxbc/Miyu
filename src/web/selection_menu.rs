@@ -115,7 +115,10 @@ pub(in crate::web) async fn selection_assist_http(
     std::thread::spawn(move || run_assist(client, messages, store, sender));
     let body = futures_util::stream::unfold(receiver, |mut receiver| async move {
         let line = receiver.recv().await?;
-        Some((Ok::<_, Infallible>(Bytes::from(format!("{line}\n"))), receiver))
+        Some((
+            Ok::<_, Infallible>(Bytes::from(format!("{line}\n"))),
+            receiver,
+        ))
     });
     let mut response = Response::new(axum::body::Body::from_stream(body));
     let response_headers = response.headers_mut();
@@ -173,7 +176,8 @@ fn run_assist(
     {
         Ok(runtime) => runtime,
         Err(error) => {
-            let _ = sender.send(json!({ "type": "error", "message": error.to_string() }).to_string());
+            let _ =
+                sender.send(json!({ "type": "error", "message": error.to_string() }).to_string());
             return;
         }
     };
@@ -198,7 +202,8 @@ fn run_assist(
                 let _ = store.add_auxiliary_usage(usage, meta);
             }
             let _ = sender.send(
-                json!({ "type": "done", "text": result.content, "model": result.model }).to_string(),
+                json!({ "type": "done", "text": result.content, "model": result.model })
+                    .to_string(),
             );
         }
         Err(error) => {
@@ -218,7 +223,10 @@ fn selection_prompt(
     let mut prompt = String::new();
     if let Some(turn) = turn {
         prompt.push_str("<conversation>\n<user>");
-        prompt.push_str(&tag_safe(&clip_middle(&turn.user_content, MAX_CONTEXT_CHARS)));
+        prompt.push_str(&tag_safe(&clip_middle(
+            &turn.user_content,
+            MAX_CONTEXT_CHARS,
+        )));
         prompt.push_str("</user>\n<assistant>");
         prompt.push_str(&tag_safe(&clip_middle(
             &turn.assistant_content,

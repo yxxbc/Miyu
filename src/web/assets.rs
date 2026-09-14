@@ -934,10 +934,7 @@ fn request_origin(headers: &HeaderMap) -> Option<String> {
     Some(format!("{scheme}://{host}"))
 }
 
-pub(in crate::web) fn resolve_persona_asset_path(
-    paths: &GqyPaths,
-    value: &str,
-) -> Option<PathBuf> {
+pub(in crate::web) fn resolve_persona_asset_path(paths: &GqyPaths, value: &str) -> Option<PathBuf> {
     let value = value.trim();
     if persona_asset_uses_managed_namespace(value) {
         return managed_persona_asset_path(paths, value);
@@ -953,10 +950,7 @@ pub(in crate::web) fn resolve_persona_asset_path(
     })
 }
 
-pub(in crate::web) fn managed_persona_asset_path(
-    paths: &GqyPaths,
-    value: &str,
-) -> Option<PathBuf> {
+pub(in crate::web) fn managed_persona_asset_path(paths: &GqyPaths, value: &str) -> Option<PathBuf> {
     let value = value.trim();
     if value.contains('\\') || value.chars().any(char::is_control) {
         return None;

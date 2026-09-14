@@ -199,13 +199,13 @@ fn real_context_batch_parsers_are_line_based_and_deduplicated() {
     let mappings =
         parse_real_context_identity_lines("# 昵称<Tab>QQ号\n顾清影\t123\n小羽 = 456").unwrap();
     assert_eq!(mappings.len(), 2);
-    assert_eq!(mappings[0].nickname, "GQY");
+    assert_eq!(mappings[0].nickname, "顾清影");
     assert_eq!(mappings[0].user_id, 123);
     assert!(parse_real_context_identity_lines("GQY\t123\nGQY\t456").is_err());
     assert!(parse_real_context_identity_lines("GQY 123").is_err());
 
     assert_eq!(
         parse_real_context_string_lines("晚安\n 晚安 \n顾清影", 128).unwrap(),
-        vec!["晚安", "GQY"]
+        vec!["晚安", "顾清影"]
     );
 }

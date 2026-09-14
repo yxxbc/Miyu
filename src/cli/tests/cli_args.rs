@@ -290,12 +290,7 @@ fn daemon_accepts_a_port_and_defaults_to_start() {
         }))
     ));
 
-    assert!(parse_args(
-        ["gqy", "daemon", "--password"]
-            .map(OsString::from)
-            .to_vec(),
-    )
-    .is_err());
+    assert!(parse_args(["gqy", "daemon", "--password"].map(OsString::from).to_vec(),).is_err());
 }
 
 #[test]

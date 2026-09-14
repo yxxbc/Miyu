@@ -69,7 +69,11 @@ fn clean_number(raw: &str) -> Result<String> {
 }
 
 async fn express_query(args: Value, config: ExpressPluginConfig) -> Result<String> {
-    let number = clean_number(args.get("number").and_then(Value::as_str).unwrap_or_default())?;
+    let number = clean_number(
+        args.get("number")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )?;
     let phone = args
         .get("phone")
         .and_then(Value::as_str)
@@ -191,7 +195,10 @@ async fn express_query(args: Value, config: ExpressPluginConfig) -> Result<Strin
         })
         .unwrap_or_default();
 
-    let state_code = data.get("state").and_then(Value::as_str).unwrap_or_default();
+    let state_code = data
+        .get("state")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
     Ok(serde_json::to_string(&json!({
         "ok": true,
         "state": "ok",
@@ -338,7 +345,10 @@ mod tests {
         // 这两条向量把前一半钉死。
         let mut hasher = Md5::new();
         hasher.update(b"abc");
-        assert_eq!(format!("{:x}", hasher.finalize()), "900150983cd24fb0d6963f7d28e17f72");
+        assert_eq!(
+            format!("{:x}", hasher.finalize()),
+            "900150983cd24fb0d6963f7d28e17f72"
+        );
         // 拼接顺序是 param + key + customer,大写。
         assert_eq!(sign_of("a", "b", "c"), sign_of("ab", "", "c"));
         assert!(sign_of("a", "b", "c").chars().all(|ch| !ch.is_lowercase()));
@@ -359,12 +369,15 @@ mod tests {
             Some("yuantong")
         );
         assert_eq!(
-            first_com_code(&json!({ "returnCode": "200", "data": [{ "comCode": "jd" }] })).as_deref(),
+            first_com_code(&json!({ "returnCode": "200", "data": [{ "comCode": "jd" }] }))
+                .as_deref(),
             Some("jd")
         );
         // 单号不合法时免费口给 201 且没有 data——当成「认不出」,不是崩。
         assert_eq!(
-            first_com_code(&json!({ "returnCode": "201", "message": "不是有效的快递单号", "result": false })),
+            first_com_code(
+                &json!({ "returnCode": "201", "message": "不是有效的快递单号", "result": false })
+            ),
             None
         );
     }

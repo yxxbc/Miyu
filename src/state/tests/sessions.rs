@@ -67,9 +67,7 @@ fn persona_reset_clears_active_local_and_onebot_contexts_only() {
     store.adopt_sessions_for_persona("gqy").unwrap();
     let current = store.session_id().to_string();
     let local = store.create_session("gqy", "local", "user", None).unwrap();
-    let second = store
-        .create_session("gqy", "second", "user", None)
-        .unwrap();
+    let second = store.create_session("gqy", "second", "user", None).unwrap();
     let other_persona = store
         .create_session("other", "other", "user", None)
         .unwrap();

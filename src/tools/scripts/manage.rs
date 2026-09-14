@@ -200,11 +200,7 @@ pub(crate) async fn register_script_handler(
 }
 
 /// 同步核心:工具闭包与 dashboard(spawn_blocking)共用。
-pub(crate) fn register_script(
-    args: Value,
-    config: &AppConfig,
-    paths: &GqyPaths,
-) -> Result<String> {
+pub(crate) fn register_script(args: Value, config: &AppConfig, paths: &GqyPaths) -> Result<String> {
     let layers = user_layers(config, paths);
     let requested_id = string_arg(&args, "id");
     if !requested_id.is_empty() && !is_valid_registered_script_id(&requested_id) {

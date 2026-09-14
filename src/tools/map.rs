@@ -491,17 +491,35 @@ fn out_of_china(lon: f64, lat: f64) -> bool {
 
 fn transform_lat(x: f64, y: f64) -> f64 {
     let mut ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * x.abs().sqrt();
-    ret += (20.0 * (6.0 * x * std::f64::consts::PI).sin() + 20.0 * (2.0 * x * std::f64::consts::PI).sin()) * 2.0 / 3.0;
-    ret += (20.0 * (y * std::f64::consts::PI).sin() + 40.0 * (y / 3.0 * std::f64::consts::PI).sin()) * 2.0 / 3.0;
-    ret += (160.0 * (y / 12.0 * std::f64::consts::PI).sin() + 320.0 * (y * std::f64::consts::PI / 30.0).sin()) * 2.0 / 3.0;
+    ret += (20.0 * (6.0 * x * std::f64::consts::PI).sin()
+        + 20.0 * (2.0 * x * std::f64::consts::PI).sin())
+        * 2.0
+        / 3.0;
+    ret += (20.0 * (y * std::f64::consts::PI).sin()
+        + 40.0 * (y / 3.0 * std::f64::consts::PI).sin())
+        * 2.0
+        / 3.0;
+    ret += (160.0 * (y / 12.0 * std::f64::consts::PI).sin()
+        + 320.0 * (y * std::f64::consts::PI / 30.0).sin())
+        * 2.0
+        / 3.0;
     ret
 }
 
 fn transform_lon(x: f64, y: f64) -> f64 {
     let mut ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * x.abs().sqrt();
-    ret += (20.0 * (6.0 * x * std::f64::consts::PI).sin() + 20.0 * (2.0 * x * std::f64::consts::PI).sin()) * 2.0 / 3.0;
-    ret += (20.0 * (x * std::f64::consts::PI).sin() + 40.0 * (x / 3.0 * std::f64::consts::PI).sin()) * 2.0 / 3.0;
-    ret += (150.0 * (x / 12.0 * std::f64::consts::PI).sin() + 300.0 * (x / 30.0 * std::f64::consts::PI).sin()) * 2.0 / 3.0;
+    ret += (20.0 * (6.0 * x * std::f64::consts::PI).sin()
+        + 20.0 * (2.0 * x * std::f64::consts::PI).sin())
+        * 2.0
+        / 3.0;
+    ret += (20.0 * (x * std::f64::consts::PI).sin()
+        + 40.0 * (x / 3.0 * std::f64::consts::PI).sin())
+        * 2.0
+        / 3.0;
+    ret += (150.0 * (x / 12.0 * std::f64::consts::PI).sin()
+        + 300.0 * (x / 30.0 * std::f64::consts::PI).sin())
+        * 2.0
+        / 3.0;
     ret
 }
 

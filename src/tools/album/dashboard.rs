@@ -38,10 +38,7 @@ pub fn dashboard_list(root: &Path) -> Result<Value> {
         .iter()
         .filter(|item| item["missing"].as_bool() == Some(true))
         .count();
-    let bytes: u64 = items
-        .iter()
-        .filter_map(|item| item["bytes"].as_u64())
-        .sum();
+    let bytes: u64 = items.iter().filter_map(|item| item["bytes"].as_u64()).sum();
     Ok(json!({
         "ok": true,
         "root": root.display().to_string(),
@@ -127,8 +124,7 @@ pub fn dashboard_add(root: &Path, upload: DashboardUpload, bytes: &[u8]) -> Resu
     };
     with_index(root, |entries| {
         let id = store::new_id(entries, &upload.filename);
-        std::fs::create_dir_all(root)
-            .with_context(|| format!("建图库目录 {}", root.display()))?;
+        std::fs::create_dir_all(root).with_context(|| format!("建图库目录 {}", root.display()))?;
         let file = format!("{id}.{suffix}");
         std::fs::write(root.join(&file), bytes)
             .with_context(|| format!("写入 {}", root.join(&file).display()))?;
@@ -202,8 +198,7 @@ pub fn dashboard_delete(root: &Path, id: &str, hard: bool) -> Result<Value> {
         if hard {
             let path = entry.path(root);
             if path.is_file() {
-                std::fs::remove_file(&path)
-                    .with_context(|| format!("删除 {}", path.display()))?;
+                std::fs::remove_file(&path).with_context(|| format!("删除 {}", path.display()))?;
                 removed_file = true;
             }
         }

@@ -948,8 +948,7 @@ fn a_trailing_stats_line_is_not_a_running_step() {
 #[test]
 fn a_multi_line_speech_paragraph_keeps_its_continuation_lines() {
     with_blocks(|| {
-        let dir =
-            std::env::temp_dir().join(format!("gqy-log-speech-lines-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("gqy-log-speech-lines-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("建目录");
         let path = dir.join("job.log");
         std::fs::write(

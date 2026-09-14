@@ -194,8 +194,7 @@ pub async fn ensure_daemon(
     let mut current = daemon_info(&active_paths).await;
     if current.is_none() {
         let previous_paths = active_paths.clone();
-        active_paths = match GqyPaths::new().context("refreshing GQY paths before daemon startup")
-        {
+        active_paths = match GqyPaths::new().context("refreshing GQY paths before daemon startup") {
             Ok(paths) => paths,
             Err(error) => {
                 if let Some(launch) = &pending_launch {
@@ -226,8 +225,7 @@ pub async fn ensure_daemon(
             }
             return Err(error);
         }
-        active_paths = match GqyPaths::new().context("refreshing GQY paths after daemon shutdown")
-        {
+        active_paths = match GqyPaths::new().context("refreshing GQY paths after daemon shutdown") {
             Ok(paths) => paths,
             Err(error) => {
                 if let Some(launch) = &pending_launch {
@@ -262,8 +260,7 @@ pub async fn ensure_daemon(
             return Err(error);
         }
         drop(starter);
-        active_paths = match GqyPaths::new().context("refreshing GQY paths after daemon shutdown")
-        {
+        active_paths = match GqyPaths::new().context("refreshing GQY paths after daemon shutdown") {
             Ok(paths) => paths,
             Err(error) => {
                 if let Some(launch) = &pending_launch {

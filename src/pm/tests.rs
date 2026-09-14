@@ -59,8 +59,7 @@ fn manifest_parses_and_validates_names_and_requirements() {
         PackageManifest::parse("[package]\nname = \"ok\"\nrequires-gqy = \"banana\"\n").is_err()
     );
     let future =
-        PackageManifest::parse("[package]\nname = \"ok\"\nrequires-gqy = \">=999.0.0\"\n")
-            .unwrap();
+        PackageManifest::parse("[package]\nname = \"ok\"\nrequires-gqy = \">=999.0.0\"\n").unwrap();
     assert!(future.check_requirement().is_err());
     assert!(PackageManifest::parse("[package]\nname = \"ok\"\nbogus = 1\n").is_err());
     assert_eq!(parse_version("0.5.0-2").unwrap(), (0, 5, 0));
@@ -77,7 +76,7 @@ fn package_specs_resolve_local_github_and_slug_forms() {
         .unwrap();
     assert!(matches!(local, PackageSource::Local(_)));
     assert_eq!(
-        PackageSource::parse_spec("shorin/miyu-bangumi@v1", None)
+        PackageSource::parse_spec("shorin/gqy-bangumi@v1", None)
             .unwrap()
             .unwrap(),
         PackageSource::GitHub {
@@ -87,7 +86,7 @@ fn package_specs_resolve_local_github_and_slug_forms() {
         }
     );
     assert_eq!(
-        PackageSource::parse_spec("https://github.com/shorin/miyu-bangumi/tree/main", None)
+        PackageSource::parse_spec("https://github.com/shorin/gqy-bangumi/tree/main", None)
             .unwrap()
             .unwrap(),
         PackageSource::GitHub {

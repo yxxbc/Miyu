@@ -30,7 +30,7 @@ fn route_pool_and_id_helpers_express_inheritance_and_positive_ids() {
     assert!(parse_id_lines("123\ninvalid\n456").is_err());
     assert_eq!(
         parse_keyword_lines("顾清影\n 小羽 \n顾清影").unwrap(),
-        vec!["GQY", "小羽"]
+        vec!["顾清影", "小羽"]
     );
 }
 
@@ -43,7 +43,7 @@ fn qq_batch_inputs_are_line_based_trimmed_and_deduplicated() {
     assert!(parse_id_lines("123,456").is_err());
     assert_eq!(
         parse_keyword_lines(" 顾清影 \r\n\r\n小羽\n顾清影\n").unwrap(),
-        vec!["GQY", "小羽"]
+        vec!["顾清影", "小羽"]
     );
 }
 

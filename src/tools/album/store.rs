@@ -100,8 +100,7 @@ pub fn load_index(root: &Path) -> Vec<AlbumEntry> {
 
 /// 整份写回,先写 `.tmp` 再 rename——中途挂掉不会留半个索引。
 pub fn save_index(root: &Path, entries: &[AlbumEntry]) -> Result<()> {
-    std::fs::create_dir_all(root)
-        .with_context(|| format!("建图库目录 {}", root.display()))?;
+    std::fs::create_dir_all(root).with_context(|| format!("建图库目录 {}", root.display()))?;
     let path = root.join(INDEX_FILE);
     let tmp = root.join(format!("{INDEX_FILE}.tmp"));
     let body = serde_json::to_string_pretty(entries)?;
@@ -125,7 +124,10 @@ fn index_lock(root: &Path) -> &'static Mutex<()> {
 /// 索引是**整份替换**的,而动它的现在有两条路:模型调 `album` 工具、人在 WebUI
 /// 面板上改。没有这把锁,两边并发时后写的会把先写的整份盖掉——她刚存进去的图
 /// 会在你保存描述的那一刻凭空消失。闭包返回 `Err` 时不落盘。
-pub fn with_index<T>(root: &Path, edit: impl FnOnce(&mut Vec<AlbumEntry>) -> Result<T>) -> Result<T> {
+pub fn with_index<T>(
+    root: &Path,
+    edit: impl FnOnce(&mut Vec<AlbumEntry>) -> Result<T>,
+) -> Result<T> {
     let lock = index_lock(root);
     let _guard = lock.lock().unwrap();
     let mut entries = load_index(root);
@@ -185,8 +187,7 @@ pub fn take_in(root: &Path, source: &Path, id: &str) -> Result<String> {
             SUFFIXES.join(", ")
         );
     }
-    std::fs::create_dir_all(root)
-        .with_context(|| format!("建图库目录 {}", root.display()))?;
+    std::fs::create_dir_all(root).with_context(|| format!("建图库目录 {}", root.display()))?;
     let stored = format!("{id}.{suffix}");
     std::fs::copy(source, root.join(&stored))
         .with_context(|| format!("复制 {} 进图库", source.display()))?;

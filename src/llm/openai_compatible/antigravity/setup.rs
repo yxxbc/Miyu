@@ -41,7 +41,9 @@ pub(super) fn render_agent_file(prompt: &str, native_on: bool) -> String {
     let mut text = String::new();
     text.push_str("---\n");
     text.push_str("name: {{AGENT_NAME}}\n");
-    text.push_str("description: GQY relay persona (managed by GQY; rewritten whenever the prompt changes)\n");
+    text.push_str(
+        "description: GQY relay persona (managed by GQY; rewritten whenever the prompt changes)\n",
+    );
     text.push_str("mainAgent: true\n");
     text.push_str("subagent: false\n");
     if native_on {

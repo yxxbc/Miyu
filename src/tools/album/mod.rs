@@ -67,7 +67,11 @@ fn dispatch(
 ) -> Result<String> {
     let root = album_root(config, paths);
     // 写动作整段持锁(面板也在动同一份 index.json);读动作直接读当下那份。
-    match args.get("action").and_then(Value::as_str).unwrap_or_default() {
+    match args
+        .get("action")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+    {
         "save" => store::with_index(&root, |entries| save(&args, &root, entries)),
         "delete" => store::with_index(&root, |entries| delete(&args, &root, entries)),
         "search" => search(&args, &root, &store::load_index(&root)),

@@ -155,10 +155,7 @@ fn platform_bindings_survive_rename_and_isolate_personas() {
     );
 
     store.delete_session(&gqy_session.session_id).unwrap();
-    assert_eq!(
-        store.find_platform_session_binding(&gqy_key).unwrap(),
-        None
-    );
+    assert_eq!(store.find_platform_session_binding(&gqy_key).unwrap(), None);
 }
 
 #[test]
@@ -328,8 +325,7 @@ fn platform_plugin_json_is_shared_across_personas_and_supports_deletion() {
         .unwrap();
     let gqy_store = store.pinned(&gqy_session.session_id);
     let other_store = store.pinned(&other_session.session_id);
-    let from_gqy: Option<Vec<String>> =
-        gqy_store.plugin_get_json(&scope, "recent_images").unwrap();
+    let from_gqy: Option<Vec<String>> = gqy_store.plugin_get_json(&scope, "recent_images").unwrap();
     let from_other: Option<Vec<String>> = other_store
         .plugin_get_json(&scope, "recent_images")
         .unwrap();

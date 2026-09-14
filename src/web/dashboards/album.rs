@@ -9,8 +9,8 @@
 //! 越界的 id 只会 404。
 
 use crate::tools::album::{
-    album_root, dashboard_add, dashboard_delete, dashboard_image, dashboard_list,
-    dashboard_update, DashboardPatch, DashboardUpload,
+    album_root, dashboard_add, dashboard_delete, dashboard_image, dashboard_list, dashboard_update,
+    DashboardPatch, DashboardUpload,
 };
 use crate::web::*;
 
@@ -106,7 +106,10 @@ pub(in crate::web) async fn dash_album_image(
         .await
         .map_err(ApiError::internal)?;
     let Some((path, mime)) = resolved else {
-        return Err(ApiError::new(StatusCode::NOT_FOUND, "album entry not found"));
+        return Err(ApiError::new(
+            StatusCode::NOT_FOUND,
+            "album entry not found",
+        ));
     };
     // 图库里的图可以被面板改名改描述,但**文件本身不会被改写**(改图等于换一条),
     // 所以按 id 缓存是安全的。

@@ -36,8 +36,7 @@ pub(in crate::platforms::plugins::renderer) const MAX_ERROR_FRAME_BYTES: usize =
 
 pub(in crate::platforms::plugins::renderer) const MAX_RESPONSE_IMAGES: usize = 1;
 
-pub(in crate::platforms::plugins::renderer) const WORKER_ENV: &str =
-    "GQY_INTERNAL_RENDERER_WORKER";
+pub(in crate::platforms::plugins::renderer) const WORKER_ENV: &str = "GQY_INTERNAL_RENDERER_WORKER";
 
 pub(in crate::platforms::plugins::renderer) const WORKER_ARG: &str = "__renderer-worker";
 
