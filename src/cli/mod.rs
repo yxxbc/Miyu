@@ -14,6 +14,7 @@ mod args;
 mod daemon_cmds;
 pub(crate) mod exit_code;
 mod inline_picker;
+pub(crate) mod ipc_event;
 mod localize;
 mod mcp_schema;
 mod mcp_serve;
@@ -194,7 +195,23 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
                 | Some(Command::Import(_))
         )
     {
-        run_init(&paths, InitKind::FirstRun)?;
+        // 紧接着就进引导或全屏画面的,初始化不打字:那几行会留在屏上。
+        let quiet = cli.banner
+            || (matches!(cli.command, None | Some(Command::Oobe))
+                && cli.message.is_empty()
+                && io::stdin().is_terminal());
+        run_init(
+            &paths,
+            if quiet {
+                InitKind::Quiet
+            } else {
+                InitKind::FirstRun
+            },
+        )?;
+    }
+    if cli.banner {
+        let config = AppConfig::load_or_default(&paths)?;
+        return crate::cli::repl::banner::preview::run(&config, &paths);
     }
 
     // Captured before `cli.command` is moved out: one-shot entry points below
@@ -369,8 +386,17 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
             session_cmds::run_session_command(&paths, args.command, plain).await
         }
         Some(Command::Stdio) => stdio::run_stdio(&paths).await,
-        Some(Command::Normal) => run_repl(&paths, AgentMode::Normal).await,
         Some(Command::Dev) => run_repl(&paths, AgentMode::Dev).await,
+        Some(Command::Oobe) => {
+            if run_oobe_flow(&paths).await? {
+                let result = run_repl(&paths, AgentMode::Normal).await;
+                // REPL 没能接过备用屏(启动失败)就自己退回主屏,别把终端留在备用屏上。
+                crate::terminal::release_alt_screen_if_held();
+                result
+            } else {
+                Ok(())
+            }
+        }
         Some(Command::Web(args)) => run_web(&paths, args).await,
         Some(Command::Daemon(args)) => run_daemon_command(&paths, args).await,
         None => {
@@ -385,30 +411,50 @@ pub async fn run(cli: Cli, paths: MiyuPaths) -> Result<()> {
                         )
                     );
                 }
-                // 裸 miyu:按 default_mode 配置分流;未配置则打印模式说明,
-                // 逼一次显式选择(miyu normal / miyu dev)。
-                let default_mode = AppConfig::load_or_default(&paths)
-                    .map(|config| config.default_mode.trim().to_ascii_lowercase())
-                    .unwrap_or_default();
-                match default_mode.as_str() {
-                    "normal" => run_repl(&paths, AgentMode::Normal).await,
-                    "dev" => run_repl(&paths, AgentMode::Dev).await,
-                    "" => {
-                        print_mode_help();
-                        Ok(())
-                    }
-                    other => bail!(
-                        "{}: {other}",
-                        t(
-                            "invalid default_mode (expected normal or dev)",
-                            "default_mode 配置无效(应为 normal 或 dev)"
-                        )
-                    ),
+                // 裸 miyu = 普通 REPL(`miyu dev` 才是开发预设)。第一次先走
+                // 新手引导;老配置在 migrate 里已标成做过,不会被拦。
+                let config = AppConfig::load_or_default(&paths)?;
+                if crate::oobe::needed(&config) && !run_oobe_flow(&paths).await? {
+                    return Ok(());
                 }
+                let result = run_repl(&paths, AgentMode::Normal).await;
+                crate::terminal::release_alt_screen_if_held();
+                result
             } else {
                 run_one_shot(&paths, root_turn, message, root_stdin, plain, mode).await
             }
         }
+    }
+}
+
+/// 跑新手引导,返回「接下来要不要进 REPL」。
+///
+/// 开场就退出(Esc / Ctrl+C)什么都不写、也不进 REPL,下次裸 `miyu` 还会再来;
+/// 选了「进入设置界面」就先开完整设置再进;做完或跳过直接进——空会话的
+/// banner 就是第一帧,不做完成页。引导写了配置,顺手让活着的 daemon 重读。
+async fn run_oobe_flow(paths: &MiyuPaths) -> Result<bool> {
+    spawn_hangup_watchdog();
+    // 后面是全屏 REPL 的话,备用屏一路不退,中间不闪 shell 画面。
+    let keep_alt = crate::cli::repl::tail::screen::requested();
+    let outcome = crate::oobe::run(paths, keep_alt)?;
+    if outcome != crate::oobe::Outcome::Aborted {
+        let _ = send_ipc_command(paths, IpcCommand::ReloadConfig).await;
+    }
+    match outcome {
+        crate::oobe::Outcome::Aborted => {
+            crate::terminal::release_alt_screen_if_held();
+            Ok(false)
+        }
+        crate::oobe::Outcome::OpenSettings => {
+            if keep_alt {
+                crate::config_tui::run_embedded(paths)?;
+            } else {
+                crate::config_tui::run(paths)?;
+            }
+            let _ = send_ipc_command(paths, IpcCommand::ReloadConfig).await;
+            Ok(true)
+        }
+        crate::oobe::Outcome::Completed | crate::oobe::Outcome::Skipped => Ok(true),
     }
 }
 
@@ -863,13 +909,21 @@ fn session_replay_frame(
         } else if replay.is_synthetic {
             // daemon 自己合成的轮：实时渲染画的是一条暗色 `⚙` 提示，回放要
             // 对齐，不能变成用户气泡。
-            frame.extend_from_slice(
-                format!(
-                    "\n\x1b[2m⚙ {}\x1b[0m\n\n",
-                    job_wake_headline(&replay.display_content)
-                )
-                .as_bytes(),
+            let notice = format!(
+                "\n\x1b[2m{} {}\x1b[0m\n\n",
+                if render::blocks::enabled() {
+                    render::timeline::glyph_notice()
+                } else {
+                    "⚙"
+                },
+                job_wake_headline(&replay.display_content)
             );
+            let notice = if render::blocks::enabled() {
+                render::timeline::indent_body(&notice)
+            } else {
+                notice
+            };
+            frame.extend_from_slice(notice.as_bytes());
         } else if !replay.display_content.trim().is_empty() {
             frame.extend_from_slice(
                 committed_user_messages_text(&[(&replay.display_content, mode)], true, cols)
@@ -877,7 +931,13 @@ fn session_replay_frame(
             );
         }
         let mut renderer = render::StreamRenderer::new(
-            render::ReasoningDisplayMode::Hidden,
+            // 全屏：思考在时间线里只占一行，回放时补上正好补齐"重开之后
+            // 少一块"的缺口。inline 照旧不放——那边一放就是整段，回放会刷屏。
+            if render::blocks::enabled() {
+                render::ReasoningDisplayMode::Summary
+            } else {
+                render::ReasoningDisplayMode::Hidden
+            },
             render::ToolCallDisplayMode::from_config(&config.display.tool_calls),
             false,
             config.display.readable_tool_names,
@@ -885,10 +945,38 @@ fn session_replay_frame(
         );
         renderer.use_external_cursor_control();
         renderer.use_buffered_output();
+        // 流水账里带着思考就按它的位置放，别再用 `assistant_reasoning` 那一列
+        // 补一遍。那一列只留得住**最后一回合**的思考：想完就去调工具、最后一
+        // 回合直接交卷的那种轮，它是空的——重开之后时间线上的思考那一步整个
+        // 没了（用户实测）。老轮（这次改动之前记下的）流水账里没有思考，那就
+        // 还是拿那一列兜底。
+        let journal_has_reasoning = replay
+            .entries
+            .iter()
+            .any(|entry| matches!(entry, ReplayEntry::Reasoning { .. }));
+        if !journal_has_reasoning {
+            if let Some(reasoning) = replay
+                .assistant_reasoning
+                .as_deref()
+                .filter(|text| !text.trim().is_empty())
+            {
+                renderer.write_chunk(ChatStreamChunk {
+                    kind: crate::llm::ChatStreamKind::Reasoning,
+                    text: reasoning.to_string(),
+                })?;
+            }
+        }
         if replay.entries.is_empty() {
+            // 被中断的轮：正文尾巴上那段 `<system-reminder>` 是写给模型的，
+            // 不给人看。
+            let content = if replay.interrupted {
+                crate::state::interrupted_prefix(&replay.assistant_content)
+            } else {
+                replay.assistant_content.clone()
+            };
             renderer.write_chunk(ChatStreamChunk {
                 kind: crate::llm::ChatStreamKind::Content,
-                text: replay.assistant_content.clone(),
+                text: content,
             })?;
         } else {
             for entry in &replay.entries {
@@ -897,10 +985,28 @@ fn session_replay_frame(
                         kind: crate::llm::ChatStreamKind::Content,
                         text: text.clone(),
                     })?,
+                    ReplayEntry::Reasoning { text, elapsed_ms } => {
+                        renderer.write_chunk(ChatStreamChunk {
+                            kind: crate::llm::ChatStreamKind::Reasoning,
+                            text: text.clone(),
+                        })?;
+                        renderer.replay_reasoning_elapsed(std::time::Duration::from_millis(
+                            *elapsed_ms,
+                        ));
+                    }
                     ReplayEntry::ToolCall { name, arguments } => {
                         renderer.write_tool_call(name, arguments)?
                     }
-                    ReplayEntry::ToolResult { name, ok, output } => {
+                    ReplayEntry::ToolResult {
+                        name,
+                        ok,
+                        output,
+                        elapsed_ms,
+                    } => {
+                        renderer.replay_tool_elapsed(
+                            name,
+                            std::time::Duration::from_millis(*elapsed_ms),
+                        );
                         renderer.write_tool_result(name, *ok, output)?
                     }
                 }
@@ -908,6 +1014,24 @@ fn session_replay_frame(
         }
         renderer.finish()?;
         frame.extend_from_slice(&renderer.take_output_frame());
+        if replay.interrupted {
+            // 标一行：这一轮没说完。和后台任务那条提示一个样子。
+            let notice = format!(
+                "\x1b[2m{} {}\x1b[0m\n\n",
+                if render::blocks::enabled() {
+                    render::timeline::glyph_notice()
+                } else {
+                    "⚙"
+                },
+                t("interrupted", "已中断")
+            );
+            let notice = if render::blocks::enabled() {
+                render::timeline::indent_body(&notice)
+            } else {
+                notice
+            };
+            frame.extend_from_slice(notice.as_bytes());
+        }
     }
     Ok(frame)
 }
@@ -1010,26 +1134,11 @@ impl Drop for ReplCursorRestore {
     }
 }
 
-#[cfg(unix)]
+/// Raw input is required for key events, but renderer output still relies on
+/// newline translation. 实现挪到了 `terminal::restore_output_processing`：
+/// chafa 跑完也要补一次，那边是两个调用方的公共位置。
 fn restore_live_output_processing() -> Result<()> {
-    let mut attributes = std::mem::MaybeUninit::<libc::termios>::uninit();
-    // Raw input is required for key events, but renderer output still relies on newline translation.
-    unsafe {
-        if libc::tcgetattr(libc::STDOUT_FILENO, attributes.as_mut_ptr()) != 0 {
-            return Err(std::io::Error::last_os_error().into());
-        }
-        let mut attributes = attributes.assume_init();
-        attributes.c_oflag |= libc::OPOST | libc::ONLCR;
-        if libc::tcsetattr(libc::STDOUT_FILENO, libc::TCSANOW, &attributes) != 0 {
-            return Err(std::io::Error::last_os_error().into());
-        }
-    }
-    Ok(())
-}
-
-#[cfg(not(unix))]
-fn restore_live_output_processing() -> Result<()> {
-    Ok(())
+    crate::terminal::restore_output_processing()
 }
 
 /// 终端已死(PTY 对端关闭):POLLHUP/POLLERR/POLLNVAL 任一命中。
@@ -1040,6 +1149,19 @@ fn restore_live_output_processing() -> Result<()> {
 /// 退出路径 5 秒宽限——主线程若卡死在 crossterm 对 HUP fd 的任何内部
 /// 自旋(事件 poll、CPR 应答等待,均为实测形态),由这里强制收尾,
 /// 保证关终端后绝不留下吃 CPU 的残留进程。
+/// REPL 是不是正跑在全屏（备用屏）里。
+///
+/// 提问面板、选择器这类"自己占一块屏"的组件要据此改行为：备用屏没有
+/// scrollback，靠打换行腾地方会把正文顶没。
+pub(crate) fn in_fullscreen() -> bool {
+    repl::tail::screen::in_fullscreen()
+}
+
+/// 全屏下正文区的尺寸（列, 行）。别的地方拿它替代 `terminal::size()`。
+pub(crate) fn content_viewport() -> Option<(u16, u16)> {
+    repl::tail::screen::content_viewport()
+}
+
 pub(crate) fn spawn_hangup_watchdog() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
@@ -1125,6 +1247,12 @@ enum LiveReplOutcome {
     /// Ctrl+C on an empty line while this session has background work: stop
     /// the work and stay in the REPL. Pressing it again then exits.
     StopJobs,
+    /// 全屏详情面板里按了 x：停掉**这一个**后台任务，人留在 REPL 里。
+    StopJob {
+        job_id: String,
+    },
+    /// 空会话里按了 Tab:换到另一条车道(普通 ↔ 开发)。调用方负责重绑会话。
+    SwitchMode(AgentMode),
 }
 
 fn repl_history_is_clean(
@@ -1212,7 +1340,10 @@ fn join_message(parts: Vec<String>) -> String {
     parts.join(" ").trim().to_string()
 }
 
-fn handle_agent_event(renderer: &mut render::StreamRenderer, event: AgentEvent) -> Result<()> {
+pub(crate) fn handle_agent_event(
+    renderer: &mut render::StreamRenderer,
+    event: AgentEvent,
+) -> Result<()> {
     match event {
         AgentEvent::TurnStarted { .. } => Ok(()),
         AgentEvent::RawReasoning(_) => Ok(()),
@@ -1272,9 +1403,16 @@ fn handle_agent_event(renderer: &mut render::StreamRenderer, event: AgentEvent) 
             request, responder, ..
         } => {
             renderer.prepare_for_external_output()?;
-            let response = crate::question_tui::ask(&request).unwrap_or_else(|err| {
-                crate::question::QuestionResponse::Unavailable(err.to_string())
-            });
+            let leave_summary = !renderer.timeline_static();
+            let response = crate::question_tui::ask_with(&request, None, leave_summary)
+                .unwrap_or_else(|err| {
+                    crate::question::QuestionResponse::Unavailable(err.to_string())
+                });
+            // 全屏下面板是**盖在**画面上的，它退场之后下一帧就按缓冲重画，
+            // 问了什么、答了什么会一起消失（用户原话「回答完问题也没输出」）。
+            // 把这一问一答写进缓冲，它才算进了历史、回翻找得到。
+            renderer.timeline_push_question(&request, &response)?;
+            renderer.write_question_exchange(&request, &response)?;
             if !matches!(&response, crate::question::QuestionResponse::Cancelled) {
                 renderer.start_waiting()?;
             }

@@ -110,6 +110,24 @@ pub(crate) fn default_tools_timeout_secs() -> u64 {
     180
 }
 
+/// `/sandbox` 默认放行的只读工具链目录:rustup 的工具链、`~/.local`(pipx/用户装的
+/// bin 与 lib)、全局 git 配置。`~/.ssh`、`~/.config` 刻意不在:那是沙盒要挡的东西。
+pub(crate) fn default_sandbox_readable() -> Vec<String> {
+    ["~/.rustup", "~/.local", "~/.gitconfig"]
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+}
+
+/// `/sandbox` 默认放行的可写构建缓存:不放行的话锁进项目后 `cargo build` 第一步
+/// 下依赖就挂。
+pub(crate) fn default_sandbox_writable() -> Vec<String> {
+    ["~/.cargo", "~/.npm"]
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+}
+
 pub(crate) fn default_command_deny() -> Vec<String> {
     [
         "rm -rf /",
@@ -271,29 +289,6 @@ pub(crate) fn default_web_images_timeout() -> u64 {
     20
 }
 
-pub(crate) fn default_deep_research_dir() -> String {
-    default_miyu_home()
-        .join("data/documents/deep-thinking")
-        .display()
-        .to_string()
-}
-
-pub(crate) fn default_deep_research_depth() -> String {
-    "high".to_string()
-}
-
-pub(crate) fn default_deep_research_max_review_revisions() -> usize {
-    0
-}
-
-pub(crate) fn default_deep_research_max_tool_steps() -> usize {
-    0
-}
-
-pub(crate) fn default_deep_research_tool_timeout() -> u64 {
-    90
-}
-
 pub(crate) fn default_subagent_max_tool_steps() -> usize {
     100
 }
@@ -408,18 +403,6 @@ pub(crate) fn default_kb_keyword_strong_score_threshold() -> f32 {
 
 pub(crate) fn default_kb_embedding_timeout_seconds() -> u64 {
     60
-}
-
-pub(crate) fn default_diagnostics_timeout() -> u64 {
-    5
-}
-
-pub(crate) fn default_diagnostics_max_stdout_chars() -> usize {
-    8_000
-}
-
-pub(crate) fn default_diagnostics_max_stderr_chars() -> usize {
-    4_000
 }
 
 pub(crate) fn default_tool_output_spill_bytes() -> usize {

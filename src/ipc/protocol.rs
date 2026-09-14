@@ -32,8 +32,15 @@ pub struct SessionState {
     pub session_id: String,
     #[serde(default)]
     pub session_name: String,
+    /// `/sandbox` 绑的根目录;None = 没绑(成员会话这里也是 None,他们的沙盒不在
+    /// 会话记录里)。
     #[serde(default)]
-    pub workspace: Option<String>,
+    pub sandbox: Option<String>,
+    /// 绑了沙盒时,根之外还能写/读什么(给 `/sandbox` 查看用;`session_state_for` 填)。
+    #[serde(default)]
+    pub sandbox_writable: Vec<String>,
+    #[serde(default)]
+    pub sandbox_readable: Vec<String>,
 }
 
 /// 记忆重置的范围。
@@ -132,6 +139,11 @@ pub enum Command {
     /// Stop all running background commands of a session (REPL exit).
     StopSessionJobs {
         session_id: String,
+    },
+    /// 停掉**一个**后台任务。全屏 TUI 的详情面板里按 x 用它——
+    /// 面板讲的就是这一个任务，停整会话的任务是另一回事。
+    StopJob {
+        job_id: String,
     },
     GetSessionState {
         target: SessionRef,
@@ -300,10 +312,12 @@ pub enum Command {
     DeleteSession {
         target: SessionRef,
     },
-    SetWorkspace {
+    /// `/sandbox <root>` / `/sandbox clear`:绑定或解绑会话沙盒根。daemon 侧校验
+    /// 目录、探测内核 Landlock、拒绝成员会话;只影响之后的回合。
+    SetSandbox {
         target: SessionRef,
         #[serde(default)]
-        path: Option<std::path::PathBuf>,
+        root: Option<std::path::PathBuf>,
     },
     /// Pins the target session to its own model pool. An empty list clears
     /// the override so the session follows the global active pool again.

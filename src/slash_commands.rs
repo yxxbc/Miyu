@@ -21,11 +21,10 @@ pub(crate) fn split_repl_command(input: &str) -> (&str, &str) {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ReplSlashCommand {
     New,
-    Init,
     Session,
     Rename,
     Delete,
-    Workspace,
+    Sandbox,
     Models,
     Persona,
     Usage,
@@ -113,23 +112,14 @@ pub(crate) const REPL_COMMAND_TABLE: &[ReplCommandSpec] = &[
         web: false,
     },
     ReplCommandSpec {
-        name: "/init",
-        command: ReplSlashCommand::Init,
-        arg_hint: "",
-        help_en: "scan the workspace and write GQY.md (dev mode)",
-        help_zh: "扫一遍工作区并写出 GQY.md 项目说明(开发模式)",
-        // WebUI 里没接:它展开成一条普通消息交给模型跑,而 WebUI 的命令层
-        // 只做客户端动作(见 web/commands.js 的说明),没有「替用户发一条
-        // 消息」的出口。接的时候在那边加一条分支即可。
-        web: false,
-    },
-    ReplCommandSpec {
-        name: "/workspace",
-        command: ReplSlashCommand::Workspace,
+        name: "/sandbox",
+        command: ReplSlashCommand::Sandbox,
         arg_hint: "[path|clear]",
-        help_en: "show, bind, or unbind the session workspace",
-        help_zh: "查看、绑定或解绑会话工作目录",
-        web: false,
+        help_en: "confine this session to a directory (Landlock); no arg shows, `clear` unbinds",
+        help_zh: "把本会话关进某个目录(Landlock 沙盒);不带参数查看,clear 解绑",
+        // WebUI 也开(09-13 用户拍板):浏览器里没有别的入口能做这件事。成员会话
+        // 本来就关在自己家里,daemon 侧一律拒绝。
+        web: true,
     },
     ReplCommandSpec {
         name: "/models",

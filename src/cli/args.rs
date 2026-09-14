@@ -11,6 +11,9 @@ use std::path::PathBuf;
 pub struct Cli {
     #[arg(long, global = true)]
     pub debug: bool,
+    /// 只看空会话的 banner(星空 + 渐变 MIYU),按任意键退出
+    #[arg(long)]
+    pub banner: bool,
 
     /// 纯文本输出(= `--output-format text --quiet`),保留给老脚本。
     #[arg(long)]
@@ -126,17 +129,17 @@ pub enum Command {
     Wipe(WipeArgs),
     Web(WebArgs),
     Daemon(DaemonArgs),
-    /// 进入普通模式 REPL(人格全能力)
-    Normal,
     /// 进入开发模式 REPL(极简编码形态,无人格)
     Dev,
+    /// 新手引导:人格 / 功能 / 认识你 / 终端集成 / 接模型(裸 miyu 第一次会自动进)
+    Oobe,
     /// 工具桥:以当前会话身份调用一个结构化工具(供 run_command 脚本编排)
     #[command(name = "tool-call")]
     ToolCallCmd(ToolCallArgs),
     /// MCP stdio 工具桥(claude-code 供应商内部使用,由 claude 拉起)
     #[command(name = "mcp-serve", hide = true)]
     McpServe,
-    /// 会话管理:list / new / show / delete / rename / clear / pop / compact / models / workspace
+    /// 会话管理:list / new / show / delete / rename / clear / pop / compact / models / sandbox
     Session(SessionArgs),
     /// 长驻协议模式:stdin 一行一请求(JSON),stdout 一行一事件;宿主软件把 Miyu 当后端用
     Stdio,
@@ -319,8 +322,8 @@ pub enum SessionCommand {
         target: String,
         model: Option<String>,
     },
-    /// 查看/绑定会话工作区;`--clear` 解绑
-    Workspace {
+    /// 查看/绑定会话沙盒根(Landlock);`--clear` 解绑
+    Sandbox {
         target: String,
         dir: Option<PathBuf>,
         #[arg(long, conflicts_with = "dir")]

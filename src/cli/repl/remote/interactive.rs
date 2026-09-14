@@ -50,6 +50,8 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
         daemon_state.context_window_assumed,
     );
     let mut live_repl = LiveReplTail::new(mode, history.clone(), Vec::new(), footer.clone())?;
+    // 空会话:挂 banner,Tab 可换车道;有过回合的会话直接是输入框。
+    live_repl.set_session_empty(&config, paths, session_is_empty(paths, &active_session_id));
     let jobs_shared = spawn_jobs_poll_thread(paths.clone());
     let jobs_feed = JobsFeed::Shared(jobs_shared.clone());
 
@@ -90,7 +92,12 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
         let replay_store = StateStore::new(paths)?.pinned(&active_session_id);
         match replay_store.session_replay(config.display.repl_replay_turns) {
             Ok(replays) if !replays.is_empty() => {
+                // 全屏下按正文区的宽度排，不是整屏：左右各两列边距，按整屏排出来
+                // 的东西会比可视区宽、被缓冲硬折一次。
                 let (cols, _) = terminal::size().unwrap_or((80, 24));
+                let cols = crate::cli::content_viewport()
+                    .map(|(cols, _)| cols)
+                    .unwrap_or(cols);
                 let frame =
                     session_replay_frame(&replays, mode, &config, usize::from(cols.max(1)))?;
                 live_repl.apply_output_frame(&frame)?;
@@ -111,6 +118,32 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
             Some(&active_session_id),
         )? {
             LiveReplOutcome::Exit => break,
+            LiveReplOutcome::StopJob { job_id } => {
+                let result = send_ipc_command(
+                    paths,
+                    IpcCommand::StopJob {
+                        job_id: job_id.clone(),
+                    },
+                )
+                .await;
+                let note = match result {
+                    Ok(_) => {
+                        // 压住它：紧接着那次轮询还带着它，状态行会闪一下。
+                        live_repl.suppress_jobs(std::iter::once(job_id.as_str()));
+                        let remaining: Vec<crate::tools::jobs::JobOverview> = live_repl
+                            .jobs
+                            .iter()
+                            .filter(|job| job.job_id != job_id)
+                            .cloned()
+                            .collect();
+                        live_repl.set_jobs(remaining);
+                        t("background task stopped", "已停止这个后台任务")
+                    }
+                    Err(_) => t("could not stop the task", "没能停掉这个后台任务"),
+                };
+                repl_note(&mut live_repl, &format!("\x1b[2m{note}\x1b[0m\n"))?;
+                continue;
+            }
             LiveReplOutcome::StopJobs => {
                 let stopped = match repl_ipc_admin(
                     paths,
@@ -130,6 +163,15 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                 // Drop the strip now instead of waiting out the ~1s jobs poll:
                 // every job of this session was just stopped, so an empty strip
                 // is the truth.
+                //
+                // 光清是不够的：紧接着那次轮询拿到的还是停之前的快照，状态行会
+                // 再冒出来一下——先把这些 id 压住，等轮询里真的没有了再放开。
+                let stopped_ids: Vec<String> = live_repl
+                    .jobs
+                    .iter()
+                    .map(|job| job.job_id.clone())
+                    .collect();
+                live_repl.suppress_jobs(stopped_ids.iter().map(String::as_str));
                 live_repl.set_jobs(Vec::new());
                 repl_note(
                     &mut live_repl,
@@ -163,20 +205,48 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
             LiveReplOutcome::Submit(next_mode, input, images, entry) => {
                 (next_mode, input, images, entry)
             }
+            LiveReplOutcome::SwitchMode(next) => {
+                match switch_repl_lane(
+                    paths,
+                    &config,
+                    next,
+                    &mut active_session_id,
+                    &mut history,
+                    &mut live_repl,
+                    &mut footer,
+                    &mut cumulative_tokens,
+                )
+                .await
+                {
+                    Ok(()) => mode = next,
+                    Err(error) => {
+                        // 切不过去就留在原车道,把颜色也换回来。
+                        live_repl.set_mode(mode);
+                        repl_note(
+                            &mut live_repl,
+                            &format!(
+                                "\x1b[31m{}: {error:#}\x1b[0m\n",
+                                t("could not switch mode", "切换模式失败")
+                            ),
+                        )?;
+                    }
+                }
+                continue;
+            }
         };
         mode = next_mode;
         let input = input.trim();
         if input.eq_ignore_ascii_case("exit") || input.eq_ignore_ascii_case("quit") {
             break;
         }
+        // 第一条消息发出去,会话就不空了:banner 撤、模式钉死。斜杠命令不算。
+        if !input.is_empty() && !input.starts_with('/') {
+            live_repl.set_session_empty(&config, paths, false);
+        }
         let (slash_command, command_args) = match parse_repl_input(input) {
             ReplInput::Chat => (None, ""),
             ReplInput::Slash(command, args) => (Some(command), args),
         };
-        // `/init` 是唯一一条**展开成消息**的命令:它要模型真的去看工作区、
-        // 写文件,那是一整个回合的活,不是一次客户端动作。装在这里,跑完命令
-        // 分支后落到下面的聊天路上。
-        let mut synthesized_prompt: Option<&'static str> = None;
         if let Some(command) = slash_command {
             // 命令也进上方向键历史：`/goal 长长的目标` 打错一个字重敲一遍，
             // 和重敲一条消息一样冤。落盘历史仍只收消息（命令是操作不是对话）。
@@ -198,36 +268,14 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
             }
             match command {
                 ReplSlashCommand::Exit => break,
-                ReplSlashCommand::Init => {
-                    // 人格会话里没有意义:GQY.md 只在 dev 提示词里注入,
-                    // 在这儿生成等于让她白做一遍没人读的功课。
-                    if mode != AgentMode::Dev {
-                        repl_note(
-                            &mut live_repl,
-                            &format!(
-                                "\x1b[2m{}\x1b[0m\n",
-                                t(
-                                    "/init is a dev-mode command; switch to dev first",
-                                    "/init 是开发模式的命令,先切到开发模式"
-                                )
-                            ),
-                        )?;
-                    } else {
-                        repl_note(
-                            &mut live_repl,
-                            &format!(
-                                "\x1b[2m{}\x1b[0m\n",
-                                t(
-                                    "reading the workspace and writing GQY.md…",
-                                    "正在通读工作区并写 GQY.md…"
-                                )
-                            ),
-                        )?;
-                        synthesized_prompt =
-                            Some(crate::agent::prompt::INIT_PROJECT_PROMPT);
-                    }
+                ReplSlashCommand::Help => {
+                    // 走缓冲而不是 `println!`：全屏下直接打 stdout 的字节不在
+                    // 缓冲里，下一帧重画就没了，回翻也找不到。
+                    repl_note(
+                        &mut live_repl,
+                        crate::cli::repl::commands::repl_help_text().trim_end(),
+                    )?;
                 }
-                ReplSlashCommand::Help => print_repl_help(),
                 ReplSlashCommand::Stt => {
                     if crate::cli::repl::dictation::is_active() {
                         crate::cli::repl::dictation::stop();
@@ -312,6 +360,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     apply_repl_session_switch(
                         paths,
                         &config,
+                        mode,
                         &state,
                         &mut active_session_id,
                         &mut history,
@@ -346,6 +395,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     apply_repl_session_switch(
                         paths,
                         &config,
+                        mode,
                         &state,
                         &mut active_session_id,
                         &mut history,
@@ -446,6 +496,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         apply_repl_session_switch(
                             paths,
                             &config,
+                            mode,
                             &state,
                             &mut active_session_id,
                             &mut history,
@@ -456,7 +507,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         .await?;
                     }
                 }
-                ReplSlashCommand::Workspace => {
+                ReplSlashCommand::Sandbox => {
                     let arg = command_args.trim();
                     if arg.is_empty() {
                         let Some(state) = repl_get_session_state(
@@ -470,16 +521,20 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         else {
                             continue;
                         };
-                        let note = match state.workspace {
-                            Some(workspace) => format!(
-                                "\x1b[2m{}: {workspace}\x1b[0m\n",
-                                t("session workspace", "会话工作目录")
+                        let note = match state.sandbox {
+                            Some(root) => format!(
+                                "\x1b[2m{}: {root}\n{}: {}\n{}: {}\x1b[0m\n",
+                                t("sandbox root", "沙盒根"),
+                                t("writable", "可写"),
+                                state.sandbox_writable.join(", "),
+                                t("readable", "可读"),
+                                state.sandbox_readable.join(", "),
                             ),
                             None => format!(
                                 "\x1b[2m{}\x1b[0m\n",
                                 t(
-                                    "no workspace bound; using the client working directory",
-                                    "未绑定工作目录；使用客户端当前目录"
+                                    "no sandbox bound; using the client working directory, nothing confined",
+                                    "未绑定沙盒;使用客户端当前目录,不设限"
                                 )
                             ),
                         };
@@ -490,11 +545,11 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         if repl_ipc_admin(
                             paths,
                             &mut live_repl,
-                            IpcCommand::SetWorkspace {
+                            IpcCommand::SetSandbox {
                                 target: crate::ipc::SessionRef::Id {
                                     id: active_session_id.clone(),
                                 },
-                                path: None,
+                                root: None,
                             },
                         )
                         .await?
@@ -504,7 +559,10 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                                 &mut live_repl,
                                 &format!(
                                     "\x1b[2m{}\x1b[0m\n",
-                                    t("workspace unbound", "已解绑工作目录")
+                                    t(
+                                        "sandbox unbound; later turns run unconfined",
+                                        "已解绑沙盒;之后的回合不设限"
+                                    )
                                 ),
                             )?;
                         }
@@ -517,7 +575,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                                 &mut live_repl,
                                 &format!(
                                     "\x1b[31m{}: {arg} ({error})\x1b[0m\n",
-                                    t("invalid workspace path", "无效的工作目录路径")
+                                    t("invalid sandbox path", "无效的沙盒路径")
                                 ),
                             )?;
                             continue;
@@ -526,11 +584,11 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     if repl_ipc_admin(
                         paths,
                         &mut live_repl,
-                        IpcCommand::SetWorkspace {
+                        IpcCommand::SetSandbox {
                             target: crate::ipc::SessionRef::Id {
                                 id: active_session_id.clone(),
                             },
-                            path: Some(path.clone()),
+                            root: Some(path.clone()),
                         },
                     )
                     .await?
@@ -539,9 +597,13 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         repl_note(
                             &mut live_repl,
                             &format!(
-                                "\x1b[2m{}: {}\x1b[0m\n",
-                                t("workspace bound", "已绑定工作目录"),
-                                path.display()
+                                "\x1b[2m{}: {}\n{}\x1b[0m\n",
+                                t("sandbox bound", "已绑定沙盒"),
+                                path.display(),
+                                t(
+                                    "later turns read and write only inside it (plus /tmp and the configured toolchain dirs)",
+                                    "之后的回合只能在这里面读写(外加 /tmp 与配置里的工具链目录)"
+                                )
                             ),
                         )?;
                     }
@@ -616,6 +678,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         apply_repl_session_switch(
                             paths,
                             &config,
+                            mode,
                             &daemon_state,
                             &mut active_session_id,
                             &mut history,
@@ -650,10 +713,13 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     )
                     .await;
                     synchronized_terminal_update(CursorAfterUpdate::Shown, || live_repl.resume())?;
-                    if let Err(error) = result {
-                        repl_note(&mut live_repl, &format!("\x1b[31m{error:#}\x1b[0m\n"))?;
-                        continue;
-                    }
+                    let changed = match result {
+                        Ok(changed) => changed,
+                        Err(error) => {
+                            repl_note(&mut live_repl, &format!("\x1b[31m{error:#}\x1b[0m\n"))?;
+                            continue;
+                        }
+                    };
                     let session_config =
                         footer_config_for_session(paths, &config, &active_session_id);
                     let (state, _) =
@@ -673,19 +739,30 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     // 输出帧也不重画 footer 行,于是模型标签要等下一次按键才换
                     // (09-10 用户截图:提示已说「已更新」,footer 仍是旧模型)。
                     live_repl.refresh_footer(footer.clone())?;
-                    repl_note(
-                        &mut live_repl,
-                        &format!(
-                            "\x1b[2m{}\x1b[0m\n",
-                            t(
-                                "session model updated; takes effect from the next turn",
-                                "会话模型已更新，下一轮生效"
-                            )
-                        ),
-                    )?;
+                    // Esc 退出选择器时什么都没改，这句"已更新"就是假消息
+                    //（用户实测）。选择器自己该说的话它已经说过了。
+                    if changed {
+                        repl_note(
+                            &mut live_repl,
+                            &format!(
+                                "\x1b[2m{}\x1b[0m\n",
+                                t(
+                                    "session model updated; takes effect from the next turn",
+                                    "会话模型已更新，下一轮生效"
+                                )
+                            ),
+                        )?;
+                    }
                 }
                 ReplSlashCommand::Config => {
                     crate::config_tui::run(paths)?;
+                    // 设置界面退出时画面原样留着、光标藏着：在一个同步块里把 REPL
+                    // 整屏画回来，光标直接出现在输入框，中间不经过左上角。
+                    if crate::cli::in_fullscreen() {
+                        synchronized_terminal_update(CursorAfterUpdate::Shown, || {
+                            live_repl.resume()
+                        })?;
+                    }
                     let Some((_, _)) =
                         repl_ipc_admin(paths, &mut live_repl, IpcCommand::ReloadConfig).await?
                     else {
@@ -699,6 +776,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         apply_repl_session_switch(
                             paths,
                             &config,
+                            mode,
                             &state,
                             &mut active_session_id,
                             &mut history,
@@ -764,6 +842,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                                 apply_repl_session_switch(
                                     paths,
                                     &config,
+                                    mode,
                                     &state,
                                     &mut active_session_id,
                                     &mut history,
@@ -898,25 +977,48 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     footer.update_cumulative_tokens(cumulative_tokens);
                 }
                 ReplSlashCommand::Compact => {
-                    repl_note(
-                        &mut live_repl,
-                        &format!(
-                            "\x1b[2m{}\x1b[0m",
-                            t("compacting context…", "正在压缩上下文…")
-                        ),
-                    )?;
-                    let Some((state, data)) = repl_ipc_admin(
+                    // 全屏：不用右上角的通知，写进正文——一行「正在压缩」，压完一行
+                    // 结果，摘要收成一块点开看（用户实测：压缩上下文只有右上角的通知）。
+                    // inline 照旧：两行提示 + 用量。
+                    let fullscreen = crate::cli::in_fullscreen();
+                    let notice = |text: &str| -> String {
+                        crate::render::timeline::indent_body(&format!(
+                            "\x1b[2m{} {text}\x1b[0m\n",
+                            crate::render::timeline::glyph_notice()
+                        ))
+                    };
+                    let compacting = t("compacting context…", "正在压缩上下文…");
+                    if fullscreen {
+                        live_repl.apply_output_frame(notice(compacting).as_bytes())?;
+                    } else {
+                        repl_note(&mut live_repl, &format!("\x1b[2m{compacting}\x1b[0m"))?;
+                    }
+                    // 摘要边生成边转发过来，攒起来压完收成一块。
+                    let mut summary = String::new();
+                    let outcome = send_ipc_admin_streaming(
                         paths,
-                        &mut live_repl,
                         IpcCommand::Compact {
                             target: crate::ipc::SessionRef::Id {
                                 id: active_session_id.clone(),
                             },
                         },
+                        |kind, data| {
+                            if kind == "context.compact_delta" {
+                                summary.push_str(ipc_text(data, "delta"));
+                            }
+                            Ok(())
+                        },
                     )
-                    .await?
-                    else {
-                        continue;
+                    .await;
+                    let (state, data) = match outcome {
+                        Ok(result) => result,
+                        Err(err) => {
+                            repl_note(
+                                &mut live_repl,
+                                &format!("\x1b[31m{}: {err}\x1b[0m\n", t("error", "错误")),
+                            )?;
+                            continue;
+                        }
                     };
                     if let Some(usage) = data
                         .get("usage")
@@ -925,10 +1027,6 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                         .map(serde_json::from_value::<Usage>)
                         .transpose()?
                     {
-                        repl_note(
-                            &mut live_repl,
-                            &format!("\x1b[2m{}\x1b[0m\n", t("context compacted", "上下文已压缩")),
-                        )?;
                         let result = ChatResult {
                             content: String::new(),
                             reasoning: None,
@@ -945,27 +1043,47 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                             last_request_usage: None,
                             responses_continuation: None,
                         };
-                        print_chat_token_usage(
-                            &result,
-                            config.display.show_token_usage,
-                            state.context_tokens,
-                            state.context_window,
-                            state_cumulative(&state),
-                        )?;
+                        if fullscreen {
+                            let mut head = t("context compacted", "上下文已压缩").to_string();
+                            if let Some(usage_line) = chat_token_usage_text(
+                                &result,
+                                config.display.show_token_usage,
+                                state.context_tokens,
+                                state.context_window,
+                                state_cumulative(&state),
+                            ) {
+                                head.push_str(" · ");
+                                head.push_str(&usage_line);
+                            }
+                            let mut frame = Vec::new();
+                            crate::render::timeline::write_compact_summary(
+                                &mut frame, &head, &summary,
+                            )?;
+                            live_repl.apply_output_frame(&frame)?;
+                        } else {
+                            repl_note(
+                                &mut live_repl,
+                                &format!(
+                                    "\x1b[2m{}\x1b[0m\n",
+                                    t("context compacted", "上下文已压缩")
+                                ),
+                            )?;
+                            print_chat_token_usage(
+                                &result,
+                                config.display.show_token_usage,
+                                state.context_tokens,
+                                state.context_window,
+                                state_cumulative(&state),
+                            )?;
+                        }
                     } else {
-                        repl_note(
-                            &mut live_repl,
-                            &format!(
-                                "\x1b[2m{}\x1b[0m\n",
-                                t("nothing to compact", "没有可压缩的上下文")
-                            ),
-                        )?;
+                        let nothing = t("nothing to compact", "没有可压缩的上下文");
+                        if fullscreen {
+                            live_repl.apply_output_frame(notice(nothing).as_bytes())?;
+                        } else {
+                            repl_note(&mut live_repl, &format!("\x1b[2m{nothing}\x1b[0m\n"))?;
+                        }
                     }
-                    cumulative_tokens = state_cumulative(&state);
-                    footer.update_session_tokens(state.context_tokens);
-                    footer
-                        .update_context_window(state.context_window, state.context_window_assumed);
-                    footer.update_cumulative_tokens(cumulative_tokens);
                 }
                 ReplSlashCommand::ResetMemory => {
                     // 不二次确认:只清本会话记下的那部分,会话历史/技能/知识库
@@ -1037,10 +1155,15 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     // reloaded rather than left showing them.
                     cumulative_tokens = TurnTokens::default();
                     footer.reset_token_usage(state.context_tokens, state.context_window);
+                    // 清空之后又是空会话:banner 回来,Tab 又能换车道。
+                    live_repl.set_session_empty(&config, paths, true);
                     // 存下新数字还不够:footer 不重绘,屏幕上的 Σ 就一直
                     // 挂着重置前的累计(验收问题四)。
                     live_repl.refresh_footer(footer.clone())?;
                     reload_repl_queue(&mut live_repl, paths, &active_session_id)?;
+                    // 全屏：画布随会话一起清空（`set_session_empty` 丢掉正文缓冲），
+                    // 下一句话从屏顶起。以前这里是 `clear_screen`（顶空一屏、往回翻
+                    // 还在），第一句话就接在那一屏空行后面、出现在屏底（用户实测）。
                     repl_note(
                         &mut live_repl,
                         &format!(
@@ -1071,6 +1194,8 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     live_repl.editor.cursor = 0;
                     cumulative_tokens = TurnTokens::default();
                     footer.reset_token_usage(state.context_tokens, state.context_window);
+                    // 清空之后又是空会话:banner 回来,Tab 又能换车道。
+                    live_repl.set_session_empty(&config, paths, true);
                     live_repl.refresh_footer(footer.clone())?;
                     reload_repl_queue(&mut live_repl, paths, &active_session_id)?;
                     repl_note(
@@ -1079,21 +1204,14 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     )?;
                 }
             }
-            if synthesized_prompt.is_none() {
-                continue;
-            }
-        }
-        if input.is_empty() && synthesized_prompt.is_none() {
             continue;
         }
-        // 展开出来的提示词不进历史:用户敲的是 `/init`,上方向键该给回那一条
-        // (命令分支已经记过了),不是这几百字的说明。
-        let input = synthesized_prompt.unwrap_or(input);
-        if synthesized_prompt.is_none() {
-            push_history_capped(&mut history, history_entry.clone());
-            live_repl.editor.record_history(history_entry.clone());
-            persist_repl_history_entry(paths, &active_session_id, &history_entry);
+        if input.is_empty() {
+            continue;
         }
+        push_history_capped(&mut history, history_entry.clone());
+        live_repl.editor.record_history(history_entry.clone());
+        persist_repl_history_entry(paths, &active_session_id, &history_entry);
         match try_run_remote_chat(
             paths,
             Some(&mut live_repl),
@@ -1151,8 +1269,14 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                 if is_remote_turn_cancelled(&err)
                     || crate::question::is_question_cancelled(&err) =>
             {
-                let frame = format!("\x1b[2m{}\x1b[0m\n\n", t("cancelled", "已取消"));
-                live_repl.apply_output_frame(frame.as_bytes())?;
+                // 走通知条：「已取消」不是对话内容，几秒之后就不再有意义。
+                // 直接塞进正文的话它会贴着第 0 列、还会被前面那个收缩块吃进去
+                // ——用户实测「这个已取消怎么不是通知，而是跟 Worked for 一起
+                // 是可交互的」说的就是它。
+                repl_note(
+                    &mut live_repl,
+                    &format!("\x1b[2m{}\x1b[0m", t("cancelled", "已取消")),
+                )?;
                 // The interrupted turn still entered the context; refresh the
                 // footer from the daemon's post-cancel state.
                 if let Ok((state, _)) =
@@ -1174,6 +1298,7 @@ pub(in crate::cli) async fn run_remote_repl(paths: &MiyuPaths, mut mode: AgentMo
                     apply_repl_session_switch(
                         paths,
                         &config,
+                        mode,
                         &state,
                         &mut active_session_id,
                         &mut history,

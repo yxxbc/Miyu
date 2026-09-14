@@ -20,16 +20,36 @@ impl StreamRenderer {
         }
         self.hide_cursor()?;
         let phase = self.waiting_phase_text();
-        self.wait_spinner = Some(WaitSpinner::start(phase, SpinnerStyle::Scanner));
+        self.wait_spinner = Some(WaitSpinner::start(phase, self.wait_style()));
         self.last_tick = None;
         self.tick_spinner()?;
         Ok(())
+    }
+
+    /// 等待动画长什么样。
+    ///
+    /// 全屏下一律用点阵转轮：绿色那条横向点进度条是 inline 的写法，它占七八格、
+    /// 自带颜色，跟时间线里「正在想」那一行的转轮既不是一个形状也不在一个位置。
+    /// 同一件事（在等）该长成同一个样子。
+    pub(crate) fn wait_style(&self) -> SpinnerStyle {
+        if self.timeline_enabled() {
+            SpinnerStyle::Braille
+        } else {
+            SpinnerStyle::Scanner
+        }
     }
 
     pub fn start_reasoning_phase(&mut self, received_at: std::time::Instant) -> Result<()> {
         self.preparing_question_started_at = None;
         self.tool_preparing = None;
         self.tool_preparing_since = None;
+        // 上一段正文的最后一行还开着（模型没给换行，markdown 那层攒着半行）：
+        // 先把它收掉再起转轮。不收的话转轮画在这半行的位置上，等下一条思考
+        // delta 来收行时，那半行正文就接在转轮那一行后面（排队跟进的第二轮
+        // 实测：`⠹ 󰝨 思考中 · 0.1s好的,收到。…` 粘成一行）。
+        if self.mode == Some(ChatStreamKind::Content) {
+            self.end_active_stream_line()?;
+        }
         if self.reasoning_mode == ReasoningDisplayMode::Summary {
             self.reasoning_started_at = Some(received_at);
             self.reasoning_elapsed = None;
@@ -54,7 +74,7 @@ impl StreamRenderer {
                 format_reasoning_elapsed(started_at.elapsed())
             );
         }
-        if let Some((phase, started_at)) = self.tool_preparing {
+        if let Some((phase, _, started_at)) = self.tool_preparing {
             return format!(
                 "~ {phase} · {}",
                 format_reasoning_elapsed(started_at.elapsed())
@@ -83,7 +103,7 @@ impl StreamRenderer {
             return Ok(());
         }
         self.reasoning_title = Some(title);
-        self.ensure_waiting_phase(self.reasoning_live_text(), SpinnerStyle::Scanner)
+        self.ensure_waiting_phase(self.reasoning_live_text(), self.wait_style())
     }
 
     pub fn start_reasoning_part(&mut self, received_at: std::time::Instant) -> Result<()> {
@@ -159,10 +179,22 @@ impl StreamRenderer {
             // they describe what the turn is blocked on right now, and the
             // summaries would otherwise overwrite them on the very first tick
             // after they are set — before the spinner has drawn once.
+            // 全屏：「准备xx」是这一步的**前置状态**，不是另一种画面。它在
+            // 时间线里占最后那一行，等真正的工具落下来就被换掉；顶掉整条
+            // 时间线的话，已经跑完的那几步会一起消失（用户原话「新出的会
+            // 覆盖已经出现的」）。
             if (self.preparing_question_started_at.is_some() || self.tool_preparing.is_some())
                 && self.wait_spinner.is_some()
+                && !self.timeline_enabled()
             {
                 self.set_waiting_phase(self.waiting_phase_text());
+            } else if self.timeline_enabled() && self.wait_spinner.is_some() {
+                self.refresh_live_block();
+                self.refresh_subagent_panels();
+                // 全屏：live 区就是这一段过程的时间线——已完成的步骤原样列着,
+                // 最后一行是正在做的那个(转轮画在它上面)。
+                let (header, sub) = self.timeline_waiting();
+                self.set_tool_waiting_phase(&header, sub.as_deref());
             } else if self.tool_call_mode == ToolCallDisplayMode::Summary
                 && !self.tool_stats.is_empty()
                 && self.wait_spinner.is_some()
@@ -175,7 +207,9 @@ impl StreamRenderer {
             {
                 self.set_waiting_phase(self.waiting_phase_text());
             }
-            if let Some(display) = &mut self.command_display {
+            // 时间线下命令块从不自己画（它只是累加器，live 区归转轮）。
+            let timeline = self.timeline_enabled();
+            if let Some(display) = self.command_display.as_mut().filter(|_| !timeline) {
                 debug_assert!(self.wait_spinner.is_none());
                 display.tick(&mut self.output)?;
             } else if let Some(spinner) = &mut self.wait_spinner {
@@ -192,6 +226,10 @@ impl StreamRenderer {
     }
 
     pub(crate) fn finalize_reasoning_summary(&mut self) -> Result<()> {
+        // 全屏：同 `finalize_tools_summary`，想完了就收进时间线当一步。
+        if self.timeline_enabled() && self.reasoning_mode != ReasoningDisplayMode::Hidden {
+            return self.timeline_push_thought();
+        }
         if self.reasoning_mode == ReasoningDisplayMode::Summary
             && (self.reasoning_title.is_some() || !self.reasoning_text.is_empty())
         {
@@ -202,8 +240,21 @@ impl StreamRenderer {
                 self.summary_line_active = false;
                 self.summary_lines_active = 0;
             }
+            // 展开的那份是完整思考正文——摘要行只说了「想了多久、多少 token」，
+            // 想看想了什么就得点开。绿色 dim 跟摘要一个色系。
+            let expanded = crate::render::blocks::expand_under(
+                &summary,
+                crate::render::blocks::expandable_text_lines(
+                    &self.reasoning_text,
+                    SummaryStyle::Reasoning,
+                ),
+                SummaryStyle::Reasoning,
+            );
             let stdout = &mut self.output;
-            write_activity_summary(stdout, &summary, SummaryStyle::Reasoning)?;
+            crate::render::blocks::write_expandable(stdout, expanded, |writer| {
+                write_activity_summary(writer, &summary, SummaryStyle::Reasoning)
+                    .map_err(std::io::Error::other)
+            })?;
             stdout.flush()?;
             self.reasoning_text.clear();
             self.reasoning_tokens = 0;
@@ -328,8 +379,14 @@ impl StreamRenderer {
     }
 
     pub(crate) fn ensure_tool_waiting_phase(&mut self) -> Result<()> {
-        debug_assert!(self.command_display.is_none());
-        let (header, sub) = self.tool_summary_live();
+        // 全屏下命令块只当累加器用（内容留到点开时才看），转轮照常归时间线，
+        // 于是「有命令块就没有转轮」这条 inline 的不变式不再成立。
+        debug_assert!(self.command_display.is_none() || self.timeline_enabled());
+        let (header, sub) = if self.timeline_enabled() {
+            self.timeline_waiting()
+        } else {
+            self.tool_summary_live()
+        };
         if self.plain || !self.live_summary {
             let summary = match &sub {
                 Some(s) if header.is_empty() => s.clone(),

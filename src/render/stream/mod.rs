@@ -8,8 +8,10 @@
 //! （`longest_sent_meme_prefix_suffix`），不能等看完整段。
 
 mod reasoning_phase;
+pub(crate) mod timeline;
 mod tool_summary;
 
+use crate::render::blocks;
 use crate::render::*;
 
 pub(crate) fn rendered_physical_rows(widths: &[usize], terminal_width: usize) -> u16 {
@@ -43,6 +45,22 @@ impl Write for RenderOutput {
 }
 
 pub struct StreamRenderer {
+    /// 工具产出的、该落在**时间线收缩行之后**的东西（图片占位格、todo 表…）。
+    ///
+    /// 它们是"这一步干出来的结果"，不是过程。夹在时间线中间的话，这一步自己
+    /// 反而排到了结果下面——屏幕上就成了「Worked for… ／ 图 ／ 1 tool」，因果
+    /// 倒过来了（用户实测报的表情包、搜图、todo、提问全是这一个毛病）。
+    /// `cut_timeline` 把这一段收成一行之后再把它们放出来。
+    pub(crate) pending_after_timeline: Vec<String>,
+    /// 正在跑的每个工具各自那一块（工具事件名 → 块 id）。见 `refresh_live_block`。
+    pub(crate) live_tool_blocks: BTreeMap<String, u64>,
+    /// 这一轮里每个子代理**至此**烧掉的词元（工具事件名 → 数）。
+    ///
+    /// 子代理的用量要等它跑完、审计会话落盘之后才进会话累计，而一个子代理能跑
+    /// 好几分钟——那几分钟里 Σ 一动不动。跑着的时候先按这份实时加上去，回合收尾
+    /// 时会话累计从库里重读，加数跟着清掉，不会算两遍。
+    /// 记的是**各自的最新值**不是增量，所以并行几个也不会互相叠加出鬼数。
+    pub(crate) subagent_tokens: BTreeMap<String, u64>,
     pub(crate) reasoning_mode: ReasoningDisplayMode,
     pub(crate) tool_call_mode: ToolCallDisplayMode,
     pub(crate) plain: bool,
@@ -67,13 +85,19 @@ pub struct StreamRenderer {
     pub(crate) live_summary: bool,
     pub(crate) wait_spinner: Option<WaitSpinner>,
     pub(crate) last_tick: Option<std::time::Instant>,
+    /// 全屏：自动压缩时流进来的摘要先攒着，压完收成一块（`finish_compact`）。
+    pub(crate) compact_text: String,
+    /// 上一次把子代理面板重灌是什么时候。见 `refresh_subagent_panels`。
+    pub(crate) last_subagent_refresh: Option<std::time::Instant>,
     pub(crate) preparing_question_started_at: Option<std::time::Instant>,
     /// Phase text and start time for the "still receiving arguments" hint.
     /// Sticky like `preparing_question_started_at` and for the same reason:
     /// `tick_spinner` re-derives the phase from renderer state on every tick,
     /// so a phase merely pushed into the spinner is overwritten before it can
     /// be drawn.
-    pub(crate) tool_preparing: Option<(&'static str, std::time::Instant)>,
+    /// 正在流参数的那个工具：提示语、它自己的图标、从什么时候开始。图标跟工具走
+    ///（准备编辑=铅笔、准备执行=`$`），不是一个通用齿轮（用户 09-14 要求）。
+    pub(crate) tool_preparing: Option<(&'static str, &'static str, std::time::Instant)>,
     /// 整个准备窗口的起点，跨 write_tool_call 存活。
     ///
     /// `tool_preparing` 每次工具调用完成就被清掉，计时锚点跟着它走的话，
@@ -86,6 +110,13 @@ pub struct StreamRenderer {
     /// 模型正文/思维链的流式转义过滤状态:与命令输出同一套状态机,
     /// 拦截 `\x1b[2J`/OSC 等正文里的终端控制序列(清屏/藏光标/伪造 UI)。
     pub(crate) stream_control: TerminalControlState,
+    /// 全屏下这一段连续过程的时间线。inline 模式全程为空。
+    pub(crate) timeline: timeline::Timeline,
+    /// 每个子代理的内层流水账，按工具名归档。点开覆盖层看的就是这个。
+    pub(crate) subagent_logs: BTreeMap<String, timeline::SubagentLog>,
+    /// 「正在进行」那一行的块 id。每帧重发标记但**id 不变**，否则每 tick
+    /// 都会在登记处攒一个新块。想完/跑完就清掉。
+    pub(crate) live_block: Option<u64>,
 }
 
 impl StreamRenderer {
@@ -114,6 +145,9 @@ impl StreamRenderer {
             tool_seq: 0,
             readable_tool_names,
             command_output_lines,
+            pending_after_timeline: Vec::new(),
+            live_tool_blocks: BTreeMap::new(),
+            subagent_tokens: BTreeMap::new(),
             command_display: None,
             summary_line_active: false,
             summary_lines_active: 0,
@@ -121,12 +155,17 @@ impl StreamRenderer {
             live_summary: io::stdout().is_terminal(),
             wait_spinner: None,
             last_tick: None,
+            compact_text: String::new(),
+            last_subagent_refresh: None,
             preparing_question_started_at: None,
             tool_preparing: None,
             tool_preparing_since: None,
             subagent_mode: None,
             sent_meme_filter: SentMemeStreamFilter::default(),
             stream_control: TerminalControlState::default(),
+            timeline: timeline::Timeline::default(),
+            subagent_logs: BTreeMap::new(),
+            live_block: None,
         }
     }
 
@@ -195,7 +234,7 @@ impl StreamRenderer {
             self.finalize_tools_summary()?;
             self.record_reasoning_text(&text);
             self.mode = Some(ChatStreamKind::Reasoning);
-            self.ensure_waiting_phase(self.reasoning_live_text(), SpinnerStyle::Scanner)?;
+            self.ensure_waiting_phase(self.reasoning_live_text(), self.wait_style())?;
             return Ok(());
         }
         self.stop_waiting()?;
@@ -203,6 +242,8 @@ impl StreamRenderer {
             if chunk.kind == ChatStreamKind::Content {
                 self.finalize_reasoning_summary()?;
                 self.finalize_tools_summary()?;
+                // 模型开始说正文了：这一段连续过程到此为止，收成一行。
+                self.cut_timeline()?;
             } else if chunk.kind == ChatStreamKind::Reasoning {
                 self.finalize_tools_summary()?;
             }
@@ -214,7 +255,16 @@ impl StreamRenderer {
         } else if self.plain {
             write!(stdout, "{text}")?;
         } else {
-            write!(stdout, "{}", self.markdown.push(&text))?;
+            let rendered = self.markdown.push(&text);
+            // 全屏：正文也缩进两格，和时间线、用户消息共用一条装订边。
+            // `push` 只吐**整行**（半行留在它自己的缓冲里），所以这里逐行加
+            // 前缀不会把一行切成两半。
+            let rendered = if blocks::enabled() {
+                timeline::indent_body(&rendered)
+            } else {
+                rendered
+            };
+            write!(stdout, "{rendered}")?;
         }
         stdout.flush()?;
         Ok(())
@@ -235,12 +285,27 @@ impl StreamRenderer {
         Ok(())
     }
 
+    /// 面板要抢屏，但**先别切时间线**。
+    ///
+    /// 切了之后"询问用户"那一步就只能落进下一段——屏幕上成了
+    /// 「Worked for… ／ 问答块 ／ 询问用户」，因果整个倒过来。正确顺序是：
+    /// 面板退场、答案到手、把这一步补进当前这一段，再连着一起收。
+    pub fn prepare_for_panel(&mut self) -> Result<()> {
+        self.preparing_question_started_at = None;
+        self.tool_preparing = None;
+        self.tool_preparing_since = None;
+        self.release_transient_output()?;
+        self.show_cursor()?;
+        Ok(())
+    }
+
     pub fn prepare_for_external_output(&mut self) -> Result<()> {
         self.preparing_question_started_at = None;
         self.tool_preparing = None;
         self.tool_preparing_since = None;
         self.release_transient_output()?;
         self.finalize_tools_summary()?;
+        self.cut_timeline()?;
         self.show_cursor()?;
         Ok(())
     }
@@ -248,6 +313,17 @@ impl StreamRenderer {
     pub fn write_system_message(&mut self, message: &str) -> Result<()> {
         self.prepare_for_external_output()?;
         let stdout = &mut self.output;
+        // 全屏：系统提示和时间线里的通知一个样子——暗色、带图标、退两格，
+        // 不是贴着第 0 列的一行灰字。
+        if blocks::enabled() {
+            let line = timeline::indent_body(&format!(
+                "\x1b[2m{} {message}\x1b[0m\n",
+                timeline::glyph_notice()
+            ));
+            write!(stdout, "{line}")?;
+            stdout.flush()?;
+            return Ok(());
+        }
         execute!(stdout, SetForegroundColor(Color::DarkGrey), MoveToColumn(0))?;
         writeln!(stdout, "{message}")?;
         execute!(stdout, ResetColor)?;
@@ -257,6 +333,13 @@ impl StreamRenderer {
 
     pub fn write_compact_chunk(&mut self, chunk: &ChatStreamChunk) -> Result<()> {
         if chunk.kind != ChatStreamKind::Content {
+            return Ok(());
+        }
+        // 全屏：摘要先攒着，压完收成一块点开看。整段灰字流到正文里，几十行
+        // 摘要把对话冲散了（用户：压缩上下文没有任何输出吗——inline 那套灰字在
+        // 全屏下本来就该折起来）。
+        if blocks::enabled() {
+            self.compact_text.push_str(&chunk.text);
             return Ok(());
         }
         self.prepare_for_external_output()?;
@@ -269,6 +352,16 @@ impl StreamRenderer {
     }
 
     pub fn finish_compact(&mut self) -> Result<()> {
+        if blocks::enabled() {
+            let summary = std::mem::take(&mut self.compact_text);
+            timeline::write_compact_summary(
+                &mut self.output,
+                t("context compacted", "上下文已压缩"),
+                &summary,
+            )?;
+            self.output.flush()?;
+            return Ok(());
+        }
         let stdout = &mut self.output;
         execute!(stdout, ResetColor)?;
         writeln!(stdout)?;
@@ -282,19 +375,39 @@ impl StreamRenderer {
         self.tool_preparing_since = None;
         self.stop_waiting()?;
         if let Some(mut display) = self.command_display.take() {
-            display.commit(
-                &mut self.output,
-                self.tool_call_mode == ToolCallDisplayMode::Summary,
-            )?;
+            if self.timeline_enabled() {
+                // 时间线下命令块只是个累加器，从不自己上屏。回合在它跑到一半
+                // 时收尾（Ctrl+C、断线），就把它收成一步「已中断」——直接
+                // `commit` 的话，inline 那套 `$ 运行命令×1 运行中 / ↳ / │`
+                // 卡片会整块漏到全屏画面里（用户实测截图）。
+                self.interrupt_command_display(display);
+            } else {
+                display.commit(
+                    &mut self.output,
+                    self.tool_call_mode == ToolCallDisplayMode::Summary,
+                )?;
+            }
         }
         self.end_subagent_stream_line()?;
         if self.mode == Some(ChatStreamKind::Content) && !self.plain {
             let stdout = &mut self.output;
             let pending = self.sent_meme_filter.finish();
             if !pending.is_empty() {
-                write!(stdout, "{}", self.markdown.push(&pending))?;
+                let rendered = self.markdown.push(&pending);
+                let rendered = if blocks::enabled() {
+                    timeline::indent_body(&rendered)
+                } else {
+                    rendered
+                };
+                write!(stdout, "{rendered}")?;
             }
-            write!(stdout, "{}", self.markdown.flush())?;
+            let rendered = self.markdown.flush();
+            let rendered = if blocks::enabled() {
+                timeline::indent_body(&rendered)
+            } else {
+                rendered
+            };
+            write!(stdout, "{rendered}")?;
             stdout.flush()?;
         }
         if self.mode == Some(ChatStreamKind::Reasoning) {
@@ -305,15 +418,20 @@ impl StreamRenderer {
         }
         self.finalize_reasoning_summary()?;
         self.finalize_tools_summary()?;
+        self.cut_timeline()?;
         if self.summary_line_active {
             self.clear_summary_lines()?;
         }
+        // 这一轮的子代理用量交还给会话累计：回合收尾时调用方会从库里重读 Σ，
+        // 那时审计会话已经落盘，实时加数留着就是算两遍。
+        self.subagent_tokens.clear();
         self.mode = None;
         self.show_cursor()?;
         Ok(())
     }
 
     pub(crate) fn switch_mode(&mut self, mode: ChatStreamKind) -> Result<()> {
+        let timeline = self.timeline_enabled();
         let stdout = &mut self.output;
         match mode {
             // 中转侧工具卡片不改变流式排版模式。
@@ -328,8 +446,13 @@ impl StreamRenderer {
             ChatStreamKind::Content => {
                 if self.mode == Some(ChatStreamKind::Reasoning) {
                     execute!(stdout, ResetColor)?;
-                    writeln!(stdout)?;
-                    writeln!(stdout)?;
+                    // 这两行空是给「思考正文直接铺在屏上」那种排版留的间距。
+                    // 时间线下思考根本没往流里写（它进了时间线的一步），再补两行
+                    // 就是收缩行和正文之间白白空三行。
+                    if !timeline {
+                        writeln!(stdout)?;
+                        writeln!(stdout)?;
+                    }
                 }
             }
             ChatStreamKind::ToolCall => return Ok(()),
@@ -353,7 +476,13 @@ impl StreamRenderer {
             execute!(self.output, ResetColor)?;
         } else if self.mode == Some(ChatStreamKind::Content) && !self.plain {
             let stdout = &mut self.output;
-            write!(stdout, "{}", self.markdown.flush())?;
+            let rendered = self.markdown.flush();
+            let rendered = if blocks::enabled() {
+                timeline::indent_body(&rendered)
+            } else {
+                rendered
+            };
+            write!(stdout, "{rendered}")?;
             stdout.flush()?;
         }
         if self.mode.is_some() {
@@ -390,16 +519,47 @@ impl StreamRenderer {
 
     pub(crate) fn release_transient_output(&mut self) -> Result<()> {
         self.stop_waiting()?;
-        if let Some(mut display) = self.command_display.take() {
-            display.commit(
-                &mut self.output,
-                self.tool_call_mode == ToolCallDisplayMode::Summary,
-            )?;
+        // 时间线下命令块留着：它是那一步的累加器，跑完由 `write_tool_result`
+        // 收进时间线。这儿提交的话，同一批里第二个工具一来（或者一张图要落），
+        // 正在跑的命令就以 inline 那套卡片的样子漏到屏上。
+        if !self.timeline_enabled() {
+            if let Some(mut display) = self.command_display.take() {
+                display.commit(
+                    &mut self.output,
+                    self.tool_call_mode == ToolCallDisplayMode::Summary,
+                )?;
+            }
         }
         self.end_subagent_stream_line()?;
         self.end_active_stream_line()?;
         self.finalize_reasoning_summary()?;
         self.clear_summary_lines()
+    }
+
+    /// 回合收尾时命令还在跑：把它此刻的样子记到统计上，随后
+    /// `finalize_tools_summary` 会把它收成一步（没跑完 = 已中断，红色打叉）。
+    fn interrupt_command_display(&mut self, mut display: CommandLiveDisplay) {
+        let width = timeline::detail_width();
+        display.set_result(false);
+        let (detail, tail) = if self.timeline_static() {
+            (display.static_detail(width, true), Vec::new())
+        } else {
+            let tail = display.detail_tail(width, true, timeline::LIVE_PREVIEW_ROWS);
+            (display.timeline_detail(width), tail)
+        };
+        // 命令工具在统计里叫什么名字（`run_command` / `Bash`）由事件决定，
+        // 找那个还没跑完的就是它。
+        let name = self
+            .ordered_tool_stats()
+            .into_iter()
+            .find(|(name, stats)| is_command_tool(name) && !stats.settled())
+            .map(|(name, _)| name.clone());
+        if let Some(name) = name {
+            let stats = self.tool_stats_entry(&name);
+            stats.elapsed = stats.started_at.map(|at| at.elapsed());
+            stats.detail = detail;
+            stats.tail = tail;
+        }
     }
 }
 

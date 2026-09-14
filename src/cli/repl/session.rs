@@ -192,7 +192,15 @@ pub(in crate::cli) fn validate_ipc_command_response(frame: Option<IpcFrame>) -> 
 /// input history, queue tray, and the footer's token accounting.
 /// Writes one line of REPL feedback through the live tail so the output
 /// cursor stays in sync; never use bare `println!` inside the remote REPL.
+/// 一句话的状态提示。
+///
+/// 全屏下短提示走**通知条**（浮在输入框上方，几秒后自己消失），长的照旧进正文。
+/// 判据是行数：`/help` 那种整页清单浮起来没法看，而「已取消」写进正文只会让
+/// 回翻时满屏都是碎片。
 pub(in crate::cli) fn repl_note(live: &mut LiveReplTail, text: &str) -> Result<()> {
+    if live.toast_note(text) {
+        return Ok(());
+    }
     live.apply_output_frame(format!("{text}\n").as_bytes())
 }
 
@@ -205,9 +213,84 @@ pub(in crate::cli) fn display_session_name(name: &str) -> &str {
     }
 }
 
+/// 会话有没有可见回合。空会话挂 banner、Tab 可换车道;读不到就当非空(保守)。
+pub(in crate::cli) fn session_is_empty(paths: &MiyuPaths, session_id: &str) -> bool {
+    StateStore::new(paths)
+        .ok()
+        .and_then(|store| store.pinned(session_id).load_visible_turns().ok())
+        .is_some_and(|turns| turns.is_empty())
+}
+
+/// 空会话里按 Tab:换到另一条车道(普通 ↔ 开发)。
+///
+/// 那条车道当前的会话要是已经有回合,就新开一条空的——banner 和 Tab 只在
+/// 空会话上有意义,不能一按掉进一个 200 轮的老会话还回不来。
+#[allow(clippy::too_many_arguments)]
+pub(in crate::cli) async fn switch_repl_lane(
+    paths: &MiyuPaths,
+    config: &AppConfig,
+    mode: AgentMode,
+    active_session_id: &mut String,
+    history: &mut Vec<ReplHistoryEntry>,
+    live_repl: &mut LiveReplTail,
+    footer: &mut ReplFooterStatus,
+    cumulative_tokens: &mut TurnTokens,
+) -> Result<()> {
+    let lane = (mode == AgentMode::Dev).then(|| "dev".to_string());
+    let (state, _) =
+        send_ipc_admin(paths, IpcCommand::GetReplSession { mode: lane.clone() }).await?;
+    let state = if session_is_empty(paths, &state.session_id) {
+        state
+    } else {
+        let (_, data) = send_ipc_admin(
+            paths,
+            IpcCommand::CreateSession {
+                name: None,
+                switch: false,
+                kind: None,
+                mode: lane,
+            },
+        )
+        .await?;
+        let id = data
+            .get("session")
+            .and_then(|session| session.get("session_id"))
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string)
+            .ok_or_else(|| {
+                anyhow::anyhow!("{}", t("created session has no id", "新会话缺少 ID"))
+            })?;
+        let (state, _) = send_ipc_admin(
+            paths,
+            IpcCommand::GetSessionState {
+                target: crate::ipc::SessionRef::Id { id },
+            },
+        )
+        .await?;
+        state
+    };
+    // 先换色再切:切换的回执行和输入框竖条都按新模式画。
+    live_repl.set_mode(mode);
+    // 换车道不打「已切换到会话」——用户按的是模式切换,不是换会话。
+    live_repl.suppress_switch_note = true;
+    apply_repl_session_switch(
+        paths,
+        config,
+        mode,
+        &state,
+        active_session_id,
+        history,
+        live_repl,
+        footer,
+        cumulative_tokens,
+    )
+    .await
+}
+
 pub(in crate::cli) async fn apply_repl_session_switch(
     paths: &MiyuPaths,
     config: &AppConfig,
+    mode: AgentMode,
     state: &ipc::SessionState,
     active_session_id: &mut String,
     history: &mut Vec<ReplHistoryEntry>,
@@ -226,14 +309,42 @@ pub(in crate::cli) async fn apply_repl_session_switch(
     live_repl.editor.history_clean_index = None;
     live_repl.editor.input.clear();
     live_repl.editor.cursor = 0;
-    repl_note(
-        live_repl,
-        &format!(
-            "\x1b[2m{}: {}\x1b[0m\n",
-            t("switched to session", "已切换到会话"),
-            display_session_name(&state.session_name)
-        ),
-    )?;
+    // 每一次换会话都经过这里:空会话挂 banner、Tab 可换车道,非空就钉死。
+    let empty = session_is_empty(paths, &state.session_id);
+    live_repl.set_session_empty(config, paths, empty);
+    // 全屏：换会话就换画布。上一个会话的正文整个丢掉，目标会话最近几轮回放到
+    // 屏顶——新会话就是一张空画布（大厅），切回旧会话能看到它的对话（用户实测：
+    // /new 不清屏，看着还是旧会话）。正文顶部对齐之后不能再用「顶出视口」：
+    // 回放会缩在屏底、上面一大截空白。空会话的画布在 set_session_empty 里已经
+    // 丢过了。inline 照旧只打一行提示。
+    let fullscreen = crate::cli::in_fullscreen();
+    if fullscreen && !empty {
+        synchronized_terminal_update(CursorAfterUpdate::Preserve, || live_repl.wipe_transcript())?;
+    }
+    if !std::mem::take(&mut live_repl.suppress_switch_note) {
+        repl_note(
+            live_repl,
+            &format!(
+                "\x1b[2m{}: {}\x1b[0m\n",
+                t("switched to session", "已切换到会话"),
+                display_session_name(&state.session_name)
+            ),
+        )?;
+    }
+    if fullscreen && !empty && config.display.repl_replay_turns > 0 {
+        match store.session_replay(config.display.repl_replay_turns) {
+            Ok(replays) if !replays.is_empty() => {
+                let (cols, _) = terminal::size().unwrap_or((80, 24));
+                let cols = crate::cli::content_viewport()
+                    .map(|(cols, _)| cols)
+                    .unwrap_or(cols);
+                let frame = session_replay_frame(&replays, mode, config, usize::from(cols.max(1)))?;
+                live_repl.apply_output_frame(&frame)?;
+            }
+            Ok(_) => {}
+            Err(error) => tracing::debug!(error = %error, "session replay unavailable"),
+        }
+    }
     synchronized_terminal_update(CursorAfterUpdate::Shown, || live_repl.reload_queue(&store))?;
     // Rebuild rather than reset: the target session may pin its own model
     // pool, so provider/model/thinking have to be re-derived alongside the
@@ -271,7 +382,8 @@ pub(in crate::cli) struct SessionListEntry {
     pub(in crate::cli) is_current: bool,
     pub(in crate::cli) turns: u64,
     pub(in crate::cli) snippet: String,
-    pub(in crate::cli) workspace: Option<String>,
+    /// `/sandbox` 绑的根;None = 没绑。
+    pub(in crate::cli) sandbox: Option<String>,
     /// "dev" | "normal",由 daemon 按会话人格推导。
     pub(in crate::cli) mode: String,
 }
@@ -312,7 +424,7 @@ pub(in crate::cli) fn session_list_entry(session: &serde_json::Value) -> Session
                 }
             })
             .unwrap_or_default(),
-        workspace: text("workspace"),
+        sandbox: text("sandbox"),
         mode: text("mode").unwrap_or_else(|| "normal".to_string()),
     }
 }
@@ -356,8 +468,8 @@ pub(in crate::cli) fn session_select_line(
         line.push_str(" · ");
         line.push_str(&entry.snippet);
     }
-    if let Some(workspace) = &entry.workspace {
-        line.push_str(&format!("  [{workspace}]"));
+    if let Some(sandbox) = &entry.sandbox {
+        line.push_str(&format!("  [sandbox {sandbox}]"));
     }
     line
 }
@@ -368,7 +480,7 @@ pub(in crate::cli) fn session_select_search(entry: &SessionListEntry) -> String 
         display_session_name(&entry.name),
         session_mode_label(&entry.mode),
         entry.snippet,
-        entry.workspace.as_deref().unwrap_or_default()
+        entry.sandbox.as_deref().unwrap_or_default()
     )
 }
 

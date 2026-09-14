@@ -18,7 +18,13 @@ pub(in crate::cli) fn read_live_repl_input(
     let _raw_mode = if std::mem::take(&mut live.raw_mode_handoff) {
         LiveRawMode::adopt()
     } else {
-        LiveRawMode::start()?
+        let guard = LiveRawMode::start()?;
+        // 全屏：raw 模式断过一段（斜杠命令等 daemon 的那几秒终端在回显模式），
+        // 屏上可能落了回显进来的字符，整屏按缓冲重画一遍把它们盖掉。
+        if crate::cli::repl::tail::screen::in_fullscreen() {
+            live.rendered = false;
+        }
+        guard
     };
     if !live.rendered {
         synchronized_terminal_update(CursorAfterUpdate::Shown, || live.resume())?;
@@ -33,7 +39,14 @@ pub(in crate::cli) fn read_live_repl_input(
             events: libc::POLLIN,
             revents: 0,
         };
-        let ready = unsafe { libc::poll(&mut pollfd, 1, 80) };
+        // 开着面板时轮询放快一倍：面板里的转轮 80ms 一帧，轮询也是 80ms 的话
+        // 差一毫秒就漏一帧，看着一顿一顿。大厅 banner 挂着时同理（星空、扫光）。
+        let wait_ms = if live.overlay_open() || live.banner.is_some() {
+            40
+        } else {
+            80
+        };
+        let ready = unsafe { libc::poll(&mut pollfd, 1, wait_ms) };
         if ready == 1 && (pollfd.revents & (libc::POLLHUP | libc::POLLERR | libc::POLLNVAL)) != 0 {
             return Ok(LiveReplOutcome::Exit);
         }
@@ -100,7 +113,11 @@ pub(in crate::cli) fn read_live_repl_input(
                     }
                 }
             }
-            let typing = last_key_at.elapsed() < Duration::from_millis(350);
+            // 打字期间暂停动画，是 inline 的历史包袱：那边状态条和活动区是
+            // 两处各自往终端打，叠在一起会写坏帧。全屏下整屏由一个画笔按 diff
+            // 重画，没有这个冲突——再暂停就只剩「一交互进度条就卡住」的坏处。
+            let typing = !crate::cli::repl::tail::screen::in_fullscreen()
+                && last_key_at.elapsed() < Duration::from_millis(350);
             if typing {
                 continue;
             }
@@ -112,10 +129,17 @@ pub(in crate::cli) fn read_live_repl_input(
             let cumulative_changed = jobs_feed
                 .cumulative()
                 .is_some_and(|totals| live.footer.update_cumulative_tokens(totals));
+            live.expire_toast()?;
+            live.tick_overlay()?;
+            if let Some(job_id) = live.pending_stop_job.take() {
+                return Ok(LiveReplOutcome::StopJob { job_id });
+            }
             if live.set_jobs(jobs_feed.current()) || cumulative_changed {
                 synchronized_terminal_update(CursorAfterUpdate::Preserve, || live.redraw())?;
             } else {
                 live.tick_job_strip()?;
+                // 空会话的 banner:星星闪、扫光过。打字时和上面一样停。
+                live.tick_banner()?;
             }
             continue;
         }
@@ -170,6 +194,15 @@ pub(in crate::cli) fn read_live_repl_input(
                     }
                 }
             }
+            // 全屏下先给视口一次机会（回翻、滚轮）；inline 下这里是空操作。
+            if live.handle_screen_event(&event)? {
+                continue;
+            }
+            // 又打字了：候选面板可以重新弹出来（Esc 只关「当时那一串」）。
+            if matches!(&event, Event::Key(KeyEvent { kind, .. }) if *kind != KeyEventKind::Release)
+            {
+                live.allow_command_hint();
+            }
             match live.editor.handle_event(event, paths, false)? {
                 LiveEditorAction::None => {}
                 LiveEditorAction::Redraw => {
@@ -216,6 +249,13 @@ pub(in crate::cli) fn read_live_repl_input(
                         entry,
                     ));
                 }
+                LiveEditorAction::ToggleMode => {
+                    let next = match live.mode() {
+                        AgentMode::Normal => AgentMode::Dev,
+                        AgentMode::Dev => AgentMode::Normal,
+                    };
+                    return Ok(LiveReplOutcome::SwitchMode(next));
+                }
                 // Ctrl+C rung 3: the draft was empty and no reply is running, but
                 // this session still has background work — stop that before the
                 // press is allowed to mean "quit". `live.jobs` holds only running
@@ -223,6 +263,16 @@ pub(in crate::cli) fn read_live_repl_input(
                 // (`Exit`) always quits outright.
                 LiveEditorAction::Interrupt if !live.jobs.is_empty() => {
                     return Ok(LiveReplOutcome::StopJobs);
+                }
+                // Ctrl+C 的最后一级在全屏下不退出。
+                //
+                // inline 下退出无所谓——scrollback 还在，往上翻就都看得到。
+                // 全屏是一块自己的画布，退出等于整屏一起没，为了一次误触付这个
+                // 代价太贵。阶梯照旧（清草稿 → 中断回复 → 停后台任务），只是
+                // 最后一级改成提示走 Ctrl+D。
+                LiveEditorAction::Interrupt if crate::cli::repl::tail::screen::in_fullscreen() => {
+                    live.toast_note_at(t("press Ctrl+D to exit", "要退出请按 Ctrl+D"), true);
+                    continue;
                 }
                 LiveEditorAction::Interrupt | LiveEditorAction::Exit => {
                     synchronized_terminal_update(CursorAfterUpdate::Hidden, || live.suspend())?;
@@ -288,12 +338,14 @@ pub(in crate::cli) fn read_repl_input(
             stdout,
             input_row,
             rendered_rows,
+            &mut Vec::new(),
             mode,
             input,
             cursor,
             raw_pasted_lines,
             footer,
             show_shortcut_hint,
+            None,
         )
     };
     render_repl_input(
@@ -764,18 +816,26 @@ pub(in crate::cli) fn render_repl_input_with_footer(
     stdout: &mut io::Stdout,
     input_row: &mut u16,
     rendered_rows: &mut u16,
+    // `drawn`：画出去的输入行（屏幕行号 + 这一行的文字）。全屏下拿它做选区——
+    // 输入区不在正文缓冲里，不记下来就没法知道某一格上是什么字。
+    drawn: &mut Vec<(u16, String)>,
     mode: AgentMode,
     input: &str,
     cursor: usize,
     raw_pasted_lines: usize,
     footer: &ReplFooterStatus,
     show_shortcut_hint: bool,
+    // 全屏空会话的大厅:输入框不在屏底、也不全宽,而是嵌在 banner 下面的一个
+    // 窄框里——(左边距, 宽度)。None = 老样子,从第 0 列画到终端右边。
+    layout: Option<(u16, usize)>,
 ) -> Result<Option<u16>> {
     let suggestions = repl_command_suggestions(input);
     let lines = repl_input_lines(input);
     let prompt_prefix = input_prompt_bar(mode);
     let plain_prefix = "  ";
-    let cols = terminal_cols();
+    let cols = layout.map(|(_, width)| width).unwrap_or_else(terminal_cols);
+    let x0 = layout.map(|(left, _)| left).unwrap_or(0);
+    let blank = layout.map(|(_, width)| " ".repeat(width));
     let display_lines = repl_visible_input_lines(
         &plain_prefix,
         &lines,
@@ -793,33 +853,38 @@ pub(in crate::cli) fn render_repl_input_with_footer(
     let rows_to_clear = (*rendered_rows).max(current_rows).max(1);
     ensure_repl_space(stdout, input_row, rows_to_clear)?;
     for row_offset in 0..rows_to_clear {
-        queue!(
-            stdout,
-            MoveTo(0, (*input_row).saturating_add(row_offset)),
-            Clear(ClearType::CurrentLine)
-        )?;
+        queue!(stdout, MoveTo(x0, (*input_row).saturating_add(row_offset)))?;
+        // 窄框只擦自己那一段:两侧是 banner 的星空,不能整行清掉。
+        match &blank {
+            Some(blank) => queue!(stdout, Print(blank))?,
+            None => queue!(stdout, Clear(ClearType::CurrentLine))?,
+        }
     }
     let mut row_offset = 0u16;
     let footer_row;
-    queue!(stdout, MoveTo(0, *input_row), Print(&prompt_prefix))?;
+    queue!(stdout, MoveTo(x0, *input_row), Print(&prompt_prefix))?;
     row_offset = row_offset.saturating_add(1);
+    let pad = " ".repeat(usize::from(x0));
     for line in &display_rows {
         let row = (*input_row).saturating_add(row_offset);
-        queue!(stdout, MoveTo(0, row))?;
+        queue!(stdout, MoveTo(x0, row))?;
         queue!(stdout, Print(&prompt_prefix), Print(line))?;
+        drawn.push((row, format!("{pad}{prompt_prefix}{line}")));
         row_offset = row_offset.saturating_add(1);
     }
     queue!(
         stdout,
-        MoveTo(0, (*input_row).saturating_add(row_offset)),
+        MoveTo(x0, (*input_row).saturating_add(row_offset)),
         Print(&prompt_prefix)
     )?;
     row_offset = row_offset.saturating_add(1);
-    if !suggestions.is_empty() {
+    // 全屏下候选走输入框上方的浮层（`command_hint_lines`），footer 留着——
+    // 挤掉 footer 的话打命令时连模型名和用量都看不见了。
+    if !suggestions.is_empty() && !crate::cli::in_fullscreen() {
         let suggestion_width = cols.saturating_sub(visible_width(&prompt_prefix)).max(1);
         queue!(
             stdout,
-            MoveTo(0, (*input_row).saturating_add(row_offset)),
+            MoveTo(x0, (*input_row).saturating_add(row_offset)),
             Print(&prompt_prefix),
             Print(format!(
                 "\x1b[2m{}\x1b[0m",
@@ -831,14 +896,14 @@ pub(in crate::cli) fn render_repl_input_with_footer(
         footer_row = Some((*input_row).saturating_add(row_offset));
         queue!(
             stdout,
-            MoveTo(0, (*input_row).saturating_add(row_offset)),
+            MoveTo(x0, (*input_row).saturating_add(row_offset)),
             Print(repl_footer_line(mode, footer, cols))
         )?;
         if show_hint {
             row_offset = row_offset.saturating_add(1);
             queue!(
                 stdout,
-                MoveTo(0, (*input_row).saturating_add(row_offset)),
+                MoveTo(x0, (*input_row).saturating_add(row_offset)),
                 Print(repl_shortcut_hint_line(mode, cols))
             )?;
         }
@@ -851,7 +916,7 @@ pub(in crate::cli) fn render_repl_input_with_footer(
             &plain_prefix,
             last_line,
             last_line.chars().count(),
-            terminal_cols(),
+            cols,
         );
         (
             col,
@@ -861,7 +926,7 @@ pub(in crate::cli) fn render_repl_input_with_footer(
     queue!(
         stdout,
         MoveTo(
-            cursor_col,
+            cursor_col.saturating_add(x0),
             (*input_row)
                 .saturating_add(1)
                 .saturating_add(cursor_row_offset)

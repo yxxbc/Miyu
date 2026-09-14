@@ -372,6 +372,10 @@ pub(in crate::cli) async fn run_direct_repl(
                 LiveReplOutcome::Exit | LiveReplOutcome::FollowWake { .. } => None,
                 // Direct mode owns its jobs in-process, so stop them here
                 // rather than through the daemon.
+                LiveReplOutcome::StopJob { job_id } => {
+                    let _ = crate::tools::jobs::stop_job(&job_id).await;
+                    continue;
+                }
                 LiveReplOutcome::StopJobs => {
                     for job in crate::tools::jobs::overview() {
                         if job.running {
@@ -382,6 +386,49 @@ pub(in crate::cli) async fn run_direct_repl(
                 }
                 LiveReplOutcome::Submit(next_mode, input, images, entry) => {
                     Some((next_mode, input, images, entry))
+                }
+                LiveReplOutcome::SwitchMode(next) => {
+                    // 直连模式换车道:与启动时同一条语义——那条车道当前会话
+                    // 非空就新开一条,再按新模式重建客户端与工具面。
+                    let persona = if next == AgentMode::Dev {
+                        crate::state::DEV_PERSONA.to_string()
+                    } else {
+                        config.active_persona_scope()
+                    };
+                    let mut repl_session_id = state.ensure_repl_session(&persona)?;
+                    if !session_is_empty(paths, &repl_session_id) {
+                        repl_session_id = state.new_repl_session(&persona)?;
+                    }
+                    state.adopt_session(&repl_session_id);
+                    mode = next;
+                    apply_session_model_override(&state, &mut config);
+                    client = OpenAiCompatibleClient::from_config(&config, paths)?;
+                    input_history = load_repl_input_history(&state, paths)?;
+                    cumulative_tokens = state.session_cumulative_token_totals().unwrap_or_default();
+                    footer = ReplFooterStatus::from_config(
+                        &config,
+                        agent.effective_context_tokens()?,
+                        cumulative_tokens,
+                    );
+                    footer.update_thinking_variant(client.thinking_variant_summary().as_deref());
+                    let registry = build_tool_registry(
+                        &config,
+                        paths,
+                        mode,
+                        crate::question_tui::available(false),
+                    )?;
+                    agent.reload_config(config.clone(), client.clone())?;
+                    agent.switch_mode(mode, registry);
+                    footer.update_context_window(
+                        agent.context_window(),
+                        agent.context_window_assumed(),
+                    );
+                    live.set_mode(mode);
+                    live.editor.history = input_history.clone();
+                    live.editor.history_index = live.editor.history.len();
+                    live.set_session_empty(&config, paths, true);
+                    live.refresh_footer(footer.clone())?;
+                    continue;
                 }
             };
             // The user moved on: finished background commands count as
@@ -409,6 +456,11 @@ pub(in crate::cli) async fn run_direct_repl(
         let (input, pasted_images, history_entry) = match next_input {
             Some((new_mode, input, pasted_images, entry)) => {
                 mode = new_mode;
+                if !input.trim().is_empty() && !input.trim_start().starts_with('/') {
+                    if let Some(live) = live_repl.as_mut() {
+                        live.set_session_empty(&config, paths, false);
+                    }
+                }
                 (input, pasted_images, entry)
             }
             None => break,
@@ -490,7 +542,7 @@ pub(in crate::cli) async fn run_direct_repl(
         if command.eq_ignore_ascii_case("/models") {
             let argument = command_args.trim();
             let repl_session_id = state.session_id();
-            run_models_for_session(
+            let _changed = run_models_for_session(
                 paths,
                 parse_models_argument(argument),
                 Some(&repl_session_id),
@@ -518,6 +570,12 @@ pub(in crate::cli) async fn run_direct_repl(
         }
         if command.eq_ignore_ascii_case("/config") && command_args_empty {
             crate::config_tui::run(paths)?;
+            // 设置界面把画面留着、光标藏着：一个同步块里画回 REPL，光标直接落在输入框。
+            if crate::cli::in_fullscreen() {
+                if let Some(live) = live_repl.as_mut() {
+                    synchronized_terminal_update(CursorAfterUpdate::Shown, || live.resume())?;
+                }
+            }
             reload_repl_config(paths, &state, &mut config, &mut client)?;
             footer = ReplFooterStatus::from_config(
                 &config,
