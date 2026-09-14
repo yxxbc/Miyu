@@ -185,12 +185,12 @@ impl AppConfig {
     }
 
     /// 纯中文人格名以前的 scope 是 `md`(只剩扩展名),09-13 起按名字哈希。
-    /// 当前人格正好是这种名字、老目录还在、新目录还没有,就把老目录搬过去,
-    /// 记忆与状态不丢。只搬当前人格:老 scope 只能容下一个人格,不会有第二个。
-    pub(crate) fn migrate_degenerate_persona_scope(&self, paths: &MiyuPaths) {
+    /// 当前人格正是这种名字时返回 (`md`, 新 scope),否则 None。目录迁移与
+    /// 库内迁移(`web::server::run` 启动时)共用这一个判据。
+    pub(crate) fn degenerate_persona_scope_rename(&self) -> Option<(&'static str, String)> {
         let name = self.prompt.active_persona.trim();
         if name.is_empty() || self.private_persona_dir().is_some() {
-            return;
+            return None;
         }
         let scope = persona_scope_name(name);
         let ascii_only: String = name
@@ -198,17 +198,45 @@ impl AppConfig {
             .filter(|ch| ch.is_ascii_alphanumeric())
             .collect::<String>()
             .to_ascii_lowercase();
-        if !scope.starts_with("persona-") || ascii_only != "md" {
+        (scope.starts_with("persona-") && ascii_only == "md").then_some(("md", scope))
+    }
+
+    /// 当前人格正好是纯中文名、老目录还在、新目录还没有,就把老目录搬过去,
+    /// 记忆、状态、图库、表情包、人格脚本与技能不丢。只搬当前人格:老 scope
+    /// 只能容下一个人格,不会有第二个。
+    ///
+    /// 09-14 补:第一版只搬了 personas/ 与 state/personas/,按 scope 分库的
+    /// 表情包(`data/memes/<scope>`)、图库(`pictures/album/<scope>`)、人格
+    /// 脚本与技能(`<extensions>/{scripts,skills}/personas/<scope>`)全落在老
+    /// 目录里,升级后看起来像数据丢了。
+    pub(crate) fn migrate_degenerate_persona_scope(&self, paths: &MiyuPaths) {
+        let Some((legacy, scope)) = self.degenerate_persona_scope_rename() else {
             return;
-        }
+        };
         for (old, new) in [
             (
-                paths.personas_dir().join("md"),
+                paths.personas_dir().join(legacy),
                 paths.personas_dir().join(&scope),
             ),
             (
-                paths.state_dir.join("personas").join("md"),
+                paths.state_dir.join("personas").join(legacy),
                 paths.state_dir.join("personas").join(&scope),
+            ),
+            (
+                paths.data_dir.join("memes").join(legacy),
+                paths.data_dir.join("memes").join(&scope),
+            ),
+            (
+                paths.pictures_dir.join("album").join(legacy),
+                paths.pictures_dir.join("album").join(&scope),
+            ),
+            (
+                paths.scripts_dir.join("personas").join(legacy),
+                paths.scripts_dir.join("personas").join(&scope),
+            ),
+            (
+                paths.skills_dir.join("personas").join(legacy),
+                paths.skills_dir.join("personas").join(&scope),
             ),
         ] {
             if old.is_dir() && !new.exists() {

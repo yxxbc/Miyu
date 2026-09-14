@@ -15,6 +15,17 @@ pub async fn run(paths: MiyuPaths, args: WebArgs) -> Result<()> {
     tools::subagent_runner::init_checkpoint_dir(&paths);
     let state_store = StateStore::new(&paths)?;
     state_store.init_files()?;
+    // 纯中文人格名的老 scope `md` → 哈希 scope:目录已在 `AppConfig::load`
+    // 里搬过,库里的会话、平台绑定、会话指针、表情包引用在这里改。必须赶在
+    // 下面 `ensure_local_current_session` 自动建会话之前——新 scope 一旦有了
+    // 会话,rename 会拒绝,老会话就永远挂在 `md` 下、列表里看不见。
+    if let Some((legacy, scope)) = config.degenerate_persona_scope_rename() {
+        if !state_store.list_sessions(legacy)?.is_empty() {
+            if let Err(error) = state_store.rename_persona_scope(legacy, &scope) {
+                tracing::warn!(%error, legacy, %scope, "persona scope database migration skipped");
+            }
+        }
+    }
     let persona = config.active_persona_scope();
     state_store.adopt_sessions_for_persona(&persona)?;
     ensure_local_current_session(&state_store, &persona)?;

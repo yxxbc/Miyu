@@ -246,6 +246,72 @@ fn reserved_system_prompt_file_is_not_a_persona() {
     assert!(config.validate_persona_files(&paths).is_err());
 }
 
+/// 纯中文人格名的老 scope `md` → 哈希 scope:按 scope 分库的每一类目录都要
+/// 跟着搬。09-14 补漏——第一版只搬了 personas/ 与 state/personas/,图库、
+/// 表情包、人格脚本升级后全留在 `md` 下,看起来像丢了。
+#[test]
+fn degenerate_persona_scope_moves_every_scoped_directory() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().to_path_buf();
+    let paths = MiyuPaths {
+        root_dir: root.clone(),
+        config_dir: root.join("config"),
+        config_file: root.join("config/config.jsonc"),
+        skills_dir: root.join("extensions/skills"),
+        data_dir: root.join("data"),
+        cache_dir: root.join("cache"),
+        state_dir: root.join("state"),
+        pictures_dir: root.join("home/mac/pictures"),
+        fish_hook_file: root.join("fish/miyu.fish"),
+        bash_hook_file: root.join("config/shell/bash-hook.sh"),
+        zsh_hook_file: root.join("config/shell/zsh-hook.zsh"),
+        scripts_dir: root.join("extensions/scripts"),
+        system_scripts_dir: PathBuf::new(),
+    };
+    std::fs::write(root.join(".home-layout-v1"), "mac\n").unwrap();
+    let mut config = AppConfig::default();
+    config.prompt.active_persona = "顾清影.md".to_string();
+
+    let (legacy, scope) = config
+        .degenerate_persona_scope_rename()
+        .expect("a pure-CJK persona name used to collapse into `md`");
+    assert_eq!(legacy, "md");
+    assert!(scope.starts_with("persona-"));
+
+    let parents = [
+        paths.personas_dir(),
+        paths.state_dir.join("personas"),
+        paths.data_dir.join("memes"),
+        paths.pictures_dir.join("album"),
+        paths.scripts_dir.join("personas"),
+        paths.skills_dir.join("personas"),
+    ];
+    for parent in &parents {
+        std::fs::create_dir_all(parent.join(legacy)).unwrap();
+        std::fs::write(parent.join(legacy).join("marker"), "kept").unwrap();
+    }
+
+    config.migrate_degenerate_persona_scope(&paths);
+
+    for parent in &parents {
+        assert!(
+            !parent.join(legacy).exists(),
+            "{} still has the legacy scope",
+            parent.display()
+        );
+        assert_eq!(
+            std::fs::read_to_string(parent.join(&scope).join("marker")).unwrap(),
+            "kept",
+            "{} lost its data",
+            parent.display()
+        );
+    }
+
+    let mut ascii = AppConfig::default();
+    ascii.prompt.active_persona = "alice.md".to_string();
+    assert!(ascii.degenerate_persona_scope_rename().is_none());
+}
+
 /// 家目录布局(阶段 6):属主档案与身份文件跟进 home/<admin>,人格记忆去 personas/。
 #[test]
 fn home_layout_marker_redirects_identity_and_persona_paths() {

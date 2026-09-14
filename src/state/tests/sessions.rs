@@ -167,8 +167,31 @@ fn persona_scope_rename_migrates_sessions_bindings_and_affection() {
             &serde_json::json!({"score": 42}),
         )
         .unwrap();
+    store.set_repl_session("old", &session.session_id).unwrap();
+    store
+        .put_platform_meme_ref(&crate::state::conversation_db::PlatformMemeRefRecord {
+            platform: "onebot".to_string(),
+            account_id: "10000".to_string(),
+            conversation_kind: "group".to_string(),
+            conversation_id: "20000".to_string(),
+            message_id: "m1".to_string(),
+            library: "old".to_string(),
+            meme_id: "wave".to_string(),
+            direction: "outbound".to_string(),
+            created_at: "2026-09-14T00:00:00Z".to_string(),
+        })
+        .unwrap();
 
     store.rename_persona_scope("old", "new").unwrap();
+
+    // 09-14:REPL 指针与表情包引用第一版漏迁,老 scope 下的数据在升级后看不见。
+    assert_eq!(
+        store.repl_session("new").unwrap(),
+        Some(session.session_id.clone())
+    );
+    assert_eq!(store.repl_session("old").unwrap(), None);
+    assert!(store.platform_meme_ref_counts("old").unwrap().is_empty());
+    assert_eq!(store.platform_meme_ref_counts("new").unwrap().len(), 1);
 
     assert_eq!(
         store

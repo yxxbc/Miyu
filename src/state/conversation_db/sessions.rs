@@ -166,6 +166,16 @@ impl ConversationDb {
         if target_pointer_exists {
             bail!("persona scope already has a current-session pointer: {new_scope}");
         }
+        let old_repl_key = format!("{REPL_SESSION_POINTER}:{old_scope}");
+        let new_repl_key = format!("{REPL_SESSION_POINTER}:{new_scope}");
+        let target_repl_pointer_exists: bool = tx.query_row(
+            "SELECT EXISTS(SELECT 1 FROM app_state WHERE key = ?1)",
+            params![new_repl_key],
+            |row| row.get(0),
+        )?;
+        if target_repl_pointer_exists {
+            bail!("persona scope already has a REPL session pointer: {new_scope}");
+        }
         let old_affection_key = format!("affection_profile:{old_scope}");
         let new_affection_key = format!("affection_profile:{new_scope}");
         let target_affection_exists: bool = tx.query_row(
@@ -193,9 +203,23 @@ impl ConversationDb {
             params![old_key, new_key],
         )?;
         tx.execute(
+            "UPDATE app_state SET key = ?2 WHERE key = ?1",
+            params![old_repl_key, new_repl_key],
+        )?;
+        tx.execute(
             "UPDATE platform_plugin_kv SET key = ?2
               WHERE plugin_id = 'real_context' AND key = ?1",
             params![old_affection_key, new_affection_key],
+        )?;
+        // 表情包库名就是人格 scope。主键含 library:新库下已有同一条引用时
+        // 旧行留着没意义,先尽量改名、撞主键的直接删。
+        tx.execute(
+            "UPDATE OR IGNORE platform_meme_refs SET library = ?2 WHERE library = ?1",
+            params![old_scope, new_scope],
+        )?;
+        tx.execute(
+            "DELETE FROM platform_meme_refs WHERE library = ?1",
+            params![old_scope],
         )?;
         tx.commit()?;
         Ok(())
